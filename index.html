@@ -234,6 +234,13 @@
                     <input type="text" id="v_af" placeholder="輸入 AF 數值或狀態">
                 </div>
                 <div class="form-group">
+                    <label>等級</label>
+                    <input type="text" id="v_level" placeholder="例如：S, A, B">
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group full">
                     <label>網址</label>
                     <input type="text" id="v_url" placeholder="個人主頁或相關連結">
                 </div>
@@ -310,7 +317,7 @@
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
-                } else if (msg.includes('順序已變更')) {
+                } else if (msg.includes('順序已變更') || msg.includes('複製')) {
                     toast.style.background = 'var(--warning)';
                 } else {
                     toast.style.background = 'var(--success)';
@@ -426,14 +433,12 @@
 
             get currentSheet() { return document.getElementById('v_sheet').value; }
 
-            // 自動判定到職日的格式貼上
             setupDatePasting() {
                 const dateInput = document.getElementById('v_start_date');
                 dateInput.addEventListener('paste', (e) => {
                     e.preventDefault();
                     let pastedText = (e.clipboardData || window.clipboardData).getData('text');
                     
-                    // 正則表達式支援 YYYY年MM月DD日, YYYY/MM/DD, YYYY-MM-DD
                     let match = pastedText.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/);
                     if (match) {
                         let y = match[1];
@@ -593,7 +598,7 @@
                         location: getIdx('位置'), store: getIdx('店名'), techId: getIdx('技師編號'),
                         startDate: getIdx('到職日'), name: getIdx('姓名'), age: getIdx('年齡'),
                         stats: getIdx('數值'), photo: getIdx('技師照片'), price: getIdx('價金'),
-                        url: getIdx('網址'), twoShift: getIdx('二輪轉'), af: getIdx('AF')
+                        url: getIdx('網址'), twoShift: getIdx('二輪轉'), af: getIdx('AF'), level: getIdx('等級')
                     };
 
                     if (this.colMap.name === -1 || this.colMap.store === -1) {
@@ -685,6 +690,7 @@
                     setV('url', document.getElementById('v_url').value);
                     setV('twoShift', document.getElementById('v_two_shift').value);
                     setV('af', document.getElementById('v_af').value);
+                    setV('level', document.getElementById('v_level').value);
                     setV('photo', finalUrl);
 
                     let writeRes;
@@ -720,7 +726,7 @@
                 
                 const values = this.dataStore.map(record => record._raw);
                 
-                Utility.showLoading("儲存排序中...");
+                Utility.showLoading("儲存排序與複製資料中...");
                 try {
                     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A2?valueInputOption=USER_ENTERED`, {
                         method: 'PUT', 
@@ -728,9 +734,9 @@
                         body: JSON.stringify({ values: values })
                     });
                     
-                    if (!res.ok) throw new Error("排序儲存失敗");
+                    if (!res.ok) throw new Error("儲存失敗");
                     
-                    Utility.showToast("✅ 排序儲存成功！");
+                    Utility.showToast("✅ 變更與排序儲存成功！");
                     document.getElementById('btn-save-order').style.display = 'none';
                     this.loadSheetData(); 
                 } catch (e) {
@@ -749,7 +755,7 @@
                 if(!record) return;
                 const r = record._raw;
 
-                document.getElementById('v_row_index').value = record._rowIndex;
+                document.getElementById('v_row_index').value = record._rowIndex || '';
                 document.getElementById('v_location').value = r[this.colMap.location] || "";
                 document.getElementById('v_store').value = r[this.colMap.store] || "";
                 
@@ -765,6 +771,7 @@
                 document.getElementById('v_url').value = r[this.colMap.url] || "";
                 document.getElementById('v_two_shift').value = r[this.colMap.twoShift] || "";
                 document.getElementById('v_af').value = r[this.colMap.af] || "";
+                document.getElementById('v_level').value = r[this.colMap.level] || "";
 
                 const rawUrl = r[this.colMap.photo] || "";
                 document.getElementById('v_photo_url').value = rawUrl; 
@@ -784,7 +791,7 @@
 
             clearForm() {
                 document.getElementById('v_row_index').value = '';
-                const inputs = ['v_location', 'v_store', 'v_tech_id', 'v_start_date', 'v_name', 'v_age', 'v_stats', 'v_price', 'v_url', 'v_two_shift', 'v_af', 'v_photo_url'];
+                const inputs = ['v_location', 'v_store', 'v_tech_id', 'v_start_date', 'v_name', 'v_age', 'v_stats', 'v_price', 'v_url', 'v_two_shift', 'v_af', 'v_level', 'v_photo_url'];
                 inputs.forEach(id => document.getElementById(id).value = '');
                 document.getElementById('preview_photo').style.display = 'none';
                 document.getElementById('text_photo').style.display = 'block';
@@ -806,6 +813,29 @@
                 this.renderCatalog();
             }
 
+            // 深拷貝項目（移除照片）
+            copyItem(oldIdx, newIdx) {
+                const originalItem = this.dataStore[oldIdx];
+                const newRaw = [...originalItem._raw];
+                
+                // 清空相片欄位
+                if (this.colMap.photo !== -1 && this.colMap.photo !== undefined) {
+                    newRaw[this.colMap.photo] = "";
+                }
+                
+                const newItem = {
+                    id: String(newRaw[this.colMap.techId] || `TEMP-COPY-${Date.now()}`).trim(),
+                    _raw: newRaw,
+                    _rowIndex: "" // 空的列號確保它被視為全新資料
+                };
+                
+                this.dataStore.splice(newIdx, 0, newItem);
+                
+                document.getElementById('btn-save-order').style.display = 'inline-flex';
+                Utility.showToast("💡 資料已複製（不含照片），請記得點擊「儲存排序」以寫入試算表！");
+                this.renderCatalog();
+            }
+
             renderCatalog() {
                 const kw = document.getElementById('searchInput').value.toLowerCase();
                 const filterLoc = document.getElementById('filterLocation').value;
@@ -819,7 +849,7 @@
                     const recLocation = r[this.colMap.location] || '';
                     if (filterLoc && recLocation !== filterLoc) return;
                     
-                    const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${recLocation} ${r[this.colMap.twoShift]} ${r[this.colMap.af]}`.toLowerCase();
+                    const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${recLocation} ${r[this.colMap.twoShift]} ${r[this.colMap.af]} ${r[this.colMap.level]}`.toLowerCase();
                     if(kw && !searchStr.includes(kw)) return;
 
                     let cleanImg = Utility.cleanDriveUrl(r[this.colMap.photo]);
@@ -829,14 +859,17 @@
                     const price = r[this.colMap.price] || '';
                     const targetUrl = r[this.colMap.url] || '';
                     
-                    // 組合 AF 與 二輪轉 的標籤
+                    // 組合額外標籤 (包含 AF、二輪轉、等級)
                     let extraTags = '';
                     const afVal = r[this.colMap.af] || '';
                     const twoShiftVal = r[this.colMap.twoShift] || '';
-                    if (afVal || twoShiftVal) {
+                    const levelVal = r[this.colMap.level] || '';
+                    
+                    if (afVal || twoShiftVal || levelVal) {
                         let tagsArr = [];
                         if (afVal) tagsArr.push(`AF: ${afVal}`);
                         if (twoShiftVal) tagsArr.push(`二輪: ${twoShiftVal}`);
+                        if (levelVal) tagsArr.push(`等級: ${levelVal}`);
                         extraTags = `<span style="font-size: 0.7em; background: #f3e5f5; color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: normal; margin-left: auto;">${tagsArr.join(' | ')}</span>`;
                     }
                     
@@ -844,7 +877,7 @@
 
                     const card = document.createElement('div');
                     card.className = 'card';
-                    card.title = isFiltered ? "左鍵：編輯資料\n右鍵：開啟專屬網址" : "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序";
+                    card.title = isFiltered ? "左鍵：編輯資料\n右鍵：開啟專屬網址" : "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序\n按住 Ctrl 拖曳可複製(不含照片)";
                     
                     card.onclick = (e) => {
                         if (e.target.closest('.price-scroll')) return;
@@ -861,7 +894,7 @@
                         card.draggable = true;
                         
                         card.ondragstart = (e) => {
-                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.effectAllowed = 'copyMove'; // 允許移動與複製
                             e.dataTransfer.setData('text/plain', index);
                             setTimeout(() => card.classList.add('dragging'), 0);
                         };
@@ -872,7 +905,8 @@
                         
                         card.ondragover = (e) => {
                             e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
+                            // 根據是否按住 Ctrl 改變游標圖示 ( + 號 )
+                            e.dataTransfer.dropEffect = e.ctrlKey ? 'copy' : 'move';
                             const overCard = e.target.closest('.card');
                             if (overCard) overCard.classList.add('drag-over');
                         };
@@ -889,14 +923,18 @@
                             
                             const oldIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
                             if (!isNaN(oldIndex)) {
-                                this.reorderItems(oldIndex, index);
+                                if (e.ctrlKey) {
+                                    this.copyItem(oldIndex, index); // Ctrl + Drop 觸發複製
+                                } else {
+                                    this.reorderItems(oldIndex, index); // 一般 Drop 觸發排序
+                                }
                             }
                         };
                     } else {
                         card.draggable = false;
                         card.ondragstart = (e) => {
                             e.preventDefault();
-                            Utility.showToast("⚠️ 請清除搜尋與篩選條件後，再進行拖曳排序！", true);
+                            Utility.showToast("⚠️ 請清除搜尋與篩選條件後，再進行拖曳操作！", true);
                         };
                     }
                     
