@@ -72,7 +72,7 @@
         .form-group.full { grid-column: span 2; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85em; color: #666; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; transition: 0.2s; }
-        input:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(69,39,160,0.1); }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(69,39,160,0.1); }
         input[readonly] { background: #f8f9fa; cursor: not-allowed; }
         
         /* 照片上傳區塊 */
@@ -182,7 +182,7 @@
                 </div>
                 <div class="form-group">
                     <label>年齡</label>
-                    <input type="number" id="v_age" placeholder="例如：22">
+                    <input type="text" id="v_age" placeholder="例如：22歲">
                 </div>
             </div>
 
@@ -196,7 +196,7 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>價金</label>
-                    <input type="text" id="v_price" placeholder="例如：40000/90;54000/120">
+                    <textarea id="v_price" rows="3" placeholder="例如：40000/90&#10;54000/120" style="resize: vertical;"></textarea>
                 </div>
                 <div class="form-group">
                     <label>二輪轉</label>
