@@ -38,7 +38,6 @@
         /* 照片上傳區塊 */
         .photo-upload-area { margin: 15px 0; position: relative; }
         .img-preview-box { width: 100%; height: 350px; background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; transition: 0.2s; }
-        /* 預覽圖改為 contain，保留完整影像 */
         .img-preview-box img { width: 100%; height: 100%; object-fit: contain; }
         .img-preview-box:hover { border-color: var(--primary); background: #f3e5f5; }
         .img-preview-box span { font-size: 0.9em; color: #777; text-align: center; line-height: 1.5; }
@@ -67,7 +66,6 @@
         .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
         .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; background: white; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(69,39,160,0.15); border-color: var(--secondary); }
-        /* 列表照片改為 contain 縮放至範圍內 */
         .card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #f8f9fa; margin-bottom: 10px; }
         .card .badge { position: absolute; top: 20px; left: 20px; background: var(--accent); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .card .store-name { font-size: 0.8em; color: var(--secondary); font-weight: bold; margin-bottom: 2px; }
@@ -169,9 +167,9 @@
 
             <div class="photo-upload-area">
                 <label>📷 技師照片 (將自動命名為：店名-姓名)</label>
-                <div class="img-preview-box" onclick="if(app.accessToken) document.getElementById('fileInputPhoto').click(); else app.triggerAuth();">
+                <div class="img-preview-box" onclick="if(app.accessToken) document.getElementById('fileInputPhoto').click(); else app.triggerAuth();" title="可直接使用 Ctrl+V 貼上截圖">
                     <img id="preview_photo" src="" style="display:none;">
-                    <span id="text_photo">點擊上傳照片<br>(自動裁切為 3:4 人像比例)</span>
+                    <span id="text_photo">點擊上傳照片，或直接在此頁面 <b>Ctrl+V</b> 貼上截圖<br>(自動裁切為 3:4 人像比例)</span>
                     <button id="btn_del_photo" class="btn-delete-img" onclick="app.deleteImage(event)" style="display:none;" title="刪除照片">✖</button>
                 </div>
             </div>
@@ -186,7 +184,10 @@
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">
                 <h3 style="margin:0;">📚 雲端資料庫 (<span id="display-sheet-name">等待解鎖</span>)</h3>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="searchInput" placeholder="🔍 搜尋姓名/店名/位置/AF/二輪轉..." oninput="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 280px;">
+                    <select id="filterLocation" onchange="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 140px; font-size: 14px;">
+                        <option value="">🗺️ 所有位置</option>
+                    </select>
+                    <input type="text" id="searchInput" placeholder="🔍 搜尋姓名/店名/位置/AF/二輪轉..." oninput="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 240px;">
                     <button class="success" onclick="app.clearForm()">➕ 新增技師</button>
                 </div>
             </div>
@@ -209,7 +210,7 @@
 
     <script>
         // ================= 配置區 =================
-        const CLIENT_ID = '615427641075-2e4i1l7smqp30l8v1qrf75c924aro94i.apps.googleusercontent.com';
+        const CLIENT_ID = '615427641075-7g7ikac4oc4s46897ch39av7174n4pmn.apps.googleusercontent.com';
         const SHEET_ID = '1WpEGW6m-N-Ofdsn4LGIrT0uQvFRPkVTh9RyJkKgqlc8'; 
         const DRIVE_FOLDER_ID = '1s1x7yyWUE3JB_8YnjOAoL93u7No6NP9p'; 
         const PLACEHOLDER_URL = 'https://placehold.co/300x400/eeeeee/999999?text=No+Photo';
@@ -247,11 +248,28 @@
                 this.cropper = null;
                 this.pendingBlob = null; 
 
-                document.getElementById('fileInputPhoto').addEventListener('change', (e) => this.handleFile(e));
+                // 綁定點擊上傳
+                document.getElementById('fileInputPhoto').addEventListener('change', (e) => this.handleFile(e.target.files[0]));
+                
+                // 綁定全域貼上事件 (Ctrl+V)
+                document.addEventListener('paste', (e) => {
+                    // 如果尚未授權，則不處理貼上動作
+                    if (!window.app || !window.app.accessToken) return;
+                    
+                    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                    for (let index in items) {
+                        const item = items[index];
+                        if (item.kind === 'file' && item.type.includes('image/')) {
+                            const file = item.getAsFile();
+                            this.handleFile(file);
+                            e.preventDefault();
+                            break; // 抓到第一張圖就跳出
+                        }
+                    }
+                });
             }
 
-            handleFile(e) {
-                const file = e.target.files[0];
+            handleFile(file) {
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
@@ -265,7 +283,7 @@
             openModal() {
                 this.modal.style.display = 'flex';
                 if(this.cropper) this.cropper.destroy();
-                // 新增 autoCropArea: 1，讓裁切框預設展開至全幅
+                // 設定 autoCropArea: 1 讓裁切框預設展開至全幅
                 this.cropper = new Cropper(this.imageElement, { 
                     aspectRatio: 3 / 4, 
                     viewMode: 1,
@@ -342,7 +360,6 @@
                         banner.className = 'authorized';
                         banner.innerHTML = '🟢 授權成功：已成功解鎖資料庫與照片上傳權限！';
                         
-                        // 授權成功後，自動抓取分頁名稱 (這會觸發真正的資料載入)
                         this.fetchSheetNames();
                     }
                 });
@@ -376,7 +393,6 @@
                             select.appendChild(opt);
                         });
                         
-                        // 抓到分頁名稱後，開始載入第一頁的資料
                         this.loadSheetData(); 
                     }
                 } catch (e) {
@@ -384,10 +400,8 @@
                 }
             }
 
-            // 改為嚴格 OAuth 驗證讀取模式 (解決限制權限無法讀取的問題)
             async loadSheetData() {
                 if (!this.accessToken) {
-                    // 若還沒登入，不跳出錯誤，安靜等待
                     document.getElementById('display-sheet-name').innerText = "請先登入解鎖";
                     return; 
                 }
@@ -417,9 +431,7 @@
                         return;
                     }
 
-                    // 第一行為標題列
                     this.headerRow = data.values[0];
-
                     const getIdx = (name) => this.headerRow.findIndex(h => String(h).trim() === name);
                     
                     this.colMap = {
@@ -444,10 +456,8 @@
                     }
 
                     this.dataStore = [];
-                    // 從第 2 行開始讀取資料 (跳過標題)
                     for (let i = 1; i < data.values.length; i++) {
                         const row = data.values[i];
-                        // 確保每一列長度與標題對齊
                         const paddedRow = this.headerRow.map((_, idx) => row[idx] || "");
                         const nameVal = paddedRow[this.colMap.name];
                         
@@ -455,16 +465,34 @@
                             this.dataStore.push({
                                 id: String(paddedRow[this.colMap.techId] || `TEMP-${i}`).trim(),
                                 _raw: paddedRow,
-                                _rowIndex: i // 對應在 values 陣列中的索引
+                                _rowIndex: i
                             });
                         }
                     }
 
+                    // 動態產生位置篩選選單
+                    this.populateLocationFilter();
                     this.renderCatalog();
                 } catch (error) {
                     Utility.hideLoading();
                     alert("❌ 系統連線發生例外錯誤：" + error.message);
                 }
+            }
+
+            // 新增：動態填入位置篩選選單
+            populateLocationFilter() {
+                const locSelect = document.getElementById('filterLocation');
+                // 取得所有不重複的位置 (排除空白)
+                const uniqueLocations = [...new Set(this.dataStore.map(r => r._raw[this.colMap.location]).filter(loc => loc && loc.trim() !== ''))];
+                
+                // 保留預設的第一個選項
+                locSelect.innerHTML = '<option value="">🗺️ 所有位置</option>';
+                uniqueLocations.sort().forEach(loc => {
+                    const opt = document.createElement('option');
+                    opt.value = loc;
+                    opt.innerText = loc;
+                    locSelect.appendChild(opt);
+                });
             }
 
             async saveToGoogleSheet() {
@@ -591,31 +619,47 @@
 
             renderCatalog() {
                 const kw = document.getElementById('searchInput').value.toLowerCase();
+                const filterLoc = document.getElementById('filterLocation').value;
                 const grid = document.getElementById('catalogGrid');
                 grid.innerHTML = '';
 
                 this.dataStore.forEach((record, index) => {
                     const r = record._raw;
+                    const recLocation = r[this.colMap.location] || '';
+
+                    // 1. 先驗證位置篩選
+                    if (filterLoc && recLocation !== filterLoc) return;
                     
-                    // 搜尋字串加入更多屬性判斷
-                    const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${r[this.colMap.location]} ${r[this.colMap.twoShift]} ${r[this.colMap.af]}`.toLowerCase();
+                    // 2. 驗證搜尋字串
+                    const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${recLocation} ${r[this.colMap.twoShift]} ${r[this.colMap.af]}`.toLowerCase();
                     if(kw && !searchStr.includes(kw)) return;
 
                     let cleanImg = Utility.cleanDriveUrl(r[this.colMap.photo]);
                     const imgSrc = cleanImg || PLACEHOLDER_URL;
                     
-                    // 姓名整合年齡顯示
                     const ageStr = r[this.colMap.age] ? ` (${r[this.colMap.age]})` : '';
                     const techName = (r[this.colMap.name] || '未命名') + ageStr;
                     const storeName = r[this.colMap.store] || '無店名';
                     const price = r[this.colMap.price] || '';
+                    const targetUrl = r[this.colMap.url] || '';
 
                     const card = document.createElement('div');
                     card.className = 'card';
+                    card.title = "左鍵：編輯資料\n右鍵：開啟專屬網址";
+                    
                     card.onclick = () => this.editRecord(index);
                     
+                    card.oncontextmenu = (e) => {
+                        e.preventDefault(); 
+                        if (targetUrl && targetUrl.startsWith('http')) {
+                            window.open(targetUrl, '_blank');
+                        } else {
+                            alert('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！');
+                        }
+                    };
+                    
                     card.innerHTML = `
-                        <span class="badge">${r[this.colMap.location] || '未知區'}</span>
+                        <span class="badge">${recLocation || '未知區'}</span>
                         <img src="${imgSrc}" loading="lazy" onerror="this.onerror=null; this.src='${PLACEHOLDER_URL}';">
                         <div class="store-name">${storeName}</div>
                         <div class="tech-name">${techName}</div>
@@ -638,12 +682,13 @@
             }
         }
 
+        // 定義在全域域，讓 paste 事件可以取得
+        window.app = null;
         const cropperSvc = new ImageCropperService();
-        const app = new AppCore();
 
-        // 啟動時只會初始化授權功能，不會強制去抓資料
         window.onload = () => {
-            app.initGoogleAuth();
+            window.app = new AppCore();
+            window.app.initGoogleAuth();
         };
     </script>
 </body>
