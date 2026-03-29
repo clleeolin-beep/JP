@@ -15,20 +15,52 @@
             --primary: #4527a0; --secondary: #7986cb; --bg: #f0f2f5; --text: #2c3e50;
             --accent: #e91e63; --success: #2e7d32; --card-bg: #ffffff;
         }
-        body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 98vh; box-sizing: border-box; overflow: hidden; }
+        body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; flex-direction: column; height: 100dvh; box-sizing: border-box; overflow: hidden; }
         h1, h2, h3 { color: var(--primary); margin-top: 0; }
         
-        /* 版面網格佈局 */
-        .app-container { display: grid; grid-template-columns: 500px 1fr; gap: 20px; flex: 1; min-height: 0; }
+        /* 頂部控制列佈局 */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap; }
+        .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .sheet-selector-wrapper { display: flex; align-items: center; gap: 8px; background: white; padding: 5px 15px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+        /* 版面網格佈局 (預設為編輯模式的電腦版) */
+        #app-container { display: grid; grid-template-columns: 500px 1fr; gap: 15px; flex: 1; min-height: 0; transition: all 0.3s ease; }
         .panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
         
+        /* ================= 模式切換邏輯 (重點) ================= */
+        /* 電腦版：瀏覽模式時，隱藏表單，列表滿版 */
+        #app-container.view-mode { grid-template-columns: 1fr; }
+        #app-container.view-mode #panel-form { display: none; }
+        
+        /* ================= RWD 手機版適應 (螢幕小於 850px) ================= */
+        @media (max-width: 850px) {
+            body { padding: 10px; }
+            .top-bar { flex-direction: column; align-items: stretch; }
+            .header-controls { flex-direction: column; align-items: stretch; }
+            .sheet-selector-wrapper { justify-content: space-between; }
+            
+            /* 手機版改為單欄 Flex 排版 */
+            #app-container { display: flex; flex-direction: column; }
+            
+            /* 手機版編輯模式：只顯示表單 */
+            #app-container.edit-mode #panel-catalog { display: none; }
+            /* 手機版瀏覽模式：只顯示列表 */
+            #app-container.view-mode #panel-form { display: none; }
+            
+            /* 表單欄位在手機上堆疊顯示 */
+            .form-grid { grid-template-columns: 1fr; gap: 8px; }
+            .form-group.full { grid-column: span 1; }
+            .filter-tools { flex-direction: column; align-items: stretch; }
+            .filter-tools input, .filter-tools select { width: 100% !important; margin-bottom: 8px; }
+        }
+
         /* 授權狀態橫幅 */
-        #auth-banner { background: #ffeeba; color: #856404; padding: 12px; font-size: 14px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 15px; cursor: pointer; border: 1px solid #ffdf7e; transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        #auth-banner { background: #ffeeba; color: #856404; padding: 10px; font-size: 14px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 12px; cursor: pointer; border: 1px solid #ffdf7e; transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         #auth-banner.authorized { background: #d4edda; color: #155724; border-color: #c3e6cb; cursor: default; }
 
         /* 表單設計 */
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
-        .form-group { margin-bottom: 12px; }
+        .form-group { margin-bottom: 8px; }
         .form-group.full { grid-column: span 2; }
         label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85em; color: #666; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; transition: 0.2s; }
@@ -36,34 +68,36 @@
         input[readonly] { background: #f8f9fa; cursor: not-allowed; }
         
         /* 照片上傳區塊 */
-        .photo-upload-area { margin: 15px 0; position: relative; }
+        .photo-upload-area { margin: 10px 0; position: relative; }
         .img-preview-box { width: 100%; height: 350px; background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; transition: 0.2s; }
         .img-preview-box img { width: 100%; height: 100%; object-fit: contain; }
         .img-preview-box:hover { border-color: var(--primary); background: #f3e5f5; }
-        .img-preview-box span { font-size: 0.9em; color: #777; text-align: center; line-height: 1.5; }
+        .img-preview-box span { font-size: 0.9em; color: #777; text-align: center; line-height: 1.5; padding: 10px; }
         
         /* 照片刪除按鈕 */
         .btn-delete-img { position: absolute; top: 10px; right: 10px; background: rgba(233, 30, 99, 0.9); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: 0.2s; z-index: 10; }
-        .btn-delete-img:hover { background: #c2185b; transform: scale(1.1); box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .btn-delete-img:hover { background: #c2185b; transform: scale(1.1); }
 
         /* 裁切視窗 Modal */
         #cropperModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .cropper-wrapper { width: 90%; max-width: 600px; height: 80%; background: white; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; }
+        .cropper-wrapper { width: 95%; max-width: 600px; height: 85%; background: white; padding: 15px; border-radius: 12px; display: flex; flex-direction: column; }
 
         /* 按鈕樣式 */
-        button { background: var(--primary); color: white; border: none; padding: 12px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; display: inline-flex; justify-content: center; align-items: center; gap: 5px; }
         button:hover { background: #311b92; }
         button:disabled { background: #b0bec5; cursor: not-allowed; }
         button.danger { background: #e53935; }
         button.danger:hover { background: #c62828; }
         button.success { background: #2e7d32; }
         button.success:hover { background: #1b5e20; }
+        button.secondary { background: #7986cb; }
+        button.secondary:hover { background: #5c6bc0; }
 
         /* 讀取畫面 */
-        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99999; justify-content: center; align-items: center; color: white; font-size: 22px; font-weight: bold; display: none; flex-direction: column; text-align: center; padding: 20px;}
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99999; justify-content: center; align-items: center; color: white; font-size: 20px; font-weight: bold; display: none; flex-direction: column; text-align: center; padding: 20px;}
 
         /* 卡片清單網格 */
-        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; align-content: start;}
         .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; background: white; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(69,39,160,0.15); border-color: var(--secondary); }
         .card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #f8f9fa; margin-bottom: 10px; }
@@ -79,16 +113,17 @@
         <div id="loading-text">資料處理中，請稍候...</div>
     </div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h2>🎭 Talent DB 技師資料彙整工具</h2>
-        <div style="display: flex; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 8px; background: white; padding: 5px 15px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-                <label style="margin: 0; font-size: 14px;">📂 選擇資料分頁：</label>
+    <div class="top-bar">
+        <h2 style="margin: 0;">🎭 Talent DB 工具</h2>
+        <div class="header-controls">
+            <div class="sheet-selector-wrapper">
+                <label style="margin: 0; font-size: 14px;">📂 分頁：</label>
                 <select id="v_sheet" style="width: auto; padding: 6px; border: none; font-weight: bold; color: var(--primary);" onchange="app.loadSheetData()">
                     <option value="">請先登入解鎖...</option>
                 </select>
             </div>
-            <button class="success" onclick="app.loadSheetData()">🔄 重新整理資料</button>
+            <button class="success" onclick="app.loadSheetData()">🔄 重新整理</button>
+            <button id="btn-mode-toggle" class="secondary" onclick="app.toggleMode()">👁️ 切換瀏覽模式</button>
         </div>
     </div>
 
@@ -96,9 +131,10 @@
         🔒 安全鎖定中：請點擊此處使用 Google 帳號授權，以解鎖讀取與編輯權限
     </div>
 
-    <div class="app-container">
-        <div class="panel">
-            <h3 style="border-bottom: 2px solid var(--primary); padding-bottom: 8px;">📝 技師資料編輯</h3>
+    <div id="app-container" class="app-container edit-mode">
+        
+        <div class="panel" id="panel-form">
+            <h3 style="border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px;">📝 技師資料編輯</h3>
             
             <div class="form-grid">
                 <div class="form-group">
@@ -113,7 +149,7 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label>技師編號 (留白則自動生成)</label>
+                    <label>技師編號 (留白自動生成)</label>
                     <input type="text" id="v_tech_id" placeholder="例如：N001">
                 </div>
                 <div class="form-group">
@@ -174,21 +210,20 @@
                 </div>
             </div>
             
-            <div style="margin-top: 15px; display: flex; gap: 10px;">
-                <button id="btn-save" onclick="app.saveToGoogleSheet()" style="flex: 2;" disabled>💾 儲存寫入 Google Sheets</button>
-                <button onclick="app.clearForm()" class="danger" style="flex: 1;">🧹 清空表單</button>
+            <div style="margin-top: auto; display: flex; gap: 10px; padding-top: 10px;">
+                <button id="btn-save" onclick="app.saveToGoogleSheet()" style="flex: 2;" disabled>💾 寫入儲存</button>
+                <button onclick="app.clearForm()" class="danger" style="flex: 1;">🧹 清空</button>
             </div>
         </div>
 
-        <div class="panel">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">
-                <h3 style="margin:0;">📚 雲端資料庫 (<span id="display-sheet-name">等待解鎖</span>)</h3>
-                <div style="display: flex; gap: 10px;">
-                    <select id="filterLocation" onchange="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 140px; font-size: 14px;">
+        <div class="panel" id="panel-catalog">
+            <div class="filter-tools" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin:0; min-width: 120px;">📚 資料庫 (<span id="display-sheet-name">等待</span>)</h3>
+                <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end;">
+                    <select id="filterLocation" onchange="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 130px; font-size: 14px;">
                         <option value="">🗺️ 所有位置</option>
                     </select>
-                    <input type="text" id="searchInput" placeholder="🔍 搜尋姓名/店名/位置/AF/二輪轉..." oninput="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 240px;">
-                    <button class="success" onclick="app.clearForm()">➕ 新增技師</button>
+                    <input type="text" id="searchInput" placeholder="🔍 姓名/店名/AF..." oninput="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; min-width: 150px; flex: 1;">
                 </div>
             </div>
             <div class="catalog-grid" id="catalogGrid"></div>
@@ -201,7 +236,7 @@
             <div style="flex: 1; background: #eee; min-height: 0; border-radius: 8px; overflow: hidden;">
                 <img id="cropperImage" src="" style="max-width: 100%; max-height: 100%;">
             </div>
-            <div style="margin-top: 20px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+            <div style="margin-top: 15px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="danger" onclick="cropperSvc.closeModal()">取消</button>
                 <button onclick="cropperSvc.cropAndPrepare()">確認裁切</button>
             </div>
@@ -209,38 +244,26 @@
     </div>
 
     <script>
-        // ================= 配置區 =================
-        const CLIENT_ID = '615427641075-7g7ikac4oc4s46897ch39av7174n4pmn.apps.googleusercontent.com';
+        const CLIENT_ID = '615427641075-2e4i1l7smqp30l8v1qrf75c924aro94i.apps.googleusercontent.com';
         const SHEET_ID = '1WpEGW6m-N-Ofdsn4LGIrT0uQvFRPkVTh9RyJkKgqlc8'; 
         const DRIVE_FOLDER_ID = '1s1x7yyWUE3JB_8YnjOAoL93u7No6NP9p'; 
         const PLACEHOLDER_URL = 'https://placehold.co/300x400/eeeeee/999999?text=No+Photo';
 
-        // ================= 工具模組 =================
         class Utility {
-            static generateID() {
-                return 'N' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-            }
-            static showLoading(msg) {
-                document.getElementById('loading-text').innerText = msg;
-                document.getElementById('loading-overlay').style.display = 'flex';
-            }
-            static hideLoading() {
-                document.getElementById('loading-overlay').style.display = 'none';
-            }
+            static generateID() { return 'N' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'); }
+            static showLoading(msg) { document.getElementById('loading-text').innerText = msg; document.getElementById('loading-overlay').style.display = 'flex'; }
+            static hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
             static cleanDriveUrl(url) {
                 if (!url) return "";
                 let parsedUrl = String(url).trim();
                 if (parsedUrl.includes('drive.google.com')) {
                     const match = parsedUrl.match(/[-\w]{25,}/);
-                    if (match) {
-                        return `https://drive.google.com/thumbnail?authuser=0&sz=w800&id=${match[0]}`;
-                    }
+                    if (match) return `https://drive.google.com/thumbnail?authuser=0&sz=w800&id=${match[0]}`;
                 }
                 return parsedUrl.startsWith('http') ? parsedUrl : "";
             }
         }
 
-        // ================= 圖片裁切與上傳服務 =================
         class ImageCropperService {
             constructor() {
                 this.modal = document.getElementById('cropperModal');
@@ -248,14 +271,10 @@
                 this.cropper = null;
                 this.pendingBlob = null; 
 
-                // 綁定點擊上傳
                 document.getElementById('fileInputPhoto').addEventListener('change', (e) => this.handleFile(e.target.files[0]));
                 
-                // 綁定全域貼上事件 (Ctrl+V)
                 document.addEventListener('paste', (e) => {
-                    // 如果尚未授權，則不處理貼上動作
                     if (!window.app || !window.app.accessToken) return;
-                    
                     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
                     for (let index in items) {
                         const item = items[index];
@@ -263,7 +282,7 @@
                             const file = item.getAsFile();
                             this.handleFile(file);
                             e.preventDefault();
-                            break; // 抓到第一張圖就跳出
+                            break; 
                         }
                     }
                 });
@@ -283,12 +302,7 @@
             openModal() {
                 this.modal.style.display = 'flex';
                 if(this.cropper) this.cropper.destroy();
-                // 設定 autoCropArea: 1 讓裁切框預設展開至全幅
-                this.cropper = new Cropper(this.imageElement, { 
-                    aspectRatio: 3 / 4, 
-                    viewMode: 1,
-                    autoCropArea: 1 
-                });
+                this.cropper = new Cropper(this.imageElement, { aspectRatio: 3 / 4, viewMode: 1, autoCropArea: 1 });
             }
 
             closeModal() {
@@ -335,7 +349,6 @@
             }
         }
 
-        // ================= 系統核心邏輯 =================
         class AppCore {
             constructor() {
                 this.dataStore = [];
@@ -343,10 +356,29 @@
                 this.headerRow = [];
                 this.accessToken = null;
                 this.tokenClient = null;
+                this.isEditMode = true; // 預設為編輯模式
             }
 
-            get currentSheet() {
-                return document.getElementById('v_sheet').value;
+            get currentSheet() { return document.getElementById('v_sheet').value; }
+
+            // ====== 模式切換器 ======
+            toggleMode() {
+                this.isEditMode = !this.isEditMode;
+                const container = document.getElementById('app-container');
+                const btn = document.getElementById('btn-mode-toggle');
+                
+                if (this.isEditMode) {
+                    container.classList.remove('view-mode');
+                    container.classList.add('edit-mode');
+                    btn.innerHTML = '👁️ 切換瀏覽模式';
+                    btn.className = 'secondary';
+                } else {
+                    container.classList.remove('edit-mode');
+                    container.classList.add('view-mode');
+                    btn.innerHTML = '📝 切換編輯模式';
+                    btn.className = 'primary';
+                    btn.style.background = '#e91e63'; // 醒目顏色
+                }
             }
 
             initGoogleAuth() {
@@ -358,8 +390,7 @@
                         this.accessToken = resp.access_token;
                         const banner = document.getElementById('auth-banner');
                         banner.className = 'authorized';
-                        banner.innerHTML = '🟢 授權成功：已成功解鎖資料庫與照片上傳權限！';
-                        
+                        banner.innerHTML = '🟢 授權成功：已解鎖資料庫與照片權限！';
                         this.fetchSheetNames();
                     }
                 });
@@ -378,31 +409,27 @@
                         headers: { 'Authorization': `Bearer ${this.accessToken}` }
                     });
                     const data = await res.json();
-                    
                     if (data.error) throw new Error(data.error.message);
 
                     if (data.sheets) {
                         const select = document.getElementById('v_sheet');
                         select.innerHTML = ''; 
-                        
                         data.sheets.forEach(s => {
-                            const title = s.properties.title;
                             const opt = document.createElement('option');
-                            opt.value = title;
-                            opt.innerText = title;
+                            opt.value = s.properties.title;
+                            opt.innerText = s.properties.title;
                             select.appendChild(opt);
                         });
-                        
                         this.loadSheetData(); 
                     }
                 } catch (e) {
-                    alert(`❌ 無法讀取試算表！\n\n原因：${e.message}\n\n請確認您的 Google 帳號是否已被加入該試算表的「共用」名單中。`);
+                    alert(`❌ 讀取失敗！請確認 Google 帳號授權狀態。`);
                 }
             }
 
             async loadSheetData() {
                 if (!this.accessToken) {
-                    document.getElementById('display-sheet-name').innerText = "請先登入解鎖";
+                    document.getElementById('display-sheet-name').innerText = "請先登入";
                     return; 
                 }
 
@@ -410,18 +437,17 @@
                 if (!sheetName) return;
 
                 document.getElementById('display-sheet-name').innerText = sheetName;
-                Utility.showLoading(`正在安全連線並載入「${sheetName}」資料...`);
+                Utility.showLoading(`載入「${sheetName}」中...`);
                 
                 try {
                     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A:Z`, {
                         headers: { 'Authorization': `Bearer ${this.accessToken}` }
                     });
                     const data = await res.json();
-                    
                     Utility.hideLoading();
 
                     if (data.error) {
-                        alert(`❌ 讀取失敗！\n原因：${data.error.message}\n請確認您有此試算表的讀取權限。`);
+                        alert(`❌ 讀取失敗！\n原因：${data.error.message}`);
                         return;
                     }
 
@@ -435,22 +461,14 @@
                     const getIdx = (name) => this.headerRow.findIndex(h => String(h).trim() === name);
                     
                     this.colMap = {
-                        location: getIdx('位置'),
-                        store: getIdx('店名'),
-                        techId: getIdx('技師編號'),
-                        startDate: getIdx('到職日'),
-                        name: getIdx('姓名'),
-                        age: getIdx('年齡'),
-                        stats: getIdx('數值'),
-                        photo: getIdx('技師照片'),
-                        price: getIdx('價金'),
-                        url: getIdx('網址'),
-                        twoShift: getIdx('二輪轉'),
-                        af: getIdx('AF')
+                        location: getIdx('位置'), store: getIdx('店名'), techId: getIdx('技師編號'),
+                        startDate: getIdx('到職日'), name: getIdx('姓名'), age: getIdx('年齡'),
+                        stats: getIdx('數值'), photo: getIdx('技師照片'), price: getIdx('價金'),
+                        url: getIdx('網址'), twoShift: getIdx('二輪轉'), af: getIdx('AF')
                     };
 
                     if (this.colMap.name === -1 || this.colMap.store === -1) {
-                        alert(`⚠️ 找不到必要的欄位 (姓名 或 店名)。\n請確認試算表第一列的標題，必須和我們設定的完全一致（不能有空格）。`);
+                        alert(`⚠️ 找不到必要的欄位 (姓名 或 店名)。`);
                     } else {
                         document.getElementById('btn-save').disabled = false;
                     }
@@ -460,32 +478,22 @@
                         const row = data.values[i];
                         const paddedRow = this.headerRow.map((_, idx) => row[idx] || "");
                         const nameVal = paddedRow[this.colMap.name];
-                        
                         if (nameVal && nameVal !== '姓名') {
-                            this.dataStore.push({
-                                id: String(paddedRow[this.colMap.techId] || `TEMP-${i}`).trim(),
-                                _raw: paddedRow,
-                                _rowIndex: i
-                            });
+                            this.dataStore.push({ id: String(paddedRow[this.colMap.techId] || `TEMP-${i}`).trim(), _raw: paddedRow, _rowIndex: i });
                         }
                     }
 
-                    // 動態產生位置篩選選單
                     this.populateLocationFilter();
                     this.renderCatalog();
                 } catch (error) {
                     Utility.hideLoading();
-                    alert("❌ 系統連線發生例外錯誤：" + error.message);
+                    alert("❌ 連線錯誤：" + error.message);
                 }
             }
 
-            // 新增：動態填入位置篩選選單
             populateLocationFilter() {
                 const locSelect = document.getElementById('filterLocation');
-                // 取得所有不重複的位置 (排除空白)
                 const uniqueLocations = [...new Set(this.dataStore.map(r => r._raw[this.colMap.location]).filter(loc => loc && loc.trim() !== ''))];
-                
-                // 保留預設的第一個選項
                 locSelect.innerHTML = '<option value="">🗺️ 所有位置</option>';
                 uniqueLocations.sort().forEach(loc => {
                     const opt = document.createElement('option');
@@ -496,19 +504,13 @@
             }
 
             async saveToGoogleSheet() {
-                if (!this.accessToken) { 
-                    this.triggerAuth(); 
-                    return; 
-                }
+                if (!this.accessToken) { this.triggerAuth(); return; }
                 const storeVal = document.getElementById('v_store').value.trim();
                 const nameVal = document.getElementById('v_name').value.trim();
                 
-                if (!storeVal || !nameVal) { 
-                    alert("請確實填寫「店名」與「姓名」！"); 
-                    return; 
-                }
+                if (!storeVal || !nameVal) { alert("請確實填寫「店名」與「姓名」！"); return; }
 
-                Utility.showLoading("正在寫入資料與上傳照片...");
+                Utility.showLoading("寫入資料與上傳照片...");
                 try {
                     let techId = document.getElementById('v_tech_id').value.trim() || Utility.generateID();
                     let finalUrl = document.getElementById('v_photo_url').value;
@@ -526,13 +528,9 @@
                     const rows = sheetData.values || [];
                     
                     let targetRowIdx = rows.findIndex(r => r[this.colMap.techId] === techId || (r[this.colMap.name] === nameVal && r[this.colMap.store] === storeVal));
-                    
                     let newRowData = targetRowIdx > -1 ? [...rows[targetRowIdx]] : new Array(this.headerRow.length).fill("");
                     
-                    const setV = (key, val) => { 
-                        const idx = this.colMap[key];
-                        if(idx !== -1 && idx !== undefined) newRowData[idx] = val; 
-                    };
+                    const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
 
                     setV('location', document.getElementById('v_location').value);
                     setV('store', storeVal);
@@ -562,19 +560,22 @@
                     }
 
                     if (!writeRes.ok) throw new Error("寫入失敗");
-                    
                     cropperSvc.pendingBlob = null;
-                    alert(`✅ [${storeVal} - ${nameVal}] 資料儲存成功！`);
+                    alert(`✅ [${storeVal} - ${nameVal}] 儲存成功！`);
                     this.loadSheetData(); 
                 } catch (e) {
-                    console.error(e);
-                    alert(`❌ 儲存發生錯誤: ${e.message}`);
+                    alert(`❌ 錯誤: ${e.message}`);
                 } finally { 
                     Utility.hideLoading(); 
                 }
             }
 
             editRecord(index) {
+                // 如果目前是瀏覽模式，點擊後自動跳轉回編輯模式
+                if(!this.isEditMode) {
+                    this.toggleMode();
+                }
+
                 const record = this.dataStore[index];
                 if(!record) return;
                 const r = record._raw;
@@ -610,11 +611,15 @@
             clearForm() {
                 const inputs = ['v_location', 'v_store', 'v_tech_id', 'v_start_date', 'v_name', 'v_age', 'v_stats', 'v_price', 'v_url', 'v_two_shift', 'v_af', 'v_photo_url'];
                 inputs.forEach(id => document.getElementById(id).value = '');
-                
                 document.getElementById('preview_photo').style.display = 'none';
                 document.getElementById('text_photo').style.display = 'block';
                 document.getElementById('btn_del_photo').style.display = 'none';
                 cropperSvc.pendingBlob = null;
+                
+                // 如果目前是瀏覽模式，點擊「新增技師」或清空時自動跳轉回編輯模式
+                if(!this.isEditMode) {
+                    this.toggleMode();
+                }
             }
 
             renderCatalog() {
@@ -626,17 +631,13 @@
                 this.dataStore.forEach((record, index) => {
                     const r = record._raw;
                     const recLocation = r[this.colMap.location] || '';
-
-                    // 1. 先驗證位置篩選
                     if (filterLoc && recLocation !== filterLoc) return;
                     
-                    // 2. 驗證搜尋字串
                     const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${recLocation} ${r[this.colMap.twoShift]} ${r[this.colMap.af]}`.toLowerCase();
                     if(kw && !searchStr.includes(kw)) return;
 
                     let cleanImg = Utility.cleanDriveUrl(r[this.colMap.photo]);
                     const imgSrc = cleanImg || PLACEHOLDER_URL;
-                    
                     const ageStr = r[this.colMap.age] ? ` (${r[this.colMap.age]})` : '';
                     const techName = (r[this.colMap.name] || '未命名') + ageStr;
                     const storeName = r[this.colMap.store] || '無店名';
@@ -648,14 +649,10 @@
                     card.title = "左鍵：編輯資料\n右鍵：開啟專屬網址";
                     
                     card.onclick = () => this.editRecord(index);
-                    
                     card.oncontextmenu = (e) => {
                         e.preventDefault(); 
-                        if (targetUrl && targetUrl.startsWith('http')) {
-                            window.open(targetUrl, '_blank');
-                        } else {
-                            alert('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！');
-                        }
+                        if (targetUrl && targetUrl.startsWith('http')) window.open(targetUrl, '_blank');
+                        else alert('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！');
                     };
                     
                     card.innerHTML = `
@@ -682,7 +679,6 @@
             }
         }
 
-        // 定義在全域域，讓 paste 事件可以取得
         window.app = null;
         const cropperSvc = new ImageCropperService();
 
