@@ -34,16 +34,14 @@
         /* ================= RWD 手機版適應 (螢幕小於 850px) ================= */
         @media (max-width: 850px) {
             body { padding: 8px; }
-            
-            /* 極致壓縮頂部空間 */
-            .app-title { display: none; } /* 隱藏大標題 */
+            .app-title { display: none; } 
             .top-bar { margin-bottom: 8px; }
             .header-controls { flex-direction: row; align-items: center; width: 100%; gap: 6px; flex-wrap: nowrap; justify-content: space-between; }
             .sheet-selector-wrapper { padding: 4px 8px; flex: 1; justify-content: flex-start; }
-            .sheet-label { display: none; } /* 隱藏 📂 分頁： */
+            .sheet-label { display: none; } 
             #v_sheet { width: 100%; font-size: 15px; padding: 2px; }
-            .btn-text { display: none; } /* 隱藏按鈕文字，只留圖示 */
-            .top-bar button { padding: 6px 10px; font-size: 18px; } /* 調整圖示按鈕大小 */
+            .btn-text { display: none; } 
+            .top-bar button { padding: 6px 10px; font-size: 18px; } 
             
             #app-container { display: flex; flex-direction: column; }
             #app-container.edit-mode #panel-catalog { display: none; }
@@ -52,12 +50,10 @@
             .form-grid { grid-template-columns: 1fr; gap: 8px; }
             .form-group.full { grid-column: span 1; }
             
-            /* 搜尋區塊緊湊化 */
             .filter-tools { flex-direction: row !important; flex-wrap: nowrap !important; gap: 5px !important; }
             .filter-tools input, .filter-tools select { width: 50% !important; margin-bottom: 0 !important; padding: 6px !important; font-size: 13px; }
-            .filter-tools h3 { display: none; } /* 手機版隱藏「資料庫」標題以節省空間 */
+            .filter-tools h3 { display: none; } 
 
-            /* ================= 手機版 雙排卡片顯示 ================= */
             .catalog-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
             .card { padding: 8px; }
             .card img { height: 160px; margin-bottom: 6px; }
@@ -105,8 +101,12 @@
         button.secondary { background: #7986cb; }
         button.secondary:hover { background: #5c6bc0; }
 
-        /* 讀取畫面 */
+        /* 讀取畫面與 Toast 提示 */
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99999; justify-content: center; align-items: center; color: white; font-size: 20px; font-weight: bold; display: none; flex-direction: column; text-align: center; padding: 20px;}
+        
+        /* 新增：淡化提示框 (Toast) */
+        #toast-container { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 100000; opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 8px; }
+        #toast-container.show { opacity: 1; top: 30px; }
 
         /* 卡片清單網格 */
         .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; align-content: start;}
@@ -124,6 +124,8 @@
     <div id="loading-overlay">
         <div id="loading-text">資料處理中，請稍候...</div>
     </div>
+    
+    <div id="toast-container">ℹ️ 提示訊息</div>
 
     <div class="top-bar">
         <h2 class="app-title" style="margin: 0;">🎭 Talent DB</h2>
@@ -226,7 +228,7 @@
             </div>
             
             <div style="margin-top: auto; display: flex; gap: 10px; padding-top: 10px;">
-                <button id="btn-save" onclick="app.saveToGoogleSheet()" style="flex: 2;" disabled>💾 寫入儲存</button>
+                <button id="btn-save" onclick="app.saveToGoogleSheet()" style="flex: 2;" disabled title="快速鍵：Ctrl + S">💾 寫入儲存 (Ctrl+S)</button>
                 <button onclick="app.clearForm()" class="danger" style="flex: 1;">🧹 清空</button>
             </div>
         </div>
@@ -276,6 +278,28 @@
                     if (match) return `https://drive.google.com/thumbnail?authuser=0&sz=w800&id=${match[0]}`;
                 }
                 return parsedUrl.startsWith('http') ? parsedUrl : "";
+            }
+            
+            // 新增：Toast 提示框功能
+            static showToast(msg, isError = false) {
+                const toast = document.getElementById('toast-container');
+                toast.innerText = msg;
+                // 根據狀態改變顏色
+                if (isError) {
+                    toast.style.background = '#e53935'; // 紅色
+                } else {
+                    toast.style.background = 'var(--success)'; // 綠色
+                }
+                
+                toast.classList.add('show');
+                
+                // 若之前有計時器，先清除
+                if (this.toastTimeout) clearTimeout(this.toastTimeout);
+                
+                // 3秒後自動淡化消失
+                this.toastTimeout = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
             }
         }
 
@@ -372,11 +396,33 @@
                 this.accessToken = null;
                 this.tokenClient = null;
                 this.isEditMode = true; 
+                
+                // 註冊 Ctrl+S / Cmd+S 快速鍵
+                this.registerKeyboardShortcuts();
             }
 
             get currentSheet() { return document.getElementById('v_sheet').value; }
 
-            // ====== 模式切換器 ======
+            // 新增：鍵盤監聽功能
+            registerKeyboardShortcuts() {
+                document.addEventListener('keydown', (e) => {
+                    // 偵測是否按下 Ctrl+S 或是 Cmd+S
+                    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                        e.preventDefault(); // 阻止瀏覽器預設的儲存網頁功能
+                        
+                        // 確保已經登入，且儲存按鈕是可以按的
+                        const saveBtn = document.getElementById('btn-save');
+                        if (this.accessToken && !saveBtn.disabled) {
+                            this.saveToGoogleSheet();
+                        } else if (!this.accessToken) {
+                            Utility.showToast('⚠️ 請先完成 Google 登入授權！', true);
+                        } else {
+                            Utility.showToast('⚠️ 無法儲存：請確認必要欄位已填寫完畢。', true);
+                        }
+                    }
+                });
+            }
+
             toggleMode() {
                 this.isEditMode = !this.isEditMode;
                 const container = document.getElementById('app-container');
@@ -398,7 +444,6 @@
             }
 
             initGoogleAuth() {
-                // 1. 檢查 sessionStorage 是否已經有暫存的登入 Token (F5 免重新登入)
                 const storedToken = sessionStorage.getItem('gapi_access_token');
 
                 this.tokenClient = google.accounts.oauth2.initTokenClient({
@@ -407,13 +452,11 @@
                     callback: (resp) => {
                         if (resp.error) return;
                         this.accessToken = resp.access_token;
-                        // 儲存 Token 到 sessionStorage
                         sessionStorage.setItem('gapi_access_token', resp.access_token);
                         this.onAuthSuccess();
                     }
                 });
 
-                // 如果有暫存的 Token，直接啟用授權狀態
                 if (storedToken) {
                     this.accessToken = storedToken;
                     this.onAuthSuccess();
@@ -421,7 +464,6 @@
             }
 
             onAuthSuccess() {
-                // 登入成功後徹底隱藏黃色橫幅，節省頂部空間
                 document.getElementById('auth-banner').style.display = 'none';
                 this.fetchSheetNames();
             }
@@ -440,7 +482,6 @@
                     });
                     const data = await res.json();
                     
-                    // 若 Token 過期，Google API 會回傳 401 錯誤
                     if (data.error) {
                         if (data.error.code === 401) {
                             this.handleTokenExpired();
@@ -465,11 +506,10 @@
                 }
             }
 
-            // 處理 Token 過期
             handleTokenExpired() {
                 sessionStorage.removeItem('gapi_access_token');
                 this.accessToken = null;
-                document.getElementById('auth-banner').style.display = 'block'; // 重新顯示登入橫幅
+                document.getElementById('auth-banner').style.display = 'block';
                 document.getElementById('auth-banner').innerHTML = '⚠️ 登入已過期，請點擊此處重新授權！';
                 document.getElementById('auth-banner').style.background = '#f8d7da';
                 document.getElementById('auth-banner').style.color = '#721c24';
@@ -557,7 +597,10 @@
                 const storeVal = document.getElementById('v_store').value.trim();
                 const nameVal = document.getElementById('v_name').value.trim();
                 
-                if (!storeVal || !nameVal) { alert("請確實填寫「店名」與「姓名」！"); return; }
+                if (!storeVal || !nameVal) { 
+                    Utility.showToast("⚠️ 請確實填寫「店名」與「姓名」！", true); 
+                    return; 
+                }
 
                 Utility.showLoading("寫入資料與上傳照片...");
                 try {
@@ -610,17 +653,19 @@
 
                     if (!writeRes.ok) throw new Error("寫入失敗");
                     cropperSvc.pendingBlob = null;
-                    alert(`✅ [${storeVal} - ${nameVal}] 儲存成功！`);
+                    
+                    // 修改原本的 alert，改為呼叫非干擾式 Toast 提示框
+                    Utility.showToast(`✅ [${storeVal} - ${nameVal}] 儲存成功！`);
+                    
                     this.loadSheetData(); 
                 } catch (e) {
-                    alert(`❌ 錯誤: ${e.message}`);
+                    Utility.showToast(`❌ 錯誤: ${e.message}`, true);
                 } finally { 
                     Utility.hideLoading(); 
                 }
             }
 
             editRecord(index) {
-                // 若在手機版瀏覽模式下點擊卡片，自動跳回編輯模式
                 if(!this.isEditMode) {
                     this.toggleMode();
                 }
@@ -700,7 +745,7 @@
                     card.oncontextmenu = (e) => {
                         e.preventDefault(); 
                         if (targetUrl && targetUrl.startsWith('http')) window.open(targetUrl, '_blank');
-                        else alert('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！');
+                        else Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
                     };
                     
                     card.innerHTML = `
