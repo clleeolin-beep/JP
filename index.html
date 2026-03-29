@@ -485,6 +485,8 @@
                     btn.className = 'primary';
                     btn.style.background = '#e91e63'; 
                 }
+                
+                this.renderCatalog();
             }
 
             initGoogleAuth() {
@@ -560,11 +562,9 @@
                 document.getElementById('auth-banner').style.borderColor = '#f5c6cb';
             }
 
-            // 新增 keepForm 參數，若為 true 則重整資料庫後不清除表單
             async loadSheetData(keepForm = false) {
                 if (!this.accessToken) return; 
 
-                // HTML tag 綁定事件時會傳入 Event 物件，這裡要將它過濾掉
                 const shouldKeepForm = keepForm === true;
 
                 const sheetName = this.currentSheet;
@@ -629,7 +629,6 @@
                     this.populateLocationFilter();
                     this.renderCatalog();
                     
-                    // 只有在非 keepForm 狀態才清空畫面，以達到儲存後畫面駐留的效果
                     if (!shouldKeepForm) {
                         this.clearForm();
                     }
@@ -721,10 +720,8 @@
                     
                     Utility.showToast(`✅ [${storeVal} - ${nameVal}] 儲存成功！`);
                     
-                    // 儲存完成後，背景重新載入並保持表單狀態
                     await this.loadSheetData(true); 
                     
-                    // 從新載入的資料庫中找到剛寫入的這筆資料並重新綁定（取得最新的 Excel 列號）
                     let targetTechId = sheetTechId.startsWith("'") ? sheetTechId.substring(1) : sheetTechId;
                     const savedRecordIdx = this.dataStore.findIndex(r => {
                         let rTechId = r._raw[this.colMap.techId] || "";
@@ -849,7 +846,7 @@
                 const originalItem = this.dataStore[oldIdx];
                 const newRaw = [...originalItem._raw];
                 
-                // 批次清除不要複製的多個欄位
+                // 清除指定的多個欄位
                 const colsToClear = ['photo', 'techId', 'url', 'age', 'stats', 'startDate'];
                 colsToClear.forEach(col => {
                     if (this.colMap[col] !== -1 && this.colMap[col] !== undefined) {
@@ -910,11 +907,28 @@
 
                     const card = document.createElement('div');
                     card.className = 'card';
-                    card.title = isFiltered ? "左鍵：編輯資料\n右鍵：開啟專屬網址" : "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序\n按住 Ctrl 或 Command 拖曳可複製";
+                    
+                    // 動態設定標題提示
+                    let titleStr = "";
+                    if (this.isEditMode) {
+                        titleStr = isFiltered ? "左鍵：編輯資料\n右鍵：開啟專屬網址" : "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序\n按住 Ctrl 或 Command 拖曳可複製(清空特定欄位)";
+                    } else {
+                        titleStr = "點擊：開啟專屬網址\n右鍵：開啟專屬網址";
+                    }
+                    card.title = titleStr;
                     
                     card.onclick = (e) => {
                         if (e.target.closest('.price-scroll')) return;
-                        this.editRecord(index);
+                        
+                        if (this.isEditMode) {
+                            this.editRecord(index);
+                        } else {
+                            if (targetUrl && targetUrl.startsWith('http')) {
+                                window.open(targetUrl, '_blank');
+                            } else {
+                                Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
+                            }
+                        }
                     };
                     
                     card.oncontextmenu = (e) => {
@@ -923,7 +937,8 @@
                         else Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
                     };
 
-                    if (!isFiltered) {
+                    // 僅在編輯模式下且未篩選時允許拖曳
+                    if (!isFiltered && this.isEditMode) {
                         card.draggable = true;
                         
                         card.ondragstart = (e) => {
@@ -985,7 +1000,9 @@
                         card.draggable = false;
                         card.ondragstart = (e) => {
                             e.preventDefault();
-                            Utility.showToast("⚠️ 請清除搜尋與篩選條件後，再進行拖曳操作！", true);
+                            if (this.isEditMode) {
+                                Utility.showToast("⚠️ 請清除搜尋與篩選條件後，再進行拖曳操作！", true);
+                            }
                         };
                     }
                     
