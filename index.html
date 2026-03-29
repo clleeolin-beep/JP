@@ -38,7 +38,8 @@
         /* 照片上傳區塊 */
         .photo-upload-area { margin: 15px 0; position: relative; }
         .img-preview-box { width: 100%; height: 350px; background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; transition: 0.2s; }
-        .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+        /* 預覽圖改為 contain，保留完整影像 */
+        .img-preview-box img { width: 100%; height: 100%; object-fit: contain; }
         .img-preview-box:hover { border-color: var(--primary); background: #f3e5f5; }
         .img-preview-box span { font-size: 0.9em; color: #777; text-align: center; line-height: 1.5; }
         
@@ -66,7 +67,8 @@
         .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
         .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; background: white; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(69,39,160,0.15); border-color: var(--secondary); }
-        .card img { width: 100%; height: 240px; object-fit: cover; border-radius: 6px; background: #f0f0f0; margin-bottom: 10px; }
+        /* 列表照片改為 contain 縮放至範圍內 */
+        .card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #f8f9fa; margin-bottom: 10px; }
         .card .badge { position: absolute; top: 20px; left: 20px; background: var(--accent); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .card .store-name { font-size: 0.8em; color: var(--secondary); font-weight: bold; margin-bottom: 2px; }
         .card .tech-name { font-size: 1.2em; color: var(--text); font-weight: bold; margin-bottom: 4px; }
@@ -143,7 +145,7 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>價金</label>
-                    <input type="text" id="v_price" placeholder="例如：3000">
+                    <input type="text" id="v_price" placeholder="例如：40000/90;54000/120">
                 </div>
                 <div class="form-group">
                     <label>二輪轉</label>
@@ -184,7 +186,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">
                 <h3 style="margin:0;">📚 雲端資料庫 (<span id="display-sheet-name">等待解鎖</span>)</h3>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="searchInput" placeholder="🔍 搜尋姓名、店名或編號..." oninput="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 220px;">
+                    <input type="text" id="searchInput" placeholder="🔍 搜尋姓名/店名/位置/AF/二輪轉..." oninput="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 280px;">
                     <button class="success" onclick="app.clearForm()">➕ 新增技師</button>
                 </div>
             </div>
@@ -263,7 +265,12 @@
             openModal() {
                 this.modal.style.display = 'flex';
                 if(this.cropper) this.cropper.destroy();
-                this.cropper = new Cropper(this.imageElement, { aspectRatio: 3 / 4, viewMode: 1 });
+                // 新增 autoCropArea: 1，讓裁切框預設展開至全幅
+                this.cropper = new Cropper(this.imageElement, { 
+                    aspectRatio: 3 / 4, 
+                    viewMode: 1,
+                    autoCropArea: 1 
+                });
             }
 
             closeModal() {
@@ -377,7 +384,7 @@
                 }
             }
 
-            // 【重要升級】改為嚴格 OAuth 驗證讀取模式 (解決限制權限無法讀取的問題)
+            // 改為嚴格 OAuth 驗證讀取模式 (解決限制權限無法讀取的問題)
             async loadSheetData() {
                 if (!this.accessToken) {
                     // 若還沒登入，不跳出錯誤，安靜等待
@@ -589,14 +596,19 @@
 
                 this.dataStore.forEach((record, index) => {
                     const r = record._raw;
-                    const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]}`.toLowerCase();
+                    
+                    // 搜尋字串加入更多屬性判斷
+                    const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${r[this.colMap.location]} ${r[this.colMap.twoShift]} ${r[this.colMap.af]}`.toLowerCase();
                     if(kw && !searchStr.includes(kw)) return;
 
                     let cleanImg = Utility.cleanDriveUrl(r[this.colMap.photo]);
                     const imgSrc = cleanImg || PLACEHOLDER_URL;
-                    const techName = r[this.colMap.name] || '未命名';
+                    
+                    // 姓名整合年齡顯示
+                    const ageStr = r[this.colMap.age] ? ` (${r[this.colMap.age]})` : '';
+                    const techName = (r[this.colMap.name] || '未命名') + ageStr;
                     const storeName = r[this.colMap.store] || '無店名';
-                    const price = r[this.colMap.price] ? `$${r[this.colMap.price]}` : '';
+                    const price = r[this.colMap.price] || '';
 
                     const card = document.createElement('div');
                     card.className = 'card';
@@ -629,7 +641,7 @@
         const cropperSvc = new ImageCropperService();
         const app = new AppCore();
 
-        // 啟動時只會初始化授權功能，不會強制去抓資料，所以不會有錯誤視窗了
+        // 啟動時只會初始化授權功能，不會強制去抓資料
         window.onload = () => {
             app.initGoogleAuth();
         };
