@@ -123,7 +123,7 @@
         .card[draggable="true"] { cursor: grab; }
         .card[draggable="true"]:active { cursor: grabbing; }
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
-        .card.drag-over { border: 2px dashed var(--primary); background: #f3e5f5; }
+        .card.drag-over { border: 2px dashed; } /* 顏色由 JS 動態控制 */
 
         /* 價格捲動區塊 */
         .price-scroll {
@@ -763,7 +763,18 @@
                 if (displayTechId.startsWith("'")) displayTechId = displayTechId.substring(1);
                 document.getElementById('v_tech_id').value = displayTechId;
                 
-                document.getElementById('v_start_date').value = r[this.colMap.startDate] || "";
+                // ===== 解決到職日無法正常顯示的核心邏輯 =====
+                let rawDate = r[this.colMap.startDate] || "";
+                let formattedDate = "";
+                if (rawDate) {
+                    let match = rawDate.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/);
+                    if (match) {
+                        formattedDate = `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
+                    }
+                }
+                document.getElementById('v_start_date').value = formattedDate;
+                // ===========================================
+                
                 document.getElementById('v_name').value = r[this.colMap.name] || "";
                 document.getElementById('v_age').value = r[this.colMap.age] || "";
                 document.getElementById('v_stats').value = r[this.colMap.stats] || "";
@@ -813,12 +824,10 @@
                 this.renderCatalog();
             }
 
-            // 深拷貝項目（移除照片）
             copyItem(oldIdx, newIdx) {
                 const originalItem = this.dataStore[oldIdx];
                 const newRaw = [...originalItem._raw];
                 
-                // 清空相片欄位
                 if (this.colMap.photo !== -1 && this.colMap.photo !== undefined) {
                     newRaw[this.colMap.photo] = "";
                 }
@@ -826,7 +835,7 @@
                 const newItem = {
                     id: String(newRaw[this.colMap.techId] || `TEMP-COPY-${Date.now()}`).trim(),
                     _raw: newRaw,
-                    _rowIndex: "" // 空的列號確保它被視為全新資料
+                    _rowIndex: "" 
                 };
                 
                 this.dataStore.splice(newIdx, 0, newItem);
@@ -859,7 +868,6 @@
                     const price = r[this.colMap.price] || '';
                     const targetUrl = r[this.colMap.url] || '';
                     
-                    // 組合額外標籤 (包含 AF、二輪轉、等級)
                     let extraTags = '';
                     const afVal = r[this.colMap.af] || '';
                     const twoShiftVal = r[this.colMap.twoShift] || '';
@@ -877,7 +885,7 @@
 
                     const card = document.createElement('div');
                     card.className = 'card';
-                    card.title = isFiltered ? "左鍵：編輯資料\n右鍵：開啟專屬網址" : "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序\n按住 Ctrl 拖曳可複製(不含照片)";
+                    card.title = isFiltered ? "左鍵：編輯資料\n右鍵：開啟專屬網址" : "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序\n按住 Ctrl 或 Command 拖曳可複製(不含照片)";
                     
                     card.onclick = (e) => {
                         if (e.target.closest('.price-scroll')) return;
@@ -890,11 +898,12 @@
                         else Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
                     };
 
+                    // ===== 解決Ctrl拖曳失效的核心邏輯 =====
                     if (!isFiltered) {
                         card.draggable = true;
                         
                         card.ondragstart = (e) => {
-                            e.dataTransfer.effectAllowed = 'copyMove'; // 允許移動與複製
+                            e.dataTransfer.effectAllowed = 'copyMove'; 
                             e.dataTransfer.setData('text/plain', index);
                             setTimeout(() => card.classList.add('dragging'), 0);
                         };
@@ -905,28 +914,46 @@
                         
                         card.ondragover = (e) => {
                             e.preventDefault();
-                            // 根據是否按住 Ctrl 改變游標圖示 ( + 號 )
-                            e.dataTransfer.dropEffect = e.ctrlKey ? 'copy' : 'move';
+                            const isCopy = e.ctrlKey || e.metaKey;
+                            e.dataTransfer.dropEffect = isCopy ? 'copy' : 'move';
                             const overCard = e.target.closest('.card');
-                            if (overCard) overCard.classList.add('drag-over');
+                            if (overCard) {
+                                overCard.classList.add('drag-over');
+                                if (isCopy) {
+                                    overCard.style.borderColor = "var(--warning)";
+                                    overCard.style.background = "#fff3e0";
+                                } else {
+                                    overCard.style.borderColor = "var(--primary)";
+                                    overCard.style.background = "#f3e5f5";
+                                }
+                            }
                         };
                         
                         card.ondragleave = (e) => {
                             const overCard = e.target.closest('.card');
-                            if (overCard) overCard.classList.remove('drag-over');
+                            if (overCard) {
+                                overCard.classList.remove('drag-over');
+                                overCard.style.borderColor = "";
+                                overCard.style.background = "";
+                            }
                         };
                         
                         card.ondrop = (e) => {
                             e.preventDefault();
                             const overCard = e.target.closest('.card');
-                            if (overCard) overCard.classList.remove('drag-over');
+                            if (overCard) {
+                                overCard.classList.remove('drag-over');
+                                overCard.style.borderColor = "";
+                                overCard.style.background = "";
+                            }
                             
                             const oldIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
                             if (!isNaN(oldIndex)) {
-                                if (e.ctrlKey) {
-                                    this.copyItem(oldIndex, index); // Ctrl + Drop 觸發複製
+                                const isCopy = e.ctrlKey || e.metaKey || e.dataTransfer.dropEffect === 'copy';
+                                if (isCopy) {
+                                    this.copyItem(oldIndex, index); 
                                 } else {
-                                    this.reorderItems(oldIndex, index); // 一般 Drop 觸發排序
+                                    this.reorderItems(oldIndex, index); 
                                 }
                             }
                         };
@@ -937,6 +964,7 @@
                             Utility.showToast("⚠️ 請清除搜尋與篩選條件後，再進行拖曳操作！", true);
                         };
                     }
+                    // ===================================
                     
                     card.innerHTML = `
                         <span class="badge">${recLocation || '未知區'}</span>
