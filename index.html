@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talent DB - 技師資料彙整系統</title>
+    <title>Talent DB - 技師資料彙整系統 (高安全版)</title>
     
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -23,7 +23,7 @@
         .panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
         
         /* 授權狀態橫幅 */
-        #auth-banner { background: #fff3cd; color: #856404; padding: 12px; font-size: 14px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 15px; cursor: pointer; border: 1px solid #ffeeba; transition: 0.3s; }
+        #auth-banner { background: #ffeeba; color: #856404; padding: 12px; font-size: 14px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 15px; cursor: pointer; border: 1px solid #ffdf7e; transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         #auth-banner.authorized { background: #d4edda; color: #155724; border-color: #c3e6cb; cursor: default; }
 
         /* 表單設計 */
@@ -85,14 +85,7 @@
             <div style="display: flex; align-items: center; gap: 8px; background: white; padding: 5px 15px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
                 <label style="margin: 0; font-size: 14px;">📂 選擇資料分頁：</label>
                 <select id="v_sheet" style="width: auto; padding: 6px; border: none; font-weight: bold; color: var(--primary);" onchange="app.loadSheetData()">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
+                    <option value="">請先登入解鎖...</option>
                 </select>
             </div>
             <button class="success" onclick="app.loadSheetData()">🔄 重新整理資料</button>
@@ -100,7 +93,7 @@
     </div>
 
     <div id="auth-banner" onclick="app.triggerAuth()">
-        🔒 唯讀模式：點擊此處進行 Google 帳號授權，以啟用照片上傳與資料寫入功能
+        🔒 安全鎖定中：請點擊此處使用 Google 帳號授權，以解鎖讀取與編輯權限
     </div>
 
     <div class="app-container">
@@ -189,7 +182,7 @@
 
         <div class="panel">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px;">
-                <h3 style="margin:0;">📚 雲端資料庫 (<span id="display-sheet-name">等待載入</span>)</h3>
+                <h3 style="margin:0;">📚 雲端資料庫 (<span id="display-sheet-name">等待解鎖</span>)</h3>
                 <div style="display: flex; gap: 10px;">
                     <input type="text" id="searchInput" placeholder="🔍 搜尋姓名、店名或編號..." oninput="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 220px;">
                     <button class="success" onclick="app.clearForm()">➕ 新增技師</button>
@@ -214,7 +207,7 @@
 
     <script>
         // ================= 配置區 =================
-        const CLIENT_ID = '615427641075-2e4i1l7smqp30l8v1qrf75c924aro94i.apps.googleusercontent.com';
+        const CLIENT_ID = '615427641075-7g7ikac4oc4s46897ch39av7174n4pmn.apps.googleusercontent.com';
         const SHEET_ID = '1WpEGW6m-N-Ofdsn4LGIrT0uQvFRPkVTh9RyJkKgqlc8'; 
         const DRIVE_FOLDER_ID = '1s1x7yyWUE3JB_8YnjOAoL93u7No6NP9p'; 
         const PLACEHOLDER_URL = 'https://placehold.co/300x400/eeeeee/999999?text=No+Photo';
@@ -340,12 +333,9 @@
                         this.accessToken = resp.access_token;
                         const banner = document.getElementById('auth-banner');
                         banner.className = 'authorized';
-                        banner.innerHTML = '🟢 授權成功：已開啟編輯與上傳功能';
-                        if(Object.keys(this.colMap).length > 0 && this.colMap.name !== -1) {
-                            document.getElementById('btn-save').disabled = false;
-                        }
+                        banner.innerHTML = '🟢 授權成功：已成功解鎖資料庫與照片上傳權限！';
                         
-                        // 授權成功後，自動去抓取雲端實際的分頁名稱！
+                        // 授權成功後，自動抓取分頁名稱 (這會觸發真正的資料載入)
                         this.fetchSheetNames();
                     }
                 });
@@ -357,7 +347,6 @@
                 }
             }
 
-            // 【新增功能】動態抓取並同步 Google Sheets 中的所有分頁名稱
             async fetchSheetNames() {
                 if (!this.accessToken) return;
                 try {
@@ -365,12 +354,12 @@
                         headers: { 'Authorization': `Bearer ${this.accessToken}` }
                     });
                     const data = await res.json();
+                    
+                    if (data.error) throw new Error(data.error.message);
+
                     if (data.sheets) {
                         const select = document.getElementById('v_sheet');
-                        const currentVal = select.value;
-                        select.innerHTML = ''; // 清空目前的選單
-                        
-                        let isCurrentValStillExists = false;
+                        select.innerHTML = ''; 
                         
                         data.sheets.forEach(s => {
                             const title = s.properties.title;
@@ -378,84 +367,97 @@
                             opt.value = title;
                             opt.innerText = title;
                             select.appendChild(opt);
-                            
-                            if (title === currentVal) isCurrentValStillExists = true;
                         });
                         
-                        // 如果原本選擇的分頁還在，就維持選擇；否則切換到第一個分頁並重新載入
-                        if (isCurrentValStillExists) {
-                            select.value = currentVal;
-                        } else {
-                            this.loadSheetData(); 
-                        }
-                        console.log("✅ 分頁名稱已動態同步完成！");
+                        // 抓到分頁名稱後，開始載入第一頁的資料
+                        this.loadSheetData(); 
                     }
                 } catch (e) {
-                    console.error("❌ 無法動態讀取分頁名稱", e);
+                    alert(`❌ 無法讀取試算表！\n\n原因：${e.message}\n\n請確認您的 Google 帳號是否已被加入該試算表的「共用」名單中。`);
                 }
             }
 
-            loadSheetData() {
+            // 【重要升級】改為嚴格 OAuth 驗證讀取模式 (解決限制權限無法讀取的問題)
+            async loadSheetData() {
+                if (!this.accessToken) {
+                    // 若還沒登入，不跳出錯誤，安靜等待
+                    document.getElementById('display-sheet-name').innerText = "請先登入解鎖";
+                    return; 
+                }
+
                 const sheetName = this.currentSheet;
+                if (!sheetName) return;
+
                 document.getElementById('display-sheet-name').innerText = sheetName;
-                Utility.showLoading(`正在連線並載入「${sheetName}」資料...\n(請確保試算表已開啟「知道連結的人均可查看」)`);
+                Utility.showLoading(`正在安全連線並載入「${sheetName}」資料...`);
                 
-                window.gvizCallback = (json) => {
+                try {
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A:Z`, {
+                        headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                    });
+                    const data = await res.json();
+                    
                     Utility.hideLoading();
 
-                    if (json && json.errors) {
-                        alert(`❌ 讀取失敗！原因：${json.errors[0].message}\n\n請確認：\n1. 分頁名稱「${sheetName}」是否存在\n2. 試算表共用設定是否為「知道連結的人均可查看」`);
+                    if (data.error) {
+                        alert(`❌ 讀取失敗！\n原因：${data.error.message}\n請確認您有此試算表的讀取權限。`);
                         return;
                     }
 
-                    if (json && json.table) {
-                        let rawHeaders = json.table.cols.map(c => c.label || "");
-                        const firstRow = json.table.rows[0] ? json.table.rows[0].c.map(cell => cell ? (cell.f || cell.v || "") : "") : [];
-                        if (rawHeaders.every(h => h === "")) { rawHeaders = firstRow; }
-                        this.headerRow = rawHeaders;
-
-                        const getIdx = (name) => this.headerRow.findIndex(h => String(h).trim() === name);
-                        
-                        this.colMap = {
-                            location: getIdx('位置'),
-                            store: getIdx('店名'),
-                            techId: getIdx('技師編號'),
-                            startDate: getIdx('到職日'),
-                            name: getIdx('姓名'),
-                            age: getIdx('年齡'),
-                            stats: getIdx('數值'),
-                            photo: getIdx('技師照片'),
-                            price: getIdx('價金'),
-                            url: getIdx('網址'),
-                            twoShift: getIdx('二輪轉'),
-                            af: getIdx('AF')
-                        };
-
-                        if (this.colMap.name === -1 || this.colMap.store === -1) {
-                            alert(`⚠️ 在「${sheetName}」分頁找不到必要的欄位 (姓名 或 店名)。\n請確認試算表第一列的標題，必須和我們設定的完全一致（不能有空格）。`);
-                        } else if (this.accessToken) {
-                            document.getElementById('btn-save').disabled = false;
-                        }
-
-                        this.dataStore = json.table.rows.map((r, rowIndex) => {
-                            const vals = this.headerRow.map((_, i) => (r.c && r.c[i]) ? (r.c[i].f || r.c[i].v || "") : "");
-                            return { 
-                                id: String(vals[this.colMap.techId] || `TEMP-${rowIndex}`).trim(), 
-                                _raw: vals,
-                                _rowIndex: rowIndex
-                            };
-                        }).filter(p => p._raw[this.colMap.name] !== '姓名'); 
-
+                    if (!data.values || data.values.length === 0) {
+                        this.dataStore = [];
                         this.renderCatalog();
+                        return;
                     }
-                };
 
-                const oldScript = document.getElementById('gvizScript');
-                if(oldScript) oldScript.remove();
-                const s = document.createElement('script');
-                s.id = 'gvizScript';
-                s.src = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=responseHandler:gvizCallback&sheet=${encodeURIComponent(sheetName)}&tq=SELECT *`;
-                document.body.appendChild(s);
+                    // 第一行為標題列
+                    this.headerRow = data.values[0];
+
+                    const getIdx = (name) => this.headerRow.findIndex(h => String(h).trim() === name);
+                    
+                    this.colMap = {
+                        location: getIdx('位置'),
+                        store: getIdx('店名'),
+                        techId: getIdx('技師編號'),
+                        startDate: getIdx('到職日'),
+                        name: getIdx('姓名'),
+                        age: getIdx('年齡'),
+                        stats: getIdx('數值'),
+                        photo: getIdx('技師照片'),
+                        price: getIdx('價金'),
+                        url: getIdx('網址'),
+                        twoShift: getIdx('二輪轉'),
+                        af: getIdx('AF')
+                    };
+
+                    if (this.colMap.name === -1 || this.colMap.store === -1) {
+                        alert(`⚠️ 找不到必要的欄位 (姓名 或 店名)。\n請確認試算表第一列的標題，必須和我們設定的完全一致（不能有空格）。`);
+                    } else {
+                        document.getElementById('btn-save').disabled = false;
+                    }
+
+                    this.dataStore = [];
+                    // 從第 2 行開始讀取資料 (跳過標題)
+                    for (let i = 1; i < data.values.length; i++) {
+                        const row = data.values[i];
+                        // 確保每一列長度與標題對齊
+                        const paddedRow = this.headerRow.map((_, idx) => row[idx] || "");
+                        const nameVal = paddedRow[this.colMap.name];
+                        
+                        if (nameVal && nameVal !== '姓名') {
+                            this.dataStore.push({
+                                id: String(paddedRow[this.colMap.techId] || `TEMP-${i}`).trim(),
+                                _raw: paddedRow,
+                                _rowIndex: i // 對應在 values 陣列中的索引
+                            });
+                        }
+                    }
+
+                    this.renderCatalog();
+                } catch (error) {
+                    Utility.hideLoading();
+                    alert("❌ 系統連線發生例外錯誤：" + error.message);
+                }
             }
 
             async saveToGoogleSheet() {
@@ -627,9 +629,9 @@
         const cropperSvc = new ImageCropperService();
         const app = new AppCore();
 
+        // 啟動時只會初始化授權功能，不會強制去抓資料，所以不會有錯誤視窗了
         window.onload = () => {
             app.initGoogleAuth();
-            app.loadSheetData(); 
         };
     </script>
 </body>
