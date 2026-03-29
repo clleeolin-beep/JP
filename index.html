@@ -13,7 +13,7 @@
         /* 魅影風格色系配置 */
         :root {
             --primary: #4527a0; --secondary: #7986cb; --bg: #f0f2f5; --text: #2c3e50;
-            --accent: #e91e63; --success: #2e7d32; --card-bg: #ffffff;
+            --accent: #e91e63; --success: #2e7d32; --card-bg: #ffffff; --warning: #ff9800;
         }
         body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; flex-direction: column; height: 100dvh; box-sizing: border-box; overflow: hidden; }
         h1, h2, h3 { color: var(--primary); margin-top: 0; }
@@ -23,7 +23,7 @@
         .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .sheet-selector-wrapper { display: flex; align-items: center; gap: 8px; background: white; padding: 5px 15px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-        /* 版面網格佈局 (預設為編輯模式的電腦版) */
+        /* 版面網格佈局 */
         #app-container { display: grid; grid-template-columns: 500px 1fr; gap: 15px; flex: 1; min-height: 0; transition: all 0.3s ease; }
         .panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
         
@@ -31,7 +31,7 @@
         #app-container.view-mode { grid-template-columns: 1fr; }
         #app-container.view-mode #panel-form { display: none; }
         
-        /* ================= RWD 手機版適應 (螢幕小於 850px) ================= */
+        /* ================= RWD 手機版適應 ================= */
         @media (max-width: 850px) {
             body { padding: 8px; }
             .app-title { display: none; } 
@@ -93,18 +93,19 @@
         /* 按鈕樣式 */
         button { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; display: inline-flex; justify-content: center; align-items: center; gap: 5px; }
         button:hover { background: #311b92; }
-        button:disabled { background: #b0bec5; cursor: not-allowed; }
+        button:disabled { background: #b0bec5; cursor: not-allowed; opacity: 0.7; }
         button.danger { background: #e53935; }
         button.danger:hover { background: #c62828; }
         button.success { background: #2e7d32; }
         button.success:hover { background: #1b5e20; }
         button.secondary { background: #7986cb; }
         button.secondary:hover { background: #5c6bc0; }
+        button.warning { background: var(--warning); color: #fff; }
+        button.warning:hover { background: #f57c00; }
 
         /* 讀取畫面與 Toast 提示 */
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99999; justify-content: center; align-items: center; color: white; font-size: 20px; font-weight: bold; display: none; flex-direction: column; text-align: center; padding: 20px;}
         
-        /* 新增：淡化提示框 (Toast) */
         #toast-container { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 100000; opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 8px; }
         #toast-container.show { opacity: 1; top: 30px; }
 
@@ -112,11 +113,32 @@
         .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; align-content: start;}
         .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; background: white; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(69,39,160,0.15); border-color: var(--secondary); }
-        .card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #f8f9fa; margin-bottom: 10px; }
-        .card .badge { position: absolute; top: 20px; left: 20px; background: var(--accent); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .card .store-name { font-size: 0.8em; color: var(--secondary); font-weight: bold; margin-bottom: 2px; }
-        .card .tech-name { font-size: 1.2em; color: var(--text); font-weight: bold; margin-bottom: 4px; }
-        .card .info-row { display: flex; justify-content: space-between; font-size: 0.85em; color: #666; margin-top: 4px; }
+        .card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #f8f9fa; margin-bottom: 10px; pointer-events: none; }
+        .card .badge { position: absolute; top: 20px; left: 20px; background: var(--accent); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none; }
+        .card .store-name { font-size: 0.8em; color: var(--secondary); font-weight: bold; margin-bottom: 2px; pointer-events: none; }
+        .card .tech-name { font-size: 1.2em; color: var(--text); font-weight: bold; margin-bottom: 4px; pointer-events: none; }
+        .card .info-row { display: flex; justify-content: space-between; font-size: 0.85em; color: #666; margin-top: 4px; pointer-events: none; }
+        
+        /* 拖曳狀態樣式 */
+        .card[draggable="true"] { cursor: grab; }
+        .card[draggable="true"]:active { cursor: grabbing; }
+        .card.dragging { opacity: 0.4; transform: scale(0.95); }
+        .card.drag-over { border: 2px dashed var(--primary); background: #f3e5f5; }
+
+        /* 價格捲動區塊 */
+        .price-scroll {
+            max-height: 48px;
+            overflow-y: auto;
+            white-space: pre-line;
+            text-align: right;
+            color: var(--accent);
+            font-weight: bold;
+            padding-right: 4px;
+            scrollbar-width: thin;
+            pointer-events: auto; /* 允許在卡片內獨立捲動 */
+        }
+        .price-scroll::-webkit-scrollbar { width: 4px; }
+        .price-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -153,6 +175,8 @@
                 <button class="success" onclick="app.clearForm()" style="padding: 5px 10px; font-size: 12px;">➕ 新增</button>
             </div>
             
+            <input type="hidden" id="v_row_index">
+
             <div class="form-grid">
                 <div class="form-group">
                     <label>店名 *</label>
@@ -167,7 +191,7 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>技師編號 (留白自動生成)</label>
-                    <input type="text" id="v_tech_id" placeholder="例如：N001">
+                    <input type="text" id="v_tech_id" placeholder="例如：001 或 N001">
                 </div>
                 <div class="form-group">
                     <label>到職日</label>
@@ -237,6 +261,7 @@
             <div class="filter-tools" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
                 <h3 style="margin:0; min-width: 120px;">📚 資料庫</h3>
                 <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end;">
+                    <button id="btn-save-order" class="warning" onclick="app.saveOrderToGoogleSheet()" style="display: none;" title="儲存拖曳後的卡片順序">💾 儲存排序</button>
                     <select id="filterLocation" onchange="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 130px; font-size: 14px;">
                         <option value="">🗺️ 所有位置</option>
                     </select>
@@ -280,23 +305,21 @@
                 return parsedUrl.startsWith('http') ? parsedUrl : "";
             }
             
-            // 新增：Toast 提示框功能
             static showToast(msg, isError = false) {
                 const toast = document.getElementById('toast-container');
                 toast.innerText = msg;
-                // 根據狀態改變顏色
                 if (isError) {
-                    toast.style.background = '#e53935'; // 紅色
+                    toast.style.background = '#e53935'; 
+                } else if (msg.includes('順序已變更')) {
+                    toast.style.background = 'var(--warning)';
                 } else {
-                    toast.style.background = 'var(--success)'; // 綠色
+                    toast.style.background = 'var(--success)';
                 }
                 
                 toast.classList.add('show');
                 
-                // 若之前有計時器，先清除
                 if (this.toastTimeout) clearTimeout(this.toastTimeout);
                 
-                // 3秒後自動淡化消失
                 this.toastTimeout = setTimeout(() => {
                     toast.classList.remove('show');
                 }, 3000);
@@ -397,20 +420,15 @@
                 this.tokenClient = null;
                 this.isEditMode = true; 
                 
-                // 註冊 Ctrl+S / Cmd+S 快速鍵
                 this.registerKeyboardShortcuts();
             }
 
             get currentSheet() { return document.getElementById('v_sheet').value; }
 
-            // 新增：鍵盤監聽功能
             registerKeyboardShortcuts() {
                 document.addEventListener('keydown', (e) => {
-                    // 偵測是否按下 Ctrl+S 或是 Cmd+S
                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-                        e.preventDefault(); // 阻止瀏覽器預設的儲存網頁功能
-                        
-                        // 確保已經登入，且儲存按鈕是可以按的
+                        e.preventDefault();
                         const saveBtn = document.getElementById('btn-save');
                         if (this.accessToken && !saveBtn.disabled) {
                             this.saveToGoogleSheet();
@@ -523,6 +541,7 @@
                 if (!sheetName) return;
 
                 Utility.showLoading(`載入「${sheetName}」中...`);
+                document.getElementById('btn-save-order').style.display = 'none';
                 
                 try {
                     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A:Z`, {
@@ -563,17 +582,23 @@
                     }
 
                     this.dataStore = [];
+                    // i=1 代表 Excel 中的第 2 列
                     for (let i = 1; i < data.values.length; i++) {
                         const row = data.values[i];
                         const paddedRow = this.headerRow.map((_, idx) => row[idx] || "");
                         const nameVal = paddedRow[this.colMap.name];
                         if (nameVal && nameVal !== '姓名') {
-                            this.dataStore.push({ id: String(paddedRow[this.colMap.techId] || `TEMP-${i}`).trim(), _raw: paddedRow, _rowIndex: i });
+                            this.dataStore.push({ 
+                                id: String(paddedRow[this.colMap.techId] || `TEMP-${i}`).trim(), 
+                                _raw: paddedRow, 
+                                _rowIndex: i + 1 
+                            });
                         }
                     }
 
                     this.populateLocationFilter();
                     this.renderCatalog();
+                    this.clearForm();
                 } catch (error) {
                     Utility.hideLoading();
                     alert("❌ 連線錯誤：" + error.message);
@@ -606,6 +631,13 @@
                 try {
                     let techId = document.getElementById('v_tech_id').value.trim() || Utility.generateID();
                     let finalUrl = document.getElementById('v_photo_url').value;
+                    let targetRowIdx = document.getElementById('v_row_index').value; 
+
+                    // 確保技師編號是純數字時，前面補單引號，防止 Google Sheets 轉為數字吃掉開頭的 0
+                    let sheetTechId = techId;
+                    if (/^\d+$/.test(techId)) {
+                        sheetTechId = "'" + techId;
+                    }
 
                     if(cropperSvc.pendingBlob) {
                         const fileName = `${storeVal}-${nameVal}.jpg`;
@@ -613,20 +645,19 @@
                     }
 
                     const sheetName = this.currentSheet;
-                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A1:Z`, { 
-                        headers: { 'Authorization': `Bearer ${this.accessToken}` } 
-                    });
-                    const sheetData = await res.json();
-                    const rows = sheetData.values || [];
+                    let newRowData = new Array(this.headerRow.length).fill("");
                     
-                    let targetRowIdx = rows.findIndex(r => r[this.colMap.techId] === techId || (r[this.colMap.name] === nameVal && r[this.colMap.store] === storeVal));
-                    let newRowData = targetRowIdx > -1 ? [...rows[targetRowIdx]] : new Array(this.headerRow.length).fill("");
-                    
+                    // 如果是編輯既有資料，將原本資料帶入以防其他未顯示欄位被清空
+                    if (targetRowIdx) {
+                        const record = this.dataStore.find(r => String(r._rowIndex) === String(targetRowIdx));
+                        if (record) newRowData = [...record._raw];
+                    }
+
                     const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
 
                     setV('location', document.getElementById('v_location').value);
                     setV('store', storeVal);
-                    setV('techId', techId);
+                    setV('techId', sheetTechId);
                     setV('startDate', document.getElementById('v_start_date').value);
                     setV('name', nameVal);
                     setV('age', document.getElementById('v_age').value);
@@ -639,8 +670,9 @@
 
                     let writeRes;
                     const writeUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/`;
-                    if (targetRowIdx > -1) {
-                        writeRes = await fetch(`${writeUrl}${encodeURIComponent(sheetName)}!A${targetRowIdx+1}?valueInputOption=USER_ENTERED`, {
+                    
+                    if (targetRowIdx) {
+                        writeRes = await fetch(`${writeUrl}${encodeURIComponent(sheetName)}!A${targetRowIdx}?valueInputOption=USER_ENTERED`, {
                             method: 'PUT', headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
                             body: JSON.stringify({ values: [newRowData] })
                         });
@@ -654,10 +686,36 @@
                     if (!writeRes.ok) throw new Error("寫入失敗");
                     cropperSvc.pendingBlob = null;
                     
-                    // 修改原本的 alert，改為呼叫非干擾式 Toast 提示框
                     Utility.showToast(`✅ [${storeVal} - ${nameVal}] 儲存成功！`);
-                    
                     this.loadSheetData(); 
+                } catch (e) {
+                    Utility.showToast(`❌ 錯誤: ${e.message}`, true);
+                } finally { 
+                    Utility.hideLoading(); 
+                }
+            }
+
+            // 批次寫入：儲存拖曳後的排序
+            async saveOrderToGoogleSheet() {
+                if (!this.accessToken) { this.triggerAuth(); return; }
+                const sheetName = this.currentSheet;
+                
+                // 提取所有當前排序的純陣列資料
+                const values = this.dataStore.map(record => record._raw);
+                
+                Utility.showLoading("儲存排序中...");
+                try {
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A2?valueInputOption=USER_ENTERED`, {
+                        method: 'PUT', 
+                        headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ values: values })
+                    });
+                    
+                    if (!res.ok) throw new Error("排序儲存失敗");
+                    
+                    Utility.showToast("✅ 排序儲存成功！");
+                    document.getElementById('btn-save-order').style.display = 'none';
+                    this.loadSheetData(); // 重新讀取確保 _rowIndex 同步
                 } catch (e) {
                     Utility.showToast(`❌ 錯誤: ${e.message}`, true);
                 } finally { 
@@ -674,9 +732,15 @@
                 if(!record) return;
                 const r = record._raw;
 
+                document.getElementById('v_row_index').value = record._rowIndex;
                 document.getElementById('v_location').value = r[this.colMap.location] || "";
                 document.getElementById('v_store').value = r[this.colMap.store] || "";
-                document.getElementById('v_tech_id').value = r[this.colMap.techId] || "";
+                
+                // 如果 API 讀取回來的編號帶有前導單引號，去除它以利顯示
+                let displayTechId = r[this.colMap.techId] || "";
+                if (displayTechId.startsWith("'")) displayTechId = displayTechId.substring(1);
+                document.getElementById('v_tech_id').value = displayTechId;
+                
                 document.getElementById('v_start_date').value = r[this.colMap.startDate] || "";
                 document.getElementById('v_name').value = r[this.colMap.name] || "";
                 document.getElementById('v_age').value = r[this.colMap.age] || "";
@@ -703,6 +767,7 @@
             }
 
             clearForm() {
+                document.getElementById('v_row_index').value = '';
                 const inputs = ['v_location', 'v_store', 'v_tech_id', 'v_start_date', 'v_name', 'v_age', 'v_stats', 'v_price', 'v_url', 'v_two_shift', 'v_af', 'v_photo_url'];
                 inputs.forEach(id => document.getElementById(id).value = '');
                 document.getElementById('preview_photo').style.display = 'none';
@@ -715,11 +780,24 @@
                 }
             }
 
+            reorderItems(oldIdx, newIdx) {
+                if (oldIdx === newIdx) return;
+                const movedItem = this.dataStore.splice(oldIdx, 1)[0];
+                this.dataStore.splice(newIdx, 0, movedItem);
+                
+                document.getElementById('btn-save-order').style.display = 'inline-flex';
+                Utility.showToast("💡 順序已變更，請記得點擊「儲存排序」以寫入試算表！");
+                this.renderCatalog();
+            }
+
             renderCatalog() {
                 const kw = document.getElementById('searchInput').value.toLowerCase();
                 const filterLoc = document.getElementById('filterLocation').value;
                 const grid = document.getElementById('catalogGrid');
                 grid.innerHTML = '';
+
+                // 如果有使用搜尋或篩選，關閉拖曳功能以防順序錯亂
+                const isFiltered = kw !== '' || filterLoc !== '';
 
                 this.dataStore.forEach((record, index) => {
                     const r = record._raw;
@@ -739,23 +817,73 @@
 
                     const card = document.createElement('div');
                     card.className = 'card';
-                    card.title = "左鍵：編輯資料\n右鍵：開啟專屬網址";
+                    card.title = isFiltered ? "左鍵：編輯資料\n右鍵：開啟專屬網址" : "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序";
                     
-                    card.onclick = () => this.editRecord(index);
+                    // 點擊事件分發
+                    card.onclick = (e) => {
+                        // 如果點擊的是價格捲動區域，不觸發編輯
+                        if (e.target.closest('.price-scroll')) return;
+                        this.editRecord(index);
+                    };
+                    
                     card.oncontextmenu = (e) => {
                         e.preventDefault(); 
                         if (targetUrl && targetUrl.startsWith('http')) window.open(targetUrl, '_blank');
                         else Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
                     };
+
+                    // 拖曳功能綁定 (無篩選狀態才啟用)
+                    if (!isFiltered) {
+                        card.draggable = true;
+                        
+                        card.ondragstart = (e) => {
+                            e.dataTransfer.effectAllowed = 'move';
+                            e.dataTransfer.setData('text/plain', index);
+                            setTimeout(() => card.classList.add('dragging'), 0);
+                        };
+                        
+                        card.ondragend = () => {
+                            card.classList.remove('dragging');
+                        };
+                        
+                        card.ondragover = (e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            const overCard = e.target.closest('.card');
+                            if (overCard) overCard.classList.add('drag-over');
+                        };
+                        
+                        card.ondragleave = (e) => {
+                            const overCard = e.target.closest('.card');
+                            if (overCard) overCard.classList.remove('drag-over');
+                        };
+                        
+                        card.ondrop = (e) => {
+                            e.preventDefault();
+                            const overCard = e.target.closest('.card');
+                            if (overCard) overCard.classList.remove('drag-over');
+                            
+                            const oldIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                            if (!isNaN(oldIndex)) {
+                                this.reorderItems(oldIndex, index);
+                            }
+                        };
+                    } else {
+                        card.draggable = false;
+                        card.ondragstart = (e) => {
+                            e.preventDefault();
+                            Utility.showToast("⚠️ 請清除搜尋與篩選條件後，再進行拖曳排序！", true);
+                        };
+                    }
                     
                     card.innerHTML = `
                         <span class="badge">${recLocation || '未知區'}</span>
                         <img src="${imgSrc}" loading="lazy" onerror="this.onerror=null; this.src='${PLACEHOLDER_URL}';">
                         <div class="store-name">${storeName}</div>
                         <div class="tech-name">${techName}</div>
-                        <div class="info-row">
-                            <span>${r[this.colMap.stats] || '-'}</span>
-                            <span style="color: var(--accent); font-weight: bold;">${price}</span>
+                        <div class="info-row" style="pointer-events: auto;">
+                            <span style="pointer-events: none;">${r[this.colMap.stats] || '-'}</span>
+                            <div class="price-scroll">${price}</div>
                         </div>
                     `;
                     grid.appendChild(card);
