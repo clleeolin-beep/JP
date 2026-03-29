@@ -27,36 +27,48 @@
         #app-container { display: grid; grid-template-columns: 500px 1fr; gap: 15px; flex: 1; min-height: 0; transition: all 0.3s ease; }
         .panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
         
-        /* ================= 模式切換邏輯 (重點) ================= */
-        /* 電腦版：瀏覽模式時，隱藏表單，列表滿版 */
+        /* 模式切換邏輯 */
         #app-container.view-mode { grid-template-columns: 1fr; }
         #app-container.view-mode #panel-form { display: none; }
         
         /* ================= RWD 手機版適應 (螢幕小於 850px) ================= */
         @media (max-width: 850px) {
-            body { padding: 10px; }
-            .top-bar { flex-direction: column; align-items: stretch; }
-            .header-controls { flex-direction: column; align-items: stretch; }
-            .sheet-selector-wrapper { justify-content: space-between; }
+            body { padding: 8px; }
             
-            /* 手機版改為單欄 Flex 排版 */
+            /* 極致壓縮頂部空間 */
+            .app-title { display: none; } /* 隱藏大標題 */
+            .top-bar { margin-bottom: 8px; }
+            .header-controls { flex-direction: row; align-items: center; width: 100%; gap: 6px; flex-wrap: nowrap; justify-content: space-between; }
+            .sheet-selector-wrapper { padding: 4px 8px; flex: 1; justify-content: flex-start; }
+            .sheet-label { display: none; } /* 隱藏 📂 分頁： */
+            #v_sheet { width: 100%; font-size: 15px; padding: 2px; }
+            .btn-text { display: none; } /* 隱藏按鈕文字，只留圖示 */
+            .top-bar button { padding: 6px 10px; font-size: 18px; } /* 調整圖示按鈕大小 */
+            
             #app-container { display: flex; flex-direction: column; }
-            
-            /* 手機版編輯模式：只顯示表單 */
             #app-container.edit-mode #panel-catalog { display: none; }
-            /* 手機版瀏覽模式：只顯示列表 */
             #app-container.view-mode #panel-form { display: none; }
             
-            /* 表單欄位在手機上堆疊顯示 */
             .form-grid { grid-template-columns: 1fr; gap: 8px; }
             .form-group.full { grid-column: span 1; }
-            .filter-tools { flex-direction: column; align-items: stretch; }
-            .filter-tools input, .filter-tools select { width: 100% !important; margin-bottom: 8px; }
+            
+            /* 搜尋區塊緊湊化 */
+            .filter-tools { flex-direction: row !important; flex-wrap: nowrap !important; gap: 5px !important; }
+            .filter-tools input, .filter-tools select { width: 50% !important; margin-bottom: 0 !important; padding: 6px !important; font-size: 13px; }
+            .filter-tools h3 { display: none; } /* 手機版隱藏「資料庫」標題以節省空間 */
+
+            /* ================= 手機版 雙排卡片顯示 ================= */
+            .catalog-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+            .card { padding: 8px; }
+            .card img { height: 160px; margin-bottom: 6px; }
+            .card .store-name { font-size: 0.7em; margin-bottom: 0; }
+            .card .tech-name { font-size: 1em; margin-bottom: 2px; }
+            .card .info-row { font-size: 0.7em; flex-direction: column; align-items: flex-start; gap: 2px; }
+            .card .badge { top: 8px; left: 8px; font-size: 10px; padding: 2px 4px; }
         }
 
         /* 授權狀態橫幅 */
-        #auth-banner { background: #ffeeba; color: #856404; padding: 10px; font-size: 14px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 12px; cursor: pointer; border: 1px solid #ffdf7e; transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        #auth-banner.authorized { background: #d4edda; color: #155724; border-color: #c3e6cb; cursor: default; }
+        #auth-banner { background: #ffeeba; color: #856404; padding: 10px; font-size: 14px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 1px solid #ffdf7e; transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
         /* 表單設計 */
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
@@ -114,27 +126,30 @@
     </div>
 
     <div class="top-bar">
-        <h2 style="margin: 0;">🎭 Talent DB 工具</h2>
+        <h2 class="app-title" style="margin: 0;">🎭 Talent DB</h2>
         <div class="header-controls">
             <div class="sheet-selector-wrapper">
-                <label style="margin: 0; font-size: 14px;">📂 分頁：</label>
+                <label class="sheet-label" style="margin: 0; font-size: 14px;">📂 分頁：</label>
                 <select id="v_sheet" style="width: auto; padding: 6px; border: none; font-weight: bold; color: var(--primary);" onchange="app.loadSheetData()">
-                    <option value="">請先登入解鎖...</option>
+                    <option value="">請登入解鎖...</option>
                 </select>
             </div>
-            <button class="success" onclick="app.loadSheetData()">🔄 重新整理</button>
-            <button id="btn-mode-toggle" class="secondary" onclick="app.toggleMode()">👁️ 切換瀏覽模式</button>
+            <button class="success" onclick="app.loadSheetData()" title="重新整理">🔄 <span class="btn-text">重新整理</span></button>
+            <button id="btn-mode-toggle" class="secondary" onclick="app.toggleMode()" title="切換模式">👁️ <span class="btn-text">切換瀏覽</span></button>
         </div>
     </div>
 
     <div id="auth-banner" onclick="app.triggerAuth()">
-        🔒 安全鎖定中：請點擊此處使用 Google 帳號授權，以解鎖讀取與編輯權限
+        🔒 安全鎖定中：點擊授權解鎖 (完成後自動記憶)
     </div>
 
     <div id="app-container" class="app-container edit-mode">
         
         <div class="panel" id="panel-form">
-            <h3 style="border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px;">📝 技師資料編輯</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px;">
+                <h3 style="margin:0;">📝 資料編輯</h3>
+                <button class="success" onclick="app.clearForm()" style="padding: 5px 10px; font-size: 12px;">➕ 新增</button>
+            </div>
             
             <div class="form-grid">
                 <div class="form-group">
@@ -202,10 +217,10 @@
             <input type="hidden" id="v_photo_url">
 
             <div class="photo-upload-area">
-                <label>📷 技師照片 (將自動命名為：店名-姓名)</label>
+                <label>📷 技師照片 (自動命名：店名-姓名)</label>
                 <div class="img-preview-box" onclick="if(app.accessToken) document.getElementById('fileInputPhoto').click(); else app.triggerAuth();" title="可直接使用 Ctrl+V 貼上截圖">
                     <img id="preview_photo" src="" style="display:none;">
-                    <span id="text_photo">點擊上傳照片，或直接在此頁面 <b>Ctrl+V</b> 貼上截圖<br>(自動裁切為 3:4 人像比例)</span>
+                    <span id="text_photo">點擊上傳，或 <b>Ctrl+V</b> 貼上截圖<br>(自動裁切 3:4 比例)</span>
                     <button id="btn_del_photo" class="btn-delete-img" onclick="app.deleteImage(event)" style="display:none;" title="刪除照片">✖</button>
                 </div>
             </div>
@@ -218,7 +233,7 @@
 
         <div class="panel" id="panel-catalog">
             <div class="filter-tools" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <h3 style="margin:0; min-width: 120px;">📚 資料庫 (<span id="display-sheet-name">等待</span>)</h3>
+                <h3 style="margin:0; min-width: 120px;">📚 資料庫</h3>
                 <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end;">
                     <select id="filterLocation" onchange="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 130px; font-size: 14px;">
                         <option value="">🗺️ 所有位置</option>
@@ -356,7 +371,7 @@
                 this.headerRow = [];
                 this.accessToken = null;
                 this.tokenClient = null;
-                this.isEditMode = true; // 預設為編輯模式
+                this.isEditMode = true; 
             }
 
             get currentSheet() { return document.getElementById('v_sheet').value; }
@@ -370,30 +385,45 @@
                 if (this.isEditMode) {
                     container.classList.remove('view-mode');
                     container.classList.add('edit-mode');
-                    btn.innerHTML = '👁️ 切換瀏覽模式';
+                    btn.innerHTML = '👁️ <span class="btn-text">切換瀏覽</span>';
                     btn.className = 'secondary';
+                    btn.style.background = '';
                 } else {
                     container.classList.remove('edit-mode');
                     container.classList.add('view-mode');
-                    btn.innerHTML = '📝 切換編輯模式';
+                    btn.innerHTML = '📝 <span class="btn-text">切換編輯</span>';
                     btn.className = 'primary';
-                    btn.style.background = '#e91e63'; // 醒目顏色
+                    btn.style.background = '#e91e63'; 
                 }
             }
 
             initGoogleAuth() {
+                // 1. 檢查 sessionStorage 是否已經有暫存的登入 Token (F5 免重新登入)
+                const storedToken = sessionStorage.getItem('gapi_access_token');
+
                 this.tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: CLIENT_ID,
                     scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
                     callback: (resp) => {
                         if (resp.error) return;
                         this.accessToken = resp.access_token;
-                        const banner = document.getElementById('auth-banner');
-                        banner.className = 'authorized';
-                        banner.innerHTML = '🟢 授權成功：已解鎖資料庫與照片權限！';
-                        this.fetchSheetNames();
+                        // 儲存 Token 到 sessionStorage
+                        sessionStorage.setItem('gapi_access_token', resp.access_token);
+                        this.onAuthSuccess();
                     }
                 });
+
+                // 如果有暫存的 Token，直接啟用授權狀態
+                if (storedToken) {
+                    this.accessToken = storedToken;
+                    this.onAuthSuccess();
+                }
+            }
+
+            onAuthSuccess() {
+                // 登入成功後徹底隱藏黃色橫幅，節省頂部空間
+                document.getElementById('auth-banner').style.display = 'none';
+                this.fetchSheetNames();
             }
 
             triggerAuth() {
@@ -409,7 +439,15 @@
                         headers: { 'Authorization': `Bearer ${this.accessToken}` }
                     });
                     const data = await res.json();
-                    if (data.error) throw new Error(data.error.message);
+                    
+                    // 若 Token 過期，Google API 會回傳 401 錯誤
+                    if (data.error) {
+                        if (data.error.code === 401) {
+                            this.handleTokenExpired();
+                            return;
+                        }
+                        throw new Error(data.error.message);
+                    }
 
                     if (data.sheets) {
                         const select = document.getElementById('v_sheet');
@@ -427,16 +465,23 @@
                 }
             }
 
+            // 處理 Token 過期
+            handleTokenExpired() {
+                sessionStorage.removeItem('gapi_access_token');
+                this.accessToken = null;
+                document.getElementById('auth-banner').style.display = 'block'; // 重新顯示登入橫幅
+                document.getElementById('auth-banner').innerHTML = '⚠️ 登入已過期，請點擊此處重新授權！';
+                document.getElementById('auth-banner').style.background = '#f8d7da';
+                document.getElementById('auth-banner').style.color = '#721c24';
+                document.getElementById('auth-banner').style.borderColor = '#f5c6cb';
+            }
+
             async loadSheetData() {
-                if (!this.accessToken) {
-                    document.getElementById('display-sheet-name').innerText = "請先登入";
-                    return; 
-                }
+                if (!this.accessToken) return; 
 
                 const sheetName = this.currentSheet;
                 if (!sheetName) return;
 
-                document.getElementById('display-sheet-name').innerText = sheetName;
                 Utility.showLoading(`載入「${sheetName}」中...`);
                 
                 try {
@@ -447,6 +492,10 @@
                     Utility.hideLoading();
 
                     if (data.error) {
+                        if (data.error.code === 401) {
+                            this.handleTokenExpired();
+                            return;
+                        }
                         alert(`❌ 讀取失敗！\n原因：${data.error.message}`);
                         return;
                     }
@@ -571,7 +620,7 @@
             }
 
             editRecord(index) {
-                // 如果目前是瀏覽模式，點擊後自動跳轉回編輯模式
+                // 若在手機版瀏覽模式下點擊卡片，自動跳回編輯模式
                 if(!this.isEditMode) {
                     this.toggleMode();
                 }
@@ -616,7 +665,6 @@
                 document.getElementById('btn_del_photo').style.display = 'none';
                 cropperSvc.pendingBlob = null;
                 
-                // 如果目前是瀏覽模式，點擊「新增技師」或清空時自動跳轉回編輯模式
                 if(!this.isEditMode) {
                     this.toggleMode();
                 }
