@@ -116,7 +116,7 @@
         .card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #f8f9fa; margin-bottom: 10px; pointer-events: none; }
         .card .badge { position: absolute; top: 20px; left: 20px; background: var(--accent); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none; }
         .card .store-name { font-size: 0.8em; color: var(--secondary); font-weight: bold; margin-bottom: 2px; pointer-events: none; }
-        .card .tech-name { font-size: 1.2em; color: var(--text); font-weight: bold; margin-bottom: 4px; pointer-events: none; }
+        .card .tech-name { font-size: 1.2em; color: var(--text); font-weight: bold; margin-bottom: 4px; pointer-events: none; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
         .card .info-row { display: flex; justify-content: space-between; font-size: 0.85em; color: #666; margin-top: 4px; pointer-events: none; }
         
         /* 拖曳狀態樣式 */
@@ -421,9 +421,30 @@
                 this.isEditMode = true; 
                 
                 this.registerKeyboardShortcuts();
+                this.setupDatePasting();
             }
 
             get currentSheet() { return document.getElementById('v_sheet').value; }
+
+            // 自動判定到職日的格式貼上
+            setupDatePasting() {
+                const dateInput = document.getElementById('v_start_date');
+                dateInput.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    let pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    
+                    // 正則表達式支援 YYYY年MM月DD日, YYYY/MM/DD, YYYY-MM-DD
+                    let match = pastedText.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/);
+                    if (match) {
+                        let y = match[1];
+                        let m = match[2].padStart(2, '0');
+                        let d = match[3].padStart(2, '0');
+                        dateInput.value = `${y}-${m}-${d}`;
+                    } else {
+                        Utility.showToast('⚠️ 無法辨識日期格式，請手動選擇或輸入', true);
+                    }
+                });
+            }
 
             registerKeyboardShortcuts() {
                 document.addEventListener('keydown', (e) => {
@@ -633,7 +654,6 @@
                     let finalUrl = document.getElementById('v_photo_url').value;
                     let targetRowIdx = document.getElementById('v_row_index').value; 
 
-                    // 確保技師編號是純數字時，前面補單引號，防止 Google Sheets 轉為數字吃掉開頭的 0
                     let sheetTechId = techId;
                     if (/^\d+$/.test(techId)) {
                         sheetTechId = "'" + techId;
@@ -647,7 +667,6 @@
                     const sheetName = this.currentSheet;
                     let newRowData = new Array(this.headerRow.length).fill("");
                     
-                    // 如果是編輯既有資料，將原本資料帶入以防其他未顯示欄位被清空
                     if (targetRowIdx) {
                         const record = this.dataStore.find(r => String(r._rowIndex) === String(targetRowIdx));
                         if (record) newRowData = [...record._raw];
@@ -695,12 +714,10 @@
                 }
             }
 
-            // 批次寫入：儲存拖曳後的排序
             async saveOrderToGoogleSheet() {
                 if (!this.accessToken) { this.triggerAuth(); return; }
                 const sheetName = this.currentSheet;
                 
-                // 提取所有當前排序的純陣列資料
                 const values = this.dataStore.map(record => record._raw);
                 
                 Utility.showLoading("儲存排序中...");
@@ -715,7 +732,7 @@
                     
                     Utility.showToast("✅ 排序儲存成功！");
                     document.getElementById('btn-save-order').style.display = 'none';
-                    this.loadSheetData(); // 重新讀取確保 _rowIndex 同步
+                    this.loadSheetData(); 
                 } catch (e) {
                     Utility.showToast(`❌ 錯誤: ${e.message}`, true);
                 } finally { 
@@ -736,7 +753,6 @@
                 document.getElementById('v_location').value = r[this.colMap.location] || "";
                 document.getElementById('v_store').value = r[this.colMap.store] || "";
                 
-                // 如果 API 讀取回來的編號帶有前導單引號，去除它以利顯示
                 let displayTechId = r[this.colMap.techId] || "";
                 if (displayTechId.startsWith("'")) displayTechId = displayTechId.substring(1);
                 document.getElementById('v_tech_id').value = displayTechId;
@@ -796,7 +812,6 @@
                 const grid = document.getElementById('catalogGrid');
                 grid.innerHTML = '';
 
-                // 如果有使用搜尋或篩選，關閉拖曳功能以防順序錯亂
                 const isFiltered = kw !== '' || filterLoc !== '';
 
                 this.dataStore.forEach((record, index) => {
@@ -810,18 +825,28 @@
                     let cleanImg = Utility.cleanDriveUrl(r[this.colMap.photo]);
                     const imgSrc = cleanImg || PLACEHOLDER_URL;
                     const ageStr = r[this.colMap.age] ? ` (${r[this.colMap.age]})` : '';
-                    const techName = (r[this.colMap.name] || '未命名') + ageStr;
                     const storeName = r[this.colMap.store] || '無店名';
                     const price = r[this.colMap.price] || '';
                     const targetUrl = r[this.colMap.url] || '';
+                    
+                    // 組合 AF 與 二輪轉 的標籤
+                    let extraTags = '';
+                    const afVal = r[this.colMap.af] || '';
+                    const twoShiftVal = r[this.colMap.twoShift] || '';
+                    if (afVal || twoShiftVal) {
+                        let tagsArr = [];
+                        if (afVal) tagsArr.push(`AF: ${afVal}`);
+                        if (twoShiftVal) tagsArr.push(`二輪: ${twoShiftVal}`);
+                        extraTags = `<span style="font-size: 0.7em; background: #f3e5f5; color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: normal; margin-left: auto;">${tagsArr.join(' | ')}</span>`;
+                    }
+                    
+                    const techName = `<span>${r[this.colMap.name] || '未命名'} ${ageStr}</span>` + extraTags;
 
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.title = isFiltered ? "左鍵：編輯資料\n右鍵：開啟專屬網址" : "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序";
                     
-                    // 點擊事件分發
                     card.onclick = (e) => {
-                        // 如果點擊的是價格捲動區域，不觸發編輯
                         if (e.target.closest('.price-scroll')) return;
                         this.editRecord(index);
                     };
@@ -832,7 +857,6 @@
                         else Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
                     };
 
-                    // 拖曳功能綁定 (無篩選狀態才啟用)
                     if (!isFiltered) {
                         card.draggable = true;
                         
