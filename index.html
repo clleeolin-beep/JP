@@ -261,20 +261,16 @@
             </div>
 
             <div class="form-grid">
-                <div class="form-group">
+                <div class="form-group full">
                     <label>價金</label>
                     <textarea id="v_price" rows="3" placeholder="例如：40000/90&#10;54000/120" style="resize: vertical;"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>二輪轉</label>
-                    <input type="text" id="v_two_shift" placeholder="例如：是 / 否">
                 </div>
             </div>
 
             <div class="form-grid">
                 <div class="form-group">
                     <label>屬性</label>
-                    <input type="text" id="v_af" placeholder="例如：禁菸 / 本番 / 潮 / 3P">
+                    <input type="text" id="v_af" placeholder="例如：禁菸 / 白虎 / 潮 / 3P">
                 </div>
                 <div class="form-group">
                     <label>等級</label>
@@ -558,7 +554,7 @@
                 
                 const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'};
                 
-                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2})|$)/g;
+                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六]\))?)?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2})|$)/g;
                 let cleanedLines = [];
                 let match;
                 
@@ -567,7 +563,7 @@
                     let d = parseInt(match[2], 10);
                     let date = `${m}/${d}`;
                     
-                    let rawDay = match[3] || '';
+                    let rawDay = match[3] ? match[3].replace(/[()]/g, '') : '';
                     let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
                     
                     let content = match[4] || ''; 
@@ -821,12 +817,19 @@
                     let text = (e.clipboardData || window.clipboardData).getData('text');
                     let html = (e.clipboardData || window.clipboardData).getData('text/html') || '';
                     
+                    // 清空除了 v_store 以外的欄位
+                    const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level', 'v_price', 'v_url'];
+                    fieldsToClear.forEach(id => {
+                        let el = document.getElementById(id);
+                        if (el) el.value = '';
+                    });
+
+                    // 解析姓名 (不再覆蓋店名)
                     let lines = text.split('\n').map(l => l.trim()).filter(l => l);
                     for(let i=0; i < Math.min(5, lines.length); i++) {
                         let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
                         if (nameStoreMatch && !lines[i].includes('http')) {
                             document.getElementById('v_name').value = nameStoreMatch[1].trim();
-                            document.getElementById('v_store').value = nameStoreMatch[2].trim();
                             break;
                         }
                     }
@@ -850,7 +853,7 @@
                     // 從 HTML 抓圖檔名字典
                     const tagMap = {
                         'tbc_tag': '禁菸',
-                        'ppn_tag': '本番',
+                        'ppn_tag': '白虎',
                         'pee_tag': '潮',
                         'mat_tag': '墊子',
                         'denma_tag': '電マ',
@@ -1071,12 +1074,11 @@
                     this.headerRow = data.values[0];
                     const getIdx = (name) => this.headerRow.findIndex(h => String(h).trim() === name);
                     
-                    // 防呆：支援原本的 AF 或新改名的 屬性
                     this.colMap = {
                         location: getIdx('位置'), store: getIdx('店名'), techId: getIdx('技師編號'),
                         startDate: getIdx('到職日'), name: getIdx('姓名'), age: getIdx('年齡'),
                         stats: getIdx('數值'), photo: getIdx('技師照片'), price: getIdx('價金'),
-                        url: getIdx('網址'), twoShift: getIdx('二輪轉'), 
+                        url: getIdx('網址'), 
                         af: getIdx('屬性') !== -1 ? getIdx('屬性') : getIdx('AF'), 
                         level: getIdx('等級'), schedule: getIdx('行事曆')
                     };
@@ -1192,7 +1194,6 @@
                     setV('stats', document.getElementById('v_stats').value);
                     setV('price', document.getElementById('v_price').value);
                     setV('url', document.getElementById('v_url').value);
-                    setV('twoShift', document.getElementById('v_two_shift').value);
                     setV('af', document.getElementById('v_af').value);
                     setV('level', document.getElementById('v_level').value);
                     setV('schedule', document.getElementById('v_schedule').value);
@@ -1296,7 +1297,6 @@
                 document.getElementById('v_stats').value = r[this.colMap.stats] || "";
                 document.getElementById('v_price').value = r[this.colMap.price] || "";
                 document.getElementById('v_url').value = r[this.colMap.url] || "";
-                document.getElementById('v_two_shift').value = r[this.colMap.twoShift] || "";
                 document.getElementById('v_af').value = r[this.colMap.af] || "";
                 document.getElementById('v_level').value = r[this.colMap.level] || "";
                 document.getElementById('v_schedule').value = r[this.colMap.schedule] || "";
@@ -1326,7 +1326,7 @@
 
             clearForm() {
                 document.getElementById('v_row_index').value = '';
-                const inputs = ['v_location', 'v_store', 'v_tech_id', 'v_start_date', 'v_name', 'v_age', 'v_stats', 'v_price', 'v_url', 'v_two_shift', 'v_af', 'v_level', 'v_schedule', 'v_photo_url'];
+                const inputs = ['v_location', 'v_store', 'v_tech_id', 'v_start_date', 'v_name', 'v_age', 'v_stats', 'v_price', 'v_url', 'v_af', 'v_level', 'v_schedule', 'v_photo_url'];
                 inputs.forEach(id => document.getElementById(id).value = '');
                 document.getElementById('preview_photo').style.display = 'none';
                 document.getElementById('text_photo').style.display = 'block';
@@ -1397,7 +1397,7 @@
                     const recLocation = r[this.colMap.location] || '';
                     if (filterLoc && recLocation !== filterLoc) return;
                     
-                    const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${recLocation} ${r[this.colMap.twoShift]} ${r[this.colMap.af]} ${r[this.colMap.level]}`.toLowerCase();
+                    const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${recLocation} ${r[this.colMap.af]} ${r[this.colMap.level]}`.toLowerCase();
                     if (kw && !searchStr.includes(kw)) return;
 
                     let hasAnyWork = false;
@@ -1465,7 +1465,6 @@
                     
                     let tagsHtml = '';
                     const afVal = r[this.colMap.af] || '';
-                    const twoShiftVal = r[this.colMap.twoShift] || '';
                     const levelVal = r[this.colMap.level] || '';
                     
                     if (afVal) {
@@ -1473,7 +1472,6 @@
                             if (t.trim()) tagsHtml += `<span class="tag-item">${t.trim()}</span>`;
                         });
                     }
-                    if (twoShiftVal) tagsHtml += `<span class="tag-item">二輪: ${twoShiftVal}</span>`;
                     if (levelVal) tagsHtml += `<span class="tag-item">等級: ${levelVal}</span>`;
                     
                     let rawStats = r[this.colMap.stats] || '';
