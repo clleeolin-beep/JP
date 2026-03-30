@@ -128,19 +128,48 @@
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
         .card.drag-over { border: 2px dashed; } 
 
-        /* 微型視覺化行事曆區塊 (重點升級：修復高度跳動問題) */
-        .sch-container {
-            display: flex; flex-direction: column; gap: 0px; margin-top: 8px;
-            font-size: 0.75rem; border-top: 1px dashed #e0e0e0; padding-top: 8px;
-            max-height: 120px; overflow-y: auto; pointer-events: auto; scrollbar-width: thin;
+        /* 價格捲動區塊 */
+        .price-scroll {
+            max-height: 48px;
+            overflow-y: auto;
+            white-space: pre-line;
+            text-align: right;
+            color: var(--accent);
+            font-weight: bold;
+            padding-right: 4px;
+            scrollbar-width: thin;
+            pointer-events: auto; 
         }
-        .sch-container::-webkit-scrollbar { width: 4px; }
-        .sch-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-        .sch-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; height: 16px; }
-        .sch-date { width: 62px; font-weight: bold; color: #555; flex-shrink: 0; font-size: 11px; text-align: left; line-height: 16px; }
-        .sch-track { flex: 1; height: 6px; background: #e0e0e0; border-radius: 3px; position: relative; overflow: hidden; margin-top: 1px; }
-        .sch-fill { position: absolute; height: 100%; background: var(--accent); border-radius: 3px; top: 0; }
-        .sch-time { width: 75px; text-align: right; flex-shrink: 0; color: var(--primary); font-family: monospace; font-weight: bold; font-size: 11px; line-height: 16px; }
+        .price-scroll::-webkit-scrollbar { width: 4px; }
+        .price-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+
+        /* ===== 全新直列式微型視覺化行事曆區塊 ===== */
+        .sch-container-vert {
+            display: flex; justify-content: space-between; gap: 4px; margin-top: 8px;
+            padding-top: 8px; border-top: 1px dashed #e0e0e0;
+            height: 85px; /* 取消捲動，固定高度 */
+            pointer-events: auto;
+        }
+        .sch-col {
+            display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%;
+        }
+        .sch-day {
+            font-size: 10px; font-weight: bold; color: #555; text-align: center;
+            line-height: 1.1; margin-bottom: 4px; height: 24px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .sch-track-vert {
+            width: 18px; /* 加粗時間條 */
+            flex: 1; /* 填滿下方剩餘空間，確保底部切齊 */
+            background: #eeeeee; border-radius: 4px; position: relative; overflow: hidden;
+        }
+        .sch-fill-vert {
+            position: absolute; width: 100%; background: var(--accent); border-radius: 4px; left: 0;
+        }
+        .sch-fill-vert.off {
+            background: #bdbdbd; /* 休假時填滿灰色 */
+            height: 100%; top: 0;
+        }
         
         /* 篩選器樣式 */
         .time-filter-group { display: flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #ccc; padding: 2px 6px; border-radius: 6px; }
@@ -360,22 +389,27 @@
                 return h * 60 + m;
             }
 
-            // 生成卡片微型視覺化行事曆
+            // ===== 生成直列式微型視覺化行事曆 =====
             static generateScheduleHTML(scheduleStr) {
                 if (!scheduleStr) return '';
-                const lines = scheduleStr.split('\n');
-                let html = '<div class="sch-container">';
+                // 限制最多只渲染前 7 天，保證排版不溢出
+                const lines = scheduleStr.split('\n').filter(l => l.trim() !== '').slice(0, 7);
+                if (lines.length === 0) return '';
+
+                let html = '<div class="sch-container-vert">';
                 
                 lines.forEach(line => {
                     const match = line.match(/^(\d{1,2}\/\d{1,2})\s*(\(.\))?\s*(.+)$/);
                     if (match) {
                         const date = match[1];
-                        const day = match[2] || '';
+                        const dayRaw = match[2] || '';
+                        const dayClean = dayRaw.replace(/[()]/g, ''); // 剝除括號，節省空間
                         const timeStr = match[3];
 
+                        let trackHtml = '';
                         if (timeStr.includes('休') || timeStr.includes('み')) {
-                            // 修正：休假不填入文字，保持 6px 純淨灰色軌道，解決忽高忽低問題
-                            html += `<div class="sch-row"><div class="sch-date">${date}${day}</div><div class="sch-track"></div><div class="sch-time" style="color:#9e9e9e;">休息</div></div>`;
+                            // 休假：填滿整個直條為灰色
+                            trackHtml = `<div class="sch-fill-vert off" title="${date} ${dayRaw} 休息"></div>`;
                         } else {
                             const tMatch = timeStr.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
                             if (tMatch) {
@@ -390,19 +424,25 @@
                                 let renderStart = Math.max(BASE_MINS, startMins);
                                 let renderEnd = Math.min(BASE_MINS + TOTAL_MINS, endMins);
 
-                                let leftPct = ((renderStart - BASE_MINS) / TOTAL_MINS) * 100;
-                                let widthPct = ((renderEnd - renderStart) / TOTAL_MINS) * 100;
-                                if(leftPct < 0) leftPct = 0;
-                                if(widthPct < 0) widthPct = 0;
-                                if(leftPct + widthPct > 100) widthPct = 100 - leftPct;
+                                let topPct = ((renderStart - BASE_MINS) / TOTAL_MINS) * 100;
+                                let heightPct = ((renderEnd - renderStart) / TOTAL_MINS) * 100;
+                                if(topPct < 0) topPct = 0;
+                                if(heightPct < 0) heightPct = 0;
+                                if(topPct + heightPct > 100) heightPct = 100 - topPct;
 
-                                html += `<div class="sch-row"><div class="sch-date">${date}${day}</div><div class="sch-track"><div class="sch-fill" style="left:${leftPct}%; width:${widthPct}%;"></div></div><div class="sch-time">${tMatch[1]}-${tMatch[2]}</div></div>`;
-                            } else {
-                                html += `<div class="sch-row"><div class="sch-date">${date}${day}</div><div class="sch-track"></div><div class="sch-time">${timeStr}</div></div>`;
+                                trackHtml = `<div class="sch-fill-vert" style="top:${topPct}%; height:${heightPct}%;" title="${date} ${dayRaw} ${tMatch[1]}-${tMatch[2]}"></div>`;
                             }
                         }
-                    } else {
-                        if(line.trim()) html += `<div class="sch-row" style="color:#888;">${line}</div>`;
+
+                        // 獨立產生每一天的欄位 (Column)
+                        html += `
+                            <div class="sch-col">
+                                <div class="sch-day">${date}<br>${dayClean}</div>
+                                <div class="sch-track-vert" title="${date} ${dayRaw} ${timeStr}">
+                                    ${trackHtml}
+                                </div>
+                            </div>
+                        `;
                     }
                 });
                 html += '</div>';
@@ -1152,7 +1192,8 @@
                     card.title = titleStr;
                     
                     card.onclick = (e) => {
-                        if (e.target.closest('.sch-container')) return;
+                        // 防止點擊班表內部軌道觸發卡片點擊
+                        if (e.target.closest('.sch-container-vert')) return;
                         
                         if (this.isEditMode) {
                             this.editRecord(index); 
