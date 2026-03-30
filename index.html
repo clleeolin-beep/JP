@@ -216,7 +216,7 @@
             <div class="form-grid">
                 <div class="form-group full">
                     <label>✨ 魔法貼上 (綜合資訊自動解析)</label>
-                    <textarea id="v_magic_paste" rows="2" placeholder="在此貼上包含「姓名、年齡、數值、到職日、班表」的完整文字，系統將自動為您拆解並填入對應欄位..."></textarea>
+                    <textarea id="v_magic_paste" rows="2" placeholder="在此貼上包含「姓名、店名、數值、班表」的完整文字 (可直接複製整個網頁，系統將自動擷取圖片屬性)..."></textarea>
                 </div>
             </div>
 
@@ -273,8 +273,8 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label>AF</label>
-                    <input type="text" id="v_af" placeholder="輸入 AF 數值或狀態">
+                    <label>AF (屬性標籤)</label>
+                    <input type="text" id="v_af" placeholder="例如：禁菸 / P / 潮">
                 </div>
                 <div class="form-group">
                     <label>等級</label>
@@ -441,27 +441,29 @@
                 return Math.min(99, Math.max(1, 40 + hourglass)); 
             }
 
-            // ===== 核心：SVG生成與身型分類 =====
+            // ===== 核心演算法：生成體型 SVG 與 計算評分罩杯顏色 =====
             static getBodyShapeData(rawStats) {
                 const parsed = this.parseStats(rawStats);
                 const {h, b, w, hp, cup} = parsed;
                 if (!h || !b || !w || !hp) return null;
 
-                // 身型分類判定 (蘋果/梨/沙漏/倒三角/H)
                 let s2 = h * 0.46; // 推算肩寬*2
                 let shapeType = "H型", shapeIcon = "▯";
+                let bustDiff = b - w;
+                let hipDiff = hp - w;
                 
-                if (w > hp) {
+                if (w >= hp) {
                     shapeType = "蘋果型"; shapeIcon = "🍎";
-                } else if ((b - w) >= 17 && (hp - w) >= 22) { // 稍微放寬標準的沙漏
+                } else if (bustDiff >= 28 && hipDiff >= 25) {
+                    shapeType = "魔鬼型(疑造假)"; shapeIcon = "🔥";
+                } else if (bustDiff >= 18 && hipDiff >= 23 && Math.abs(b - hp) <= 10) {
                     shapeType = "沙漏型"; shapeIcon = "⏳";
-                } else if (hp - s2 > 3) {
+                } else if (hp - s2 > 3 || hp - b > 5) {
                     shapeType = "梨型"; shapeIcon = "🍐";
-                } else if (s2 - hp > 3) {
+                } else if (s2 - hp > 3 || b - hp > 10) {
                     shapeType = "倒三角"; shapeIcon = "🔻";
                 }
 
-                // 分數顏色
                 let hourglass = (b - w) + (hp - w);
                 let score = Math.min(99, Math.max(1, 40 + hourglass));
                 let scoreColor = '#4caf50'; 
@@ -469,7 +471,6 @@
                 else if (score >= 95) scoreColor = '#e91e63'; 
                 else if (score >= 90) scoreColor = '#ff9800'; 
 
-                // 實測罩杯
                 let estUB = Math.round(((w + 10) + (h * 0.43)) / 2);
                 let diff = b - estUB;
                 let cupNames = ['AA','A','B','C','D','E','F','G','H','I','J','K','L'];
@@ -493,13 +494,11 @@
                     cupDiffColor = '#4caf50'; 
                 }
 
-                // 胖瘦判定
                 const whtr = w / h;
                 let shapeColor = '#4caf50', whtrText = '標準';
                 if (whtr < 0.36) { shapeColor = '#2196f3'; whtrText = '瘦'; }
                 else if (whtr > 0.41) { shapeColor = '#e91e63'; whtrText = '胖'; }
 
-                // SVG 繪製 (頭部圓形 + 身體曲線)
                 const avgH = 158, avgB = 82, avgW = 61, avgH_p = 86;
                 const scaleY = 100 / 180, scaleX = 0.8; 
                 const getPoints = (height, bust, waist, hip) => {
@@ -548,13 +547,80 @@
                 return { score, scoreColor, trueCup, cupDiffColor, svgHtml, shapeType, shapeIcon };
             }
 
-            // ===== 時間軸與行事曆渲染核心 =====
             static timeToMins(tStr) {
                 let [h, m] = tStr.split(':').map(Number);
                 if (h < 6) h += 24; 
                 return h * 60 + m;
             }
 
+            // ===== 智慧班表貼上攔截器 =====
+            static parseAndFormatSchedule(rawText) {
+                if (!rawText) return '';
+                
+                const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'};
+                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2})|$)/g;
+                let cleanedLines = [];
+                let match;
+                
+                while ((match = regex.exec(rawText)) !== null) {
+                    let m = parseInt(match[1], 10);
+                    let d = parseInt(match[2], 10);
+                    let date = `${m}/${d}`;
+                    
+                    let rawDay = match[3] || '';
+                    let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
+                    let content = match[4] || ''; 
+                    
+                    let timeStr = "休息";
+                    const timeMatch = content.match(/(\d{1,2}[:：]\d{2})\s*[-~〜ー]\s*(\d{1,2}[:：]\d{2})/);
+                    
+                    if (timeMatch) {
+                        timeStr = `${timeMatch[1].replace('：',':')}-${timeMatch[2].replace('：',':')}`;
+                    } else if (content.includes('休') || content.includes('み') || content.includes('缺')) {
+                        timeStr = '休息';
+                    }
+                    
+                    cleanedLines.push(`${date} ${day} ${timeStr}`.trim());
+                }
+                
+                if (cleanedLines.length > 0) {
+                    let firstDateStr = cleanedLines[0].split(' ')[0];
+                    let dateMatch = firstDateStr.match(/(\d+)\/(\d+)/);
+                    if (dateMatch) {
+                        let m = parseInt(dateMatch[1], 10);
+                        let d = parseInt(dateMatch[2], 10);
+                        let year = new Date().getFullYear();
+                        if (new Date().getMonth() === 11 && m === 1) year += 1;
+                        
+                        let finalLines = [];
+                        const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+                        for (let i = 0; i < 7; i++) {
+                            let curDate = new Date(year, m - 1, d + i);
+                            let curM = curDate.getMonth() + 1;
+                            let curD = curDate.getDate();
+                            let dateStr = `${curM}/${curD}`;
+                            
+                            let existing = cleanedLines.find(l => l.startsWith(dateStr + ' ') || l === dateStr);
+                            if (existing) {
+                                let exMatch = existing.match(/^(\d{1,2}\/\d{1,2})\s*(?:\(.\))?\s*(.+)$/);
+                                if (exMatch) {
+                                    let correctDay = `(${dayNames[curDate.getDay()]})`;
+                                    finalLines.push(`${exMatch[1]} ${correctDay} ${exMatch[2]}`);
+                                } else {
+                                    finalLines.push(existing);
+                                }
+                            } else {
+                                let dayStr = `(${dayNames[curDate.getDay()]})`;
+                                finalLines.push(`${dateStr} ${dayStr} 休息`);
+                            }
+                        }
+                        return finalLines.join('\n');
+                    }
+                }
+                return rawText.replace(/\n\s*\n/g, '\n').trim();
+            }
+
+            // 生成直列式微型視覺化行事曆
             static generateScheduleHTML(scheduleStr) {
                 if (!scheduleStr) return '';
                 const lines = scheduleStr.split('\n').filter(l => l.trim() !== '').slice(0, 7);
@@ -606,11 +672,6 @@
                     }
                 });
 
-                // 加入橫向刻度線與時間標籤 (12, 18, 24, 6)
-                // 12:00 = 180m (180/1260 = 14.3%)
-                // 18:00 = 540m (540/1260 = 42.9%)
-                // 24:00 = 900m (900/1260 = 71.4%)
-                // 06:00 = 1260m (100%)
                 return `
                     <div class="sch-wrapper">
                         <div class="sch-time-axis">
@@ -751,6 +812,7 @@
                 }
             }
 
+            // ===== 魔法貼上攔截器 (雙重解析 + 隱藏屬性擷取) =====
             setupMagicPasting() {
                 const magicInput = document.getElementById('v_magic_paste');
                 if (!magicInput) return;
@@ -758,30 +820,67 @@
                 magicInput.addEventListener('paste', (e) => {
                     e.preventDefault();
                     let text = (e.clipboardData || window.clipboardData).getData('text');
+                    let html = (e.clipboardData || window.clipboardData).getData('text/html') || '';
                     
-                    let mName = text.match(/(?:Name|名前)\s*([^\sAge年齢]+)/i);
-                    if (mName) document.getElementById('v_name').value = mName[1].trim();
+                    // 1. 解析店名與姓名 (找尋「名字 | 店名」的格式)
+                    let lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                    for(let i=0; i < Math.min(5, lines.length); i++) {
+                        let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
+                        if (nameStoreMatch && !lines[i].includes('http')) {
+                            document.getElementById('v_name').value = nameStoreMatch[1].trim();
+                            document.getElementById('v_store').value = nameStoreMatch[2].trim();
+                            break;
+                        }
+                    }
 
+                    // 2. 備用姓名解析
+                    let mName = text.match(/(?:Name|名前)\s*([^\sAge年齢]+)/i);
+                    if (mName && !document.getElementById('v_name').value) {
+                        document.getElementById('v_name').value = mName[1].trim();
+                    }
+
+                    // 3. 年齡
                     let mAge = text.match(/(?:Age|年齢)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才)/);
                     if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
 
-                    let mStats = text.match(/(?:BodySize|Size|スタイル)\s*(T\d+.*?)(?:EntryDay|出勤情報|入店|$)/i) || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
+                    // 4. 數值
+                    let mStats = text.match(/(?:BodySize|Size|スタイル)\s*(T\d+.*?)(?:EntryDay|出勤情報|スケジュール|入店|$)/i) || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
                     if (mStats) document.getElementById('v_stats').value = mStats[1].trim();
 
+                    // 5. 到職日
                     let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
                     if (mDate) {
                         document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
                     }
+                    
+                    // 6. 圖像屬性標籤 (AF) - 從 HTML 抓圖檔名
+                    let tags = [];
+                    if (html.includes('tbc_tag.png')) tags.push('禁菸');
+                    if (html.includes('ppn_tag.png')) tags.push('P');
+                    if (html.includes('pee_tag.png')) tags.push('潮');
+                    if (html.includes('mat_tag.png')) tags.push('M');
+                    if (html.includes('denma_tag.png')) tags.push('電');
+                    
+                    if (tags.length > 0) {
+                        document.getElementById('v_af').value = tags.join('/');
+                    }
 
+                    // 7. 班表解析
                     let scheduleText = text;
-                    let mSch = text.match(/出勤情報\s*([\s\S]+)/);
+                    let mSch = text.match(/(?:出勤情報|スケジュール)[\s\S]*/);
                     if (mSch) {
-                        scheduleText = mSch[1];
+                        scheduleText = mSch[0];
                     }
                     
-                    document.getElementById('v_schedule').value = Utility.parseAndFormatSchedule(scheduleText);
+                    let formattedSch = Utility.parseAndFormatSchedule(scheduleText);
+                    document.getElementById('v_schedule').value = formattedSch;
                     
-                    Utility.showToast('✨ 総合情報を解析し、各項目に自動入力しました！');
+                    if (formattedSch.includes('休息') || formattedSch.includes(':')) {
+                        Utility.showToast('✨ 綜合資訊已自動解析！(含隱藏屬性圖片)');
+                    } else {
+                        Utility.showToast('⚠️ 屬性解析完成，但未發現標準班表格式。');
+                    }
+                    
                     setTimeout(() => { magicInput.value = ''; }, 100);
                 });
             }
@@ -1360,7 +1459,6 @@
                     if (afVal) tagsHtml += `<span class="tag-item">AF: ${afVal}</span>`;
                     if (twoShiftVal) tagsHtml += `<span class="tag-item">二輪: ${twoShiftVal}</span>`;
                     if (levelVal) tagsHtml += `<span class="tag-item">等級: ${levelVal}</span>`;
-                    let tagsContainer = tagsHtml ? `<div class="tags-row">${tagsHtml}</div>` : '';
                     
                     let rawStats = r[this.colMap.stats] || '';
                     let cup = '?';
@@ -1417,9 +1515,8 @@
                     const shapeData = Utility.getBodyShapeData(r[this.colMap.stats]);
                     let nameRowHtml = '';
                     if (shapeData) {
-                        // 新增身型分類標籤
                         tagsHtml += `<span class="tag-item" style="background:#546e7a; color:white;" title="身型分類">${shapeData.shapeIcon} ${shapeData.shapeType}</span>`;
-                        tagsContainer = `<div class="tags-row">${tagsHtml}</div>`;
+                        let tagsContainer = `<div class="tags-row">${tagsHtml}</div>`;
 
                         nameRowHtml = `
                             <div class="name-row">
@@ -1433,9 +1530,10 @@
                                 </div>
                             </div>
                         `;
+                        nameRowHtml += tagsContainer;
                     } else {
-                        tagsContainer = `<div class="tags-row">${tagsHtml}</div>`;
-                        nameRowHtml = `<div class="tech-name">${r[this.colMap.name] || '未命名'} ${ageStr}</div>`;
+                        let tagsContainer = `<div class="tags-row">${tagsHtml}</div>`;
+                        nameRowHtml = `<div class="tech-name">${r[this.colMap.name] || '未命名'} ${ageStr}</div>${tagsContainer}`;
                     }
 
                     const schHTML = Utility.generateScheduleHTML(r[this.colMap.schedule]);
@@ -1546,7 +1644,6 @@
                         </div>
                         <div class="store-name">${storeName}</div>
                         ${nameRowHtml}
-                        ${tagsContainer}
                         ${statsHtml}
                         ${priceHtml}
                         ${schHTML}
