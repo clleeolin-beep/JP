@@ -51,7 +51,7 @@
             .form-group.full { grid-column: span 1; }
             
             .filter-tools { flex-direction: row !important; flex-wrap: wrap !important; gap: 5px !important; }
-            .filter-tools input, .filter-tools select { margin-bottom: 4px !important; padding: 6px !important; font-size: 13px; }
+            .filter-tools input, .filter-tools select { width: 100% !important; margin-bottom: 4px !important; padding: 6px !important; font-size: 13px; }
             .filter-tools h3 { display: none; } 
             .time-filter-group { width: 100%; justify-content: space-between; }
             
@@ -117,16 +117,6 @@
         
         .img-container { position: relative; line-height: 0; margin-bottom: 10px; }
         .card .badge { position: absolute; top: 10px; left: 10px; background: var(--accent); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none; z-index: 5; }
-        
-        /* 體型判定 HUD 疊加層 */
-        .shape-hud {
-            position: absolute; bottom: 10px; right: 10px; background: rgba(255, 255, 255, 0.85); 
-            border-radius: 8px; padding: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            display: flex; flex-direction: column; align-items: center; pointer-events: auto;
-            backdrop-filter: blur(4px); z-index: 10;
-        }
-        .shape-hud-title { font-size: 10px; font-weight: bold; margin-bottom: 4px; letter-spacing: 1px; }
-        .true-cup-badge { font-size: 10px; font-weight: bold; background: var(--text); color: white; padding: 2px 6px; border-radius: 4px; margin-top: 4px; }
 
         .store-name { 
             font-size: 0.8em; color: var(--secondary); font-weight: bold; 
@@ -135,10 +125,15 @@
             overflow: hidden; text-overflow: ellipsis; line-height: 1.3; min-height: 2.6em; 
         }
         
-        .tech-name { 
-            font-size: 1.2em; color: var(--text); font-weight: bold; 
-            margin-bottom: 6px; pointer-events: none; text-align: left;
-        }
+        /* 姓名列與微型 SVG 佈局 */
+        .name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .mini-svg-box { width: 34px; height: 42px; flex-shrink: 0; background: #fff; border-radius: 4px; border: 1px solid #e0e0e0; display: flex; justify-content: center; align-items: center; padding: 1px; box-shadow: inset 0 0 4px rgba(0,0,0,0.05); }
+        .name-col { display: flex; flex-direction: column; flex: 1; overflow: hidden; justify-content: center; }
+        
+        .tech-name { font-size: 1.15em; color: var(--text); font-weight: bold; margin-bottom: 2px; pointer-events: none; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .score-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+        .big-badge { font-size: 0.8em; font-weight: bold; color: white; padding: 2px 6px; border-radius: 4px; display: inline-block; white-space: nowrap; letter-spacing: 0.5px; }
 
         .tags-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; pointer-events: none; }
         .tag-item { font-size: 0.75em; background: #f3e5f5; color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: bold; }
@@ -387,12 +382,13 @@
                 } else {
                     toast.style.background = 'var(--success)';
                 }
+                
                 toast.classList.add('show');
                 if (this.toastTimeout) clearTimeout(this.toastTimeout);
                 this.toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000);
             }
 
-            // 解析數值核心函數
+            // 數值萃取解析器
             static parseStats(rawStats) {
                 let h=0, b=0, w=0, hp=0, cup='?';
                 if (!rawStats) return {h, b, w, hp, cup};
@@ -433,18 +429,51 @@
                 const {h, b, w, hp} = this.parseStats(rawStats);
                 if (!h || !b || !w || !hp) return 0;
                 let hourglass = (b - w) + (hp - w);
-                return Math.min(99, Math.max(1, 40 + hourglass)); // 最高給 99 分
+                return Math.min(99, Math.max(1, 40 + hourglass)); 
             }
 
-            // 生成 HUD
-            static generateBodyShapeOverlay(rawStats) {
-                if (!rawStats) return '';
-                const {h, b, w, hp} = this.parseStats(rawStats);
-                if (!h || !b || !w || !hp) return '';
+            // ===== 核心演算法：生成體型 SVG 與 計算評分罩杯顏色 =====
+            static getBodyShapeData(rawStats) {
+                const parsed = this.parseStats(rawStats);
+                const {h, b, w, hp, cup} = parsed;
+                if (!h || !b || !w || !hp) return null;
 
+                // 曲線分數判定與顯色
+                let hourglass = (b - w) + (hp - w);
+                let score = Math.min(99, Math.max(1, 40 + hourglass));
+                let scoreColor = '#4caf50'; // < 90 綠色
+                if (score >= 98) scoreColor = '#6200ea'; // 深紫
+                else if (score >= 95) scoreColor = '#e91e63'; // 桃紅
+                else if (score >= 90) scoreColor = '#ff9800'; // 橘色
+
+                // 真實下胸圍逆推與罩杯差距判定
+                let estUB = Math.round(((w + 10) + (h * 0.43)) / 2);
+                let diff = b - estUB;
+                let cupNames = ['AA','A','B','C','D','E','F','G','H','I','J','K','L'];
+                let trueCupIdx = Math.floor((diff - 7.5) / 2.5);
+                let trueCup = trueCupIdx >= 0 ? (cupNames[Math.min(trueCupIdx, cupNames.length-1)]) : 'AA-';
+
+                let claimedCupIdx = cupNames.indexOf(cup);
+                if (claimedCupIdx === -1 && cup !== '?') {
+                    claimedCupIdx = cup.charCodeAt(0) - 64; 
+                }
+                
+                // 實推罩杯顏色判定 (差異越大越深)
+                let cupDiffColor = '#9e9e9e';
+                if (claimedCupIdx !== -1 && trueCupIdx >= 0) {
+                    let idxDiff = claimedCupIdx - trueCupIdx;
+                    if (idxDiff <= 0) cupDiffColor = '#4caf50'; // 綠色 (老實)
+                    else if (idxDiff === 1) cupDiffColor = '#fbc02d'; // 黃色 (微調)
+                    else if (idxDiff === 2) cupDiffColor = '#f57c00'; // 橘色 (中度)
+                    else if (idxDiff === 3) cupDiffColor = '#d32f2f'; // 紅色 (嚴重)
+                    else cupDiffColor = '#b71c1c'; // 深紅 (極度誇張)
+                } else {
+                    cupDiffColor = '#4caf50'; // 無宣稱則預設綠
+                }
+
+                // 繪製 SVG
                 const avgH = 158, avgB = 82, avgW = 61, avgH_p = 86;
                 const scaleY = 100 / 180, scaleX = 0.8; 
-
                 const getPoints = (height, bust, waist, hip) => {
                     const yHead = 100 - (height * scaleY);
                     const yBust = yHead + (height * 0.28 * scaleY);
@@ -458,40 +487,25 @@
 
                 const avg = getPoints(avgH, avgB, avgW, avgH_p);
                 const tgt = getPoints(h, b, w, hp);
-
-                const whtr = w / h;
-                let shapeColor = '#4caf50', shapeLabel = '標準體型';
-                if (whtr < 0.36) { shapeColor = '#2196f3'; shapeLabel = '偏瘦體型'; }
-                else if (whtr > 0.41) { shapeColor = '#e91e63'; shapeLabel = '豐滿體型'; }
-
-                const makePath = (p) => {
-                    return `M ${p.cx - p.wHead},${p.yHead} L ${p.cx + p.wHead},${p.yHead} Q ${p.cx + p.wBust},${p.yHead + (p.yBust - p.yHead)/2} ${p.cx + p.wBust},${p.yBust} Q ${p.cx + p.wWaist*0.8},${(p.yBust+p.yWaist)/2} ${p.cx + p.wWaist},${p.yWaist} Q ${p.cx + p.wHip*1.1},${(p.yWaist+p.yHip)/2} ${p.cx + p.wHip},${p.yHip} L ${p.cx + p.wFoot},${p.yFoot} L ${p.cx - p.wFoot},${p.yFoot} L ${p.cx - p.wHip},${p.yHip} Q ${p.cx - p.wHip*1.1},${(p.yWaist+p.yHip)/2} ${p.cx - p.wWaist},${p.yWaist} Q ${p.cx - p.wWaist*0.8},${(p.yBust+p.yWaist)/2} ${p.cx - p.wBust},${p.yBust} Q ${p.cx - p.wBust},${p.yHead + (p.yBust - p.yHead)/2} ${p.cx - p.wHead},${p.yHead} Z`;
-                };
-
-                const avgPath = makePath(avg), tgtPath = makePath(tgt);
-
-                // 真實罩杯逆向推斷
-                let estUB = Math.round(((w + 10) + (h * 0.43)) / 2);
-                let diff = b - estUB;
-                let cupNames = ['AA','A','B','C','D','E','F','G','H','I','J','K','L'];
-                let cupIdx = Math.floor((diff - 7.5) / 2.5);
-                let trueCup = cupIdx >= 0 ? (cupNames[Math.min(cupIdx, cupNames.length-1)]) : 'AA-';
                 
-                let bodyScore = this.getBodyScore(rawStats);
+                const whtr = w / h;
+                let shapeColor = '#4caf50';
+                if (whtr < 0.36) shapeColor = '#2196f3';
+                else if (whtr > 0.41) shapeColor = '#e91e63';
 
-                return `
-                    <div class="shape-hud" title="虛線: 日本女性平均體型\n實色: 該技師體型\n體型判定: ${shapeLabel}\n真實罩杯推算: 戳破灌水罩杯\n曲線評分: 沙漏比例綜合評分">
-                        <div class="shape-hud-title" style="color: ${shapeColor};">${shapeLabel}</div>
-                        <svg width="80" height="100" viewBox="0 0 80 100">
-                            <path d="${avgPath}" fill="none" stroke="#666" stroke-dasharray="2,2" stroke-width="1.5" opacity="0.6"/>
-                            <path d="${tgtPath}" fill="${shapeColor}" opacity="0.6" stroke="${shapeColor}" stroke-width="1"/>
-                            <line x1="0" y1="${tgt.yHead}" x2="80" y2="${tgt.yHead}" stroke="${shapeColor}" stroke-width="0.5" stroke-dasharray="1,1" />
-                            <text x="2" y="${Math.max(8, tgt.yHead - 2)}" fill="${shapeColor}" font-size="9" font-weight="bold">${h}cm</text>
-                        </svg>
-                        <div class="true-cup-badge">實推: ${trueCup}杯</div>
-                        <div class="true-cup-badge" style="background:#4caf50; margin-top:2px;">評分: ${bodyScore}</div>
-                    </div>
+                const makePath = (p) => `M ${p.cx - p.wHead},${p.yHead} L ${p.cx + p.wHead},${p.yHead} Q ${p.cx + p.wBust},${p.yHead + (p.yBust - p.yHead)/2} ${p.cx + p.wBust},${p.yBust} Q ${p.cx + p.wWaist*0.8},${(p.yBust+p.yWaist)/2} ${p.cx + p.wWaist},${p.yWaist} Q ${p.cx + p.wHip*1.1},${(p.yWaist+p.yHip)/2} ${p.cx + p.wHip},${p.yHip} L ${p.cx + p.wFoot},${p.yFoot} L ${p.cx - p.wFoot},${p.yFoot} L ${p.cx - p.wHip},${p.yHip} Q ${p.cx - p.wHip*1.1},${(p.yWaist+p.yHip)/2} ${p.cx - p.wWaist},${p.yWaist} Q ${p.cx - p.wWaist*0.8},${(p.yBust+p.yWaist)/2} ${p.cx - p.wBust},${p.yBust} Q ${p.cx - p.wBust},${p.yHead + (p.yBust - p.yHead)/2} ${p.cx - p.wHead},${p.yHead} Z`;
+
+                const avgPath = makePath(avg);
+                const tgtPath = makePath(tgt);
+
+                const svgHtml = `
+                    <svg width="100%" height="100%" viewBox="0 0 80 100" preserveAspectRatio="xMidYMid meet">
+                        <path d="${avgPath}" fill="none" stroke="#ccc" stroke-dasharray="2,2" stroke-width="1.5" opacity="0.8"/>
+                        <path d="${tgtPath}" fill="${shapeColor}" opacity="0.6" stroke="${shapeColor}" stroke-width="1"/>
+                    </svg>
                 `;
+
+                return { score, scoreColor, trueCup, cupDiffColor, svgHtml };
             }
 
             // 修改跨日轉換邏輯：從 6 點切割 (9:00 不再被算成隔日)
@@ -771,7 +785,7 @@
                         let d = match[3].padStart(2, '0');
                         dateInput.value = `${y}-${m}-${d}`;
                     } else {
-                        Utility.showToast('⚠️ 無法辨識日期格式，請手動選擇或輸入', true);
+                        Utility.showToast('⚠️ 無法辨識日期格式，請手手動選擇或輸入', true);
                     }
                 });
             }
@@ -1242,7 +1256,6 @@
 
                 let displayList = [];
 
-                // 第一階段：過濾資料
                 this.dataStore.forEach((record, index) => {
                     const r = record._raw;
                     
@@ -1298,14 +1311,12 @@
                     displayList.push({ record, index });
                 });
 
-                // 第二階段：執行暫時性動態排序
                 if (sortOpt === 'cup') {
                     displayList.sort((a, b) => Utility.getCupScore(b.record._raw[this.colMap.stats]) - Utility.getCupScore(a.record._raw[this.colMap.stats]));
                 } else if (sortOpt === 'body') {
                     displayList.sort((a, b) => Utility.getBodyScore(b.record._raw[this.colMap.stats]) - Utility.getBodyScore(a.record._raw[this.colMap.stats]));
                 }
 
-                // 第三階段：渲染畫面
                 displayList.forEach(item => {
                     const r = item.record._raw;
                     const index = item.index; 
@@ -1379,7 +1390,26 @@
                         priceHtml += '</div>';
                     }
 
-                    const shapeHudHTML = Utility.generateBodyShapeOverlay(r[this.colMap.stats]);
+                    const shapeData = Utility.getBodyShapeData(r[this.colMap.stats]);
+                    let nameRowHtml = '';
+                    if (shapeData) {
+                        // ===== 全新姓名與徽章佈局 =====
+                        nameRowHtml = `
+                            <div class="name-row">
+                                <div class="mini-svg-box" title="實色: 該技師體型\n虛線: 日本女性平均體型">${shapeData.svgHtml}</div>
+                                <div class="name-col">
+                                    <div class="tech-name">${r[this.colMap.name] || '未命名'} ${ageStr}</div>
+                                    <div class="score-row">
+                                        <span class="big-badge" style="background:${shapeData.scoreColor};" title="沙漏比例曲線評分">👑 ${shapeData.score}分</span>
+                                        <span class="big-badge" style="background:${shapeData.cupDiffColor};" title="推算真實罩杯 (與宣稱差異越大顏色越深)">實推 ${shapeData.trueCup}杯</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        nameRowHtml = `<div class="tech-name">${r[this.colMap.name] || '未命名'} ${ageStr}</div>`;
+                    }
+
                     const schHTML = Utility.generateScheduleHTML(r[this.colMap.schedule]);
 
                     const card = document.createElement('div');
@@ -1476,7 +1506,7 @@
                         card.ondragstart = (e) => {
                             e.preventDefault();
                             if (this.isEditMode) {
-                                Utility.showToast("⚠️ 請清除所有排序與篩選條件後，再進行手動拖曳操作！", true);
+                                Utility.showToast("⚠️ 請清除搜尋與篩選條件後，再進行手動拖曳操作！", true);
                             }
                         };
                     }
@@ -1485,10 +1515,9 @@
                         <div class="img-container">
                             <span class="badge">${recLocation || '未知區'}</span>
                             <img src="${imgSrc}" loading="lazy" onerror="this.onerror=null; this.src='${PLACEHOLDER_URL}';">
-                            ${shapeHudHTML}
                         </div>
                         <div class="store-name">${storeName}</div>
-                        <div class="tech-name">${r[this.colMap.name] || '未命名'} ${ageStr}</div>
+                        ${nameRowHtml}
                         ${tagsContainer}
                         ${statsHtml}
                         ${priceHtml}
