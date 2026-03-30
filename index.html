@@ -50,10 +50,11 @@
             .form-grid { grid-template-columns: 1fr; gap: 8px; }
             .form-group.full { grid-column: span 1; }
             
-            .filter-tools { flex-direction: row !important; flex-wrap: nowrap !important; gap: 5px !important; }
-            .filter-tools input, .filter-tools select { width: 50% !important; margin-bottom: 0 !important; padding: 6px !important; font-size: 13px; }
+            .filter-tools { flex-direction: row !important; flex-wrap: wrap !important; gap: 5px !important; }
+            .filter-tools input, .filter-tools select { width: 100% !important; margin-bottom: 4px !important; padding: 6px !important; font-size: 13px; }
             .filter-tools h3 { display: none; } 
-
+            .time-filter-group { width: 100%; justify-content: space-between; }
+            
             .catalog-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
             .card { padding: 8px; }
             .card img { height: 160px; margin-bottom: 6px; }
@@ -110,7 +111,7 @@
         #toast-container.show { opacity: 1; top: 30px; }
 
         /* 卡片清單網格 */
-        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; align-content: start;}
+        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 15px; align-content: start;}
         .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; background: white; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(69,39,160,0.15); border-color: var(--secondary); }
         .card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #f8f9fa; margin-bottom: 10px; pointer-events: none; }
@@ -125,20 +126,24 @@
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
         .card.drag-over { border: 2px dashed; } 
 
-        /* 價格捲動區塊 */
-        .price-scroll {
-            max-height: 48px;
-            overflow-y: auto;
-            white-space: pre-line;
-            text-align: right;
-            color: var(--accent);
-            font-weight: bold;
-            padding-right: 4px;
-            scrollbar-width: thin;
-            pointer-events: auto; 
+        /* 微型視覺化行事曆區塊 (重點升級) */
+        .sch-container {
+            display: flex; flex-direction: column; gap: 4px; margin-top: 8px;
+            font-size: 0.75rem; border-top: 1px dashed #e0e0e0; padding-top: 8px;
+            max-height: 90px; overflow-y: auto; pointer-events: auto; scrollbar-width: thin;
         }
-        .price-scroll::-webkit-scrollbar { width: 4px; }
-        .price-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        .sch-container::-webkit-scrollbar { width: 4px; }
+        .sch-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        .sch-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+        .sch-date { width: 55px; font-weight: bold; color: #555; flex-shrink: 0; }
+        .sch-track { flex: 1; height: 6px; background: #e0e0e0; border-radius: 3px; position: relative; overflow: hidden; }
+        .sch-fill { position: absolute; height: 100%; background: var(--accent); border-radius: 3px; }
+        .sch-fill.off { background: #9e9e9e; width: 100%; position: static; }
+        .sch-time { width: 70px; text-align: right; flex-shrink: 0; color: var(--primary); font-family: monospace; font-weight: bold; }
+        
+        /* 篩選器樣式 */
+        .time-filter-group { display: flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #ccc; padding: 2px 6px; border-radius: 6px; }
+        .time-filter-group select { border: none; outline: none; background: transparent; padding: 4px; font-size: 13px; margin: 0 !important; width: auto !important; }
     </style>
 </head>
 <body>
@@ -249,7 +254,7 @@
             <div class="form-grid">
                 <div class="form-group full">
                     <label>本周班表 (行事曆)</label>
-                    <textarea id="v_schedule" rows="4" placeholder="對列表卡片按右鍵開啟網頁，複製班表後在此「Ctrl+V」貼上 (系統將自動排版)" style="resize: vertical; font-family: monospace;"></textarea>
+                    <textarea id="v_schedule" rows="4" placeholder="對列表卡片按右鍵開啟網頁，複製班表後在此「Ctrl+V」貼上，系統將自動洗淨排版" style="resize: vertical; font-family: monospace;"></textarea>
                 </div>
             </div>
 
@@ -272,14 +277,22 @@
         </div>
 
         <div class="panel" id="panel-catalog">
-            <div class="filter-tools" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <h3 style="margin:0; min-width: 120px;">📚 資料庫</h3>
-                <div style="display: flex; gap: 10px; flex: 1; justify-content: flex-end;">
+            <div class="filter-tools" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <h3 style="margin:0; min-width: 100px;">📚 資料庫</h3>
+                <div style="display: flex; gap: 8px; flex: 1; justify-content: flex-end; flex-wrap: wrap;">
                     <button id="btn-save-order" class="warning" onclick="app.saveOrderToGoogleSheet()" style="display: none;" title="儲存拖曳後的卡片順序">💾 儲存排序</button>
-                    <select id="filterLocation" onchange="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 130px; font-size: 14px;">
+                    <select id="filterLocation" onchange="app.renderCatalog()" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 120px; font-size: 13px;">
                         <option value="">🗺️ 所有位置</option>
                     </select>
-                    <input type="text" id="searchInput" placeholder="🔍 姓名/店名/AF..." oninput="app.renderCatalog()" style="padding: 8px; border-radius: 6px; border: 1px solid #ccc; min-width: 150px; flex: 1;">
+                    <select id="filterDate" onchange="app.renderCatalog()" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 110px; font-size: 13px;">
+                        <option value="">📅 所有日期</option>
+                    </select>
+                    <div class="time-filter-group" title="尋找此時段內有上班的女優">
+                        <select id="filterTimeStart" onchange="app.renderCatalog()"></select>
+                        <span style="color:#666; font-weight:bold;">~</span>
+                        <select id="filterTimeEnd" onchange="app.renderCatalog()"></select>
+                    </div>
+                    <input type="text" id="searchInput" placeholder="🔍 姓名/店名..." oninput="app.renderCatalog()" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; min-width: 120px; flex: 1;">
                 </div>
             </div>
             <div class="catalog-grid" id="catalogGrid"></div>
@@ -338,6 +351,62 @@
                     toast.classList.remove('show');
                 }, 3000);
             }
+
+            // 將 "HH:MM" 轉為總分鐘數 (若小於 10 點，視為跨夜的隔日時間)
+            static timeToMins(tStr) {
+                let [h, m] = tStr.split(':').map(Number);
+                if (h < 10) h += 24; 
+                return h * 60 + m;
+            }
+
+            // 生成卡片微型視覺化行事曆
+            static generateScheduleHTML(scheduleStr) {
+                if (!scheduleStr) return '';
+                const lines = scheduleStr.split('\n');
+                let html = '<div class="sch-container">';
+                
+                lines.forEach(line => {
+                    // 解析 3/30(一) 14:00-22:00
+                    const match = line.match(/^(\d{1,2}\/\d{1,2})\s*(\(.\))?\s*(.+)$/);
+                    if (match) {
+                        const date = match[1];
+                        const day = match[2] || '';
+                        const timeStr = match[3];
+
+                        if (timeStr.includes('休') || timeStr.includes('み')) {
+                            html += `<div class="sch-row"><div class="sch-date">${date}${day}</div><div class="sch-track"><div class="sch-fill off">休</div></div><div class="sch-time">休息</div></div>`;
+                        } else {
+                            const tMatch = timeStr.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
+                            if (tMatch) {
+                                let startMins = this.timeToMins(tMatch[1]);
+                                let endMins = this.timeToMins(tMatch[2]);
+                                if (endMins < startMins) endMins += 24 * 60; 
+
+                                // 基準設定: 早上 10:00 (600分) 到 隔日清晨 05:00 (1740分)，總區間 1140分
+                                const BASE_MINS = 600;
+                                const TOTAL_MINS = 1140;
+
+                                let renderStart = Math.max(BASE_MINS, startMins);
+                                let renderEnd = Math.min(BASE_MINS + TOTAL_MINS, endMins);
+
+                                let leftPct = ((renderStart - BASE_MINS) / TOTAL_MINS) * 100;
+                                let widthPct = ((renderEnd - renderStart) / TOTAL_MINS) * 100;
+                                if(leftPct < 0) leftPct = 0;
+                                if(widthPct < 0) widthPct = 0;
+                                if(leftPct + widthPct > 100) widthPct = 100 - leftPct;
+
+                                html += `<div class="sch-row"><div class="sch-date">${date}${day}</div><div class="sch-track"><div class="sch-fill" style="left:${leftPct}%; width:${widthPct}%;"></div></div><div class="sch-time">${tMatch[1]}-${tMatch[2]}</div></div>`;
+                            } else {
+                                html += `<div class="sch-row"><div class="sch-date">${date}${day}</div><div class="sch-track"></div><div class="sch-time">${timeStr}</div></div>`;
+                            }
+                        }
+                    } else {
+                        if(line.trim()) html += `<div class="sch-row" style="color:#888;">${line}</div>`;
+                    }
+                });
+                html += '</div>';
+                return html;
+            }
         }
 
         class ImageCropperService {
@@ -351,8 +420,6 @@
                 
                 document.addEventListener('paste', (e) => {
                     if (!window.app || !window.app.accessToken) return;
-                    
-                    // 確保我們不是在輸入文字框內貼上 (防衝突)
                     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
                     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
@@ -445,42 +512,60 @@
 
             get currentSheet() { return document.getElementById('v_sheet').value; }
 
-            // ===== 班表貼上攔截器與碎裂文字重組 =====
+            // 產生過濾器時間軸的下拉選單
+            populateTimeDropdowns() {
+                const startSel = document.getElementById('filterTimeStart');
+                const endSel = document.getElementById('filterTimeEnd');
+                if(startSel.options.length > 0) return; // 避免重複建立
+
+                startSel.innerHTML = '<option value="">🕒 起始</option>';
+                endSel.innerHTML = '<option value="">🕒 結束</option>';
+                
+                for(let h = 10; h <= 29; h++) {
+                    let displayH = h >= 24 ? h - 24 : h;
+                    let label = `${displayH.toString().padStart(2,'0')}:00`;
+                    let val = h * 60;
+                    startSel.innerHTML += `<option value="${val}">${label}</option>`;
+                    endSel.innerHTML += `<option value="${val}">${label}</option>`;
+                }
+            }
+
+            // ===== 智慧班表貼上攔截器 (台日雙語自動轉換 + 無視雜訊重組) =====
             setupSchedulePasting() {
                 const scheduleInput = document.getElementById('v_schedule');
                 scheduleInput.addEventListener('paste', (e) => {
                     e.preventDefault();
                     let pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                    const urlVal = document.getElementById('v_url').value || '';
                     
-                    // 針對 yoasobi-heaven 或是類似碎裂格式進行強大清洗
-                    if (urlVal.includes('yoasobi-heaven.com')) {
-                        // 支援日文(月火水木金土日)與中文(一二三四五六日)
-                        const regex = /(\d{1,2}\/\d{1,2})\s*(\([^)]+\))?\s*(休\s*み|公\s*休|休\s*假|\d{1,2}:\d{2}\s*[-~〜ー]\s*\d{1,2}:\d{2})/g;
-                        let cleanedLines = [];
-                        let match;
+                    const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日',
+                                    '一':'一', '二':'二', '三':'三', '四':'四', '五':'五', '六':'六'};
+                                    
+                    // 尋找日期、可選括號星期、與時間區段(中間允許無限換行與空白干擾)
+                    const regex = /(\d{1,2}\/\d{1,2})\s*(\([月火水木金土日一二三四五六]\))?\s*(休\s*み|公\s*休|休\s*假|\d{1,2}:\d{2}\s*[-~〜ー]\s*\d{1,2}:\d{2})/g;
+                    let cleanedLines = [];
+                    let match;
+                    
+                    while ((match = regex.exec(pastedText)) !== null) {
+                        let date = match[1];
                         
-                        while ((match = regex.exec(pastedText)) !== null) {
-                            let date = match[1];
-                            let day = match[2] ? match[2] : '';
-                            // 移除時間或休み字串中間的所有換行與空白，例如將「14:00\n-\n22:00」變成「14:00-22:00」
-                            let time = match[3].replace(/\s+/g, ''); 
-                            
-                            // 將萃取出來的資訊組合成單行
-                            let cleanLine = `${date} ${day} ${time}`.trim();
-                            cleanedLines.push(cleanLine);
-                        }
+                        // 轉換星期為繁體中文
+                        let rawDay = match[2] ? match[2].replace(/[()]/g, '') : '';
+                        let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : '';
                         
-                        if (cleanedLines.length > 0) {
-                            scheduleInput.value = cleanedLines.join('\n');
-                            Utility.showToast('✅ 已成功將碎片化文字重組為完整班表！');
-                            return;
-                        }
+                        // 移除時間文字中間的所有干擾(如換行、多餘空白)
+                        let time = match[3].replace(/\s+/g, ''); 
+                        
+                        let cleanLine = `${date} ${day} ${time}`.trim();
+                        cleanedLines.push(cleanLine);
                     }
                     
-                    // 若非特定網址或正則沒抓到，僅執行一般清理 (去除非必要空行)
-                    scheduleInput.value = pastedText.replace(/\n\s*\n/g, '\n').trim();
-                    Utility.showToast('✅ 班表已貼上');
+                    if (cleanedLines.length > 0) {
+                        scheduleInput.value = cleanedLines.join('\n');
+                        Utility.showToast('✅ 已成功洗淨排版並轉為中文星期！');
+                    } else {
+                        scheduleInput.value = pastedText.replace(/\n\s*\n/g, '\n').trim();
+                        Utility.showToast('✅ 班表已貼上');
+                    }
                 });
             }
 
@@ -542,6 +627,7 @@
 
             initGoogleAuth() {
                 const storedToken = sessionStorage.getItem('gapi_access_token');
+                this.populateTimeDropdowns();
 
                 this.tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: CLIENT_ID,
@@ -682,7 +768,7 @@
                         }
                     }
 
-                    this.populateLocationFilter();
+                    this.populateFilters(); // 動態更新日期與地區
                     this.renderCatalog();
                     
                     if (!shouldKeepForm) {
@@ -694,16 +780,35 @@
                 }
             }
 
-            populateLocationFilter() {
+            populateFilters() {
+                // 位置篩選器
                 const locSelect = document.getElementById('filterLocation');
                 const uniqueLocations = [...new Set(this.dataStore.map(r => r._raw[this.colMap.location]).filter(loc => loc && loc.trim() !== ''))];
+                const currentLoc = locSelect.value;
                 locSelect.innerHTML = '<option value="">🗺️ 所有位置</option>';
                 uniqueLocations.sort().forEach(loc => {
                     const opt = document.createElement('option');
-                    opt.value = loc;
-                    opt.innerText = loc;
+                    opt.value = loc; opt.innerText = loc;
                     locSelect.appendChild(opt);
                 });
+                locSelect.value = currentLoc;
+
+                // 日期篩選器 (從所有女優的班表中汲取可用日期)
+                const dateSelect = document.getElementById('filterDate');
+                const dateSet = new Set();
+                this.dataStore.forEach(r => {
+                    const sch = r._raw[this.colMap.schedule] || '';
+                    const matches = sch.match(/\d{1,2}\/\d{1,2}/g);
+                    if (matches) matches.forEach(m => dateSet.add(m));
+                });
+                const currentDate = dateSelect.value;
+                dateSelect.innerHTML = '<option value="">📅 所有日期</option>';
+                [...dateSet].sort().forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d; opt.innerText = d;
+                    dateSelect.appendChild(opt);
+                });
+                if (dateSet.has(currentDate)) dateSelect.value = currentDate;
             }
 
             async saveToGoogleSheet() {
@@ -934,19 +1039,75 @@
             renderCatalog() {
                 const kw = document.getElementById('searchInput').value.toLowerCase();
                 const filterLoc = document.getElementById('filterLocation').value;
+                const filterDate = document.getElementById('filterDate').value;
+                const filterStartStr = document.getElementById('filterTimeStart').value;
+                const filterEndStr = document.getElementById('filterTimeEnd').value;
+                
+                const filterStart = filterStartStr ? parseInt(filterStartStr) : null;
+                const filterEnd = filterEndStr ? parseInt(filterEndStr) : null;
+
                 const grid = document.getElementById('catalogGrid');
                 grid.innerHTML = '';
 
-                const isFiltered = kw !== '' || filterLoc !== '';
+                // 只要有任何一種篩選條件被觸發，就暫時關閉拖曳功能以防卡片順序錯亂
+                const isFiltered = kw !== '' || filterLoc !== '' || filterDate !== '' || filterStart !== null || filterEnd !== null;
 
                 this.dataStore.forEach((record, index) => {
                     const r = record._raw;
+                    
+                    // 1. 位置篩選
                     const recLocation = r[this.colMap.location] || '';
                     if (filterLoc && recLocation !== filterLoc) return;
                     
+                    // 2. 關鍵字搜尋
                     const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${recLocation} ${r[this.colMap.twoShift]} ${r[this.colMap.af]} ${r[this.colMap.level]}`.toLowerCase();
-                    if(kw && !searchStr.includes(kw)) return;
+                    if (kw && !searchStr.includes(kw)) return;
 
+                    // 3. 班表時間交集篩選邏輯 (強大媒合功能)
+                    if (filterDate || filterStart !== null || filterEnd !== null) {
+                        const scheduleRaw = r[this.colMap.schedule] || '';
+                        if (!scheduleRaw) return; // 沒班表的直接隱藏
+
+                        let isWorkingMatch = false;
+                        const lines = scheduleRaw.split('\n');
+                        
+                        for (let line of lines) {
+                            const match = line.match(/^(\d{1,2}\/\d{1,2})\s*(\(.\))?\s*(.+)$/);
+                            if (match) {
+                                let d = match[1];
+                                let tStr = match[3];
+
+                                if (filterDate && d !== filterDate) continue; // 找尋指定的那一天
+
+                                if (filterStart === null && filterEnd === null) {
+                                    if (!tStr.includes('休') && !tStr.includes('み')) {
+                                        isWorkingMatch = true; break;
+                                    }
+                                } else {
+                                    // 確認有指定時間時，判斷兩條時間線是否有交疊
+                                    if (!tStr.includes('休') && !tStr.includes('み')) {
+                                        const tMatch = tStr.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
+                                        if (tMatch) {
+                                            let tStart = Utility.timeToMins(tMatch[1]);
+                                            let tEnd = Utility.timeToMins(tMatch[2]);
+                                            if (tEnd <= tStart) tEnd += 24 * 60; // 跨日處理
+
+                                            let qStart = filterStart !== null ? filterStart : 0;
+                                            let qEnd = filterEnd !== null ? filterEnd : 9999;
+                                            
+                                            // 交集公式：最大起點 < 最小終點
+                                            if (Math.max(tStart, qStart) < Math.min(tEnd, qEnd)) {
+                                                isWorkingMatch = true; break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (!isWorkingMatch) return; // 這個人這天沒班，或者時間沒對上，不顯示！
+                    }
+
+                    // 開始渲染符合條件的卡片
                     let cleanImg = Utility.cleanDriveUrl(r[this.colMap.photo]);
                     const imgSrc = cleanImg || PLACEHOLDER_URL;
                     const ageStr = r[this.colMap.age] ? ` (${r[this.colMap.age]})` : '';
@@ -968,6 +1129,7 @@
                     }
                     
                     const techName = `<span>${r[this.colMap.name] || '未命名'} ${ageStr}</span>` + extraTags;
+                    const schHTML = Utility.generateScheduleHTML(r[this.colMap.schedule]);
 
                     const card = document.createElement('div');
                     card.className = 'card';
@@ -981,7 +1143,8 @@
                     card.title = titleStr;
                     
                     card.onclick = (e) => {
-                        if (e.target.closest('.price-scroll')) return;
+                        // 避免點擊班表捲動軸時觸發開啟
+                        if (e.target.closest('.sch-container')) return;
                         
                         if (this.isEditMode) {
                             this.editRecord(index); 
@@ -1075,8 +1238,9 @@
                         <div class="tech-name">${techName}</div>
                         <div class="info-row" style="pointer-events: auto;">
                             <span style="pointer-events: none;">${r[this.colMap.stats] || '-'}</span>
-                            <div class="price-scroll">${price}</div>
+                            <div style="font-weight:bold; color:var(--accent); text-align:right;">${price}</div>
                         </div>
+                        ${schHTML}
                     `;
                     grid.appendChild(card);
                 });
