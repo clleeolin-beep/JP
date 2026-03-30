@@ -23,15 +23,15 @@
         .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .sheet-selector-wrapper { display: flex; align-items: center; gap: 8px; background: white; padding: 5px 15px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-        /* 版面網格佈局 */
+        /* 版面網格佈局 (預設為電腦版雙欄) */
         #app-container { display: grid; grid-template-columns: 500px 1fr; gap: 15px; flex: 1; min-height: 0; transition: all 0.3s ease; }
         .panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
         
-        /* 模式切換邏輯 */
+        /* 模式切換邏輯 (電腦版) */
         #app-container.view-mode { grid-template-columns: 1fr; }
         #app-container.view-mode #panel-form { display: none; }
         
-        /* ================= RWD 手機版適應 ================= */
+        /* ================= RWD 手機版適應 (螢幕小於 850px) ================= */
         @media (max-width: 850px) {
             body { padding: 8px; }
             .app-title { display: none; } 
@@ -43,8 +43,11 @@
             .btn-text { display: none; } 
             .top-bar button { padding: 6px 10px; font-size: 18px; } 
             
-            #app-container { display: flex; flex-direction: column; }
-            #app-container.edit-mode #panel-catalog { display: none; }
+            /* 手機版編輯模式：表單與清單上下排列，並讓容器整體可捲動 */
+            #app-container { display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+            .panel { flex: none; overflow-y: visible; height: auto; margin-bottom: 10px; }
+            
+            /* 手機版瀏覽模式：只隱藏表單 */
             #app-container.view-mode #panel-form { display: none; }
             
             .form-grid { grid-template-columns: 1fr; gap: 8px; }
@@ -612,7 +615,6 @@
                     }
 
                     this.dataStore = [];
-                    // i=1 代表 Excel 中的第 2 列
                     for (let i = 1; i < data.values.length; i++) {
                         const row = data.values[i];
                         const paddedRow = this.headerRow.map((_, idx) => row[idx] || "");
@@ -816,6 +818,14 @@
                     document.getElementById('text_photo').style.display = 'block';
                     document.getElementById('btn_del_photo').style.display = 'none';
                 }
+                
+                // ===== 手機版點擊卡片後，自動捲動回上方表單 =====
+                if (window.innerWidth <= 850) {
+                    const formPanel = document.getElementById('panel-form');
+                    if (formPanel) {
+                        formPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
             }
 
             clearForm() {
@@ -846,7 +856,6 @@
                 const originalItem = this.dataStore[oldIdx];
                 const newRaw = [...originalItem._raw];
                 
-                // 清除指定的多個欄位
                 const colsToClear = ['photo', 'techId', 'url', 'age', 'stats', 'startDate'];
                 colsToClear.forEach(col => {
                     if (this.colMap[col] !== -1 && this.colMap[col] !== undefined) {
@@ -908,7 +917,6 @@
                     const card = document.createElement('div');
                     card.className = 'card';
                     
-                    // 動態設定標題提示
                     let titleStr = "";
                     if (this.isEditMode) {
                         titleStr = isFiltered ? "左鍵：編輯資料\n右鍵：開啟專屬網址" : "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序\n按住 Ctrl 或 Command 拖曳可複製(清空特定欄位)";
@@ -917,12 +925,14 @@
                     }
                     card.title = titleStr;
                     
+                    // ===== 依據當前模式決定左鍵行為 =====
                     card.onclick = (e) => {
                         if (e.target.closest('.price-scroll')) return;
                         
                         if (this.isEditMode) {
-                            this.editRecord(index);
+                            this.editRecord(index); // 編輯模式：開啟表單
                         } else {
+                            // 瀏覽模式：直接開啟網址
                             if (targetUrl && targetUrl.startsWith('http')) {
                                 window.open(targetUrl, '_blank');
                             } else {
@@ -937,7 +947,6 @@
                         else Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
                     };
 
-                    // 僅在編輯模式下且未篩選時允許拖曳
                     if (!isFiltered && this.isEditMode) {
                         card.draggable = true;
                         
