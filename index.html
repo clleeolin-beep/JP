@@ -73,6 +73,9 @@
         input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(69,39,160,0.1); }
         input[readonly] { background: #f8f9fa; cursor: not-allowed; }
         
+        #v_magic_paste { background: #fff8e1; border-color: #ffb300; transition: all 0.3s; }
+        #v_magic_paste:focus { box-shadow: 0 0 0 2px rgba(255, 179, 0, 0.3); }
+
         /* 照片上傳區塊 */
         .photo-upload-area { margin: 10px 0; position: relative; }
         .img-preview-box { width: 100%; height: 350px; background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; transition: 0.2s; }
@@ -127,7 +130,7 @@
         
         /* 姓名列與微型 SVG 佈局 */
         .name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-        .mini-svg-box { width: 34px; height: 42px; flex-shrink: 0; background: #fff; border-radius: 4px; border: 1px solid #e0e0e0; display: flex; justify-content: center; align-items: center; padding: 1px; box-shadow: inset 0 0 4px rgba(0,0,0,0.05); }
+        .mini-svg-box { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 32px; flex-shrink: 0; }
         .name-col { display: flex; flex-direction: column; flex: 1; overflow: hidden; justify-content: center; }
         
         .tech-name { font-size: 1.15em; color: var(--text); font-weight: bold; margin-bottom: 2px; pointer-events: none; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -155,16 +158,18 @@
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
         .card.drag-over { border: 2px dashed; } 
 
-        /* 直列式微型視覺化行事曆區塊 */
-        .sch-container-vert {
-            display: flex; justify-content: space-between; gap: 4px; margin-top: 8px;
-            padding-top: 8px; border-top: 1px dashed #e0e0e0; height: 85px; pointer-events: auto;
-        }
-        .sch-col { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; }
+        /* 直列式微型視覺化行事曆區塊 (含刻度線) */
+        .sch-wrapper { display: flex; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e0e0; position: relative; }
+        .sch-time-axis { display: flex; flex-direction: column; width: 18px; position: relative; font-size: 9px; color: #999; margin-top: 24px; font-weight: bold; }
+        .sch-time-axis span { position: absolute; right: 4px; transform: translateY(-50%); }
+        .sch-container-vert { flex: 1; display: flex; justify-content: space-between; gap: 4px; height: 85px; position: relative; }
+        .sch-grid-line { position: absolute; left: 0; right: 0; border-top: 1px dashed #e0e0e0; z-index: 0; }
+        
+        .sch-col { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; z-index: 1; }
         .sch-day { font-size: 10px; font-weight: bold; color: #555; text-align: center; line-height: 1.1; margin-bottom: 4px; height: 24px; display: flex; flex-direction: column; justify-content: center; }
-        .sch-track-vert { width: 18px; flex: 1; background: #eeeeee; border-radius: 4px; position: relative; overflow: hidden; }
-        .sch-fill-vert { position: absolute; width: 100%; background: var(--accent); border-radius: 4px; left: 0; }
-        .sch-fill-vert.off { background: #bdbdbd; height: 100%; top: 0; }
+        .sch-track-vert { width: 18px; flex: 1; background: rgba(238, 238, 238, 0.7); border-radius: 4px; position: relative; overflow: hidden; }
+        .sch-fill-vert { position: absolute; width: 100%; background: var(--accent); border-radius: 4px; left: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .sch-fill-vert.off { background: #bdbdbd; height: 100%; top: 0; box-shadow: none; }
         
         /* 篩選器與排序選單樣式 */
         .time-filter-group { display: flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #ccc; padding: 2px 6px; border-radius: 6px; }
@@ -207,6 +212,13 @@
             </div>
             
             <input type="hidden" id="v_row_index">
+
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>✨ 魔法貼上 (綜合資訊自動解析)</label>
+                    <textarea id="v_magic_paste" rows="2" placeholder="在此貼上包含「姓名、年齡、數值、到職日、班表」的完整文字，系統將自動為您拆解並填入對應欄位..."></textarea>
+                </div>
+            </div>
 
             <div class="form-grid">
                 <div class="form-group">
@@ -377,7 +389,7 @@
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
-                } else if (msg.includes('順序已變更') || msg.includes('複製')) {
+                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('解析')) {
                     toast.style.background = 'var(--warning)';
                 } else {
                     toast.style.background = 'var(--success)';
@@ -388,7 +400,6 @@
                 this.toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000);
             }
 
-            // 數值萃取解析器
             static parseStats(rawStats) {
                 let h=0, b=0, w=0, hp=0, cup='?';
                 if (!rawStats) return {h, b, w, hp, cup};
@@ -417,14 +428,12 @@
                 return {h, b, w, hp, cup};
             }
 
-            // 罩杯分數 (供排序使用)
             static getCupScore(rawStats) {
                 const {cup} = this.parseStats(rawStats);
                 if (cup === '?') return 0;
                 return cup.charCodeAt(0) - 64; 
             }
 
-            // 曲線沙漏比例分數 (供排序使用)
             static getBodyScore(rawStats) {
                 const {h, b, w, hp} = this.parseStats(rawStats);
                 if (!h || !b || !w || !hp) return 0;
@@ -432,21 +441,35 @@
                 return Math.min(99, Math.max(1, 40 + hourglass)); 
             }
 
-            // ===== 核心演算法：生成體型 SVG 與 計算評分罩杯顏色 =====
+            // ===== 核心：SVG生成與身型分類 =====
             static getBodyShapeData(rawStats) {
                 const parsed = this.parseStats(rawStats);
                 const {h, b, w, hp, cup} = parsed;
                 if (!h || !b || !w || !hp) return null;
 
-                // 曲線分數判定與顯色
+                // 身型分類判定 (蘋果/梨/沙漏/倒三角/H)
+                let s2 = h * 0.46; // 推算肩寬*2
+                let shapeType = "H型", shapeIcon = "▯";
+                
+                if (w > hp) {
+                    shapeType = "蘋果型"; shapeIcon = "🍎";
+                } else if ((b - w) >= 17 && (hp - w) >= 22) { // 稍微放寬標準的沙漏
+                    shapeType = "沙漏型"; shapeIcon = "⏳";
+                } else if (hp - s2 > 3) {
+                    shapeType = "梨型"; shapeIcon = "🍐";
+                } else if (s2 - hp > 3) {
+                    shapeType = "倒三角"; shapeIcon = "🔻";
+                }
+
+                // 分數顏色
                 let hourglass = (b - w) + (hp - w);
                 let score = Math.min(99, Math.max(1, 40 + hourglass));
-                let scoreColor = '#4caf50'; // < 90 綠色
-                if (score >= 98) scoreColor = '#6200ea'; // 深紫
-                else if (score >= 95) scoreColor = '#e91e63'; // 桃紅
-                else if (score >= 90) scoreColor = '#ff9800'; // 橘色
+                let scoreColor = '#4caf50'; 
+                if (score >= 98) scoreColor = '#6200ea'; 
+                else if (score >= 95) scoreColor = '#e91e63'; 
+                else if (score >= 90) scoreColor = '#ff9800'; 
 
-                // 真實下胸圍逆推與罩杯差距判定
+                // 實測罩杯
                 let estUB = Math.round(((w + 10) + (h * 0.43)) / 2);
                 let diff = b - estUB;
                 let cupNames = ['AA','A','B','C','D','E','F','G','H','I','J','K','L'];
@@ -458,20 +481,25 @@
                     claimedCupIdx = cup.charCodeAt(0) - 64; 
                 }
                 
-                // 實推罩杯顏色判定 (差異越大越深)
                 let cupDiffColor = '#9e9e9e';
                 if (claimedCupIdx !== -1 && trueCupIdx >= 0) {
                     let idxDiff = claimedCupIdx - trueCupIdx;
-                    if (idxDiff <= 0) cupDiffColor = '#4caf50'; // 綠色 (老實)
-                    else if (idxDiff === 1) cupDiffColor = '#fbc02d'; // 黃色 (微調)
-                    else if (idxDiff === 2) cupDiffColor = '#f57c00'; // 橘色 (中度)
-                    else if (idxDiff === 3) cupDiffColor = '#d32f2f'; // 紅色 (嚴重)
-                    else cupDiffColor = '#b71c1c'; // 深紅 (極度誇張)
+                    if (idxDiff <= 0) cupDiffColor = '#4caf50'; 
+                    else if (idxDiff === 1) cupDiffColor = '#fbc02d'; 
+                    else if (idxDiff === 2) cupDiffColor = '#f57c00'; 
+                    else if (idxDiff === 3) cupDiffColor = '#d32f2f'; 
+                    else cupDiffColor = '#b71c1c'; 
                 } else {
-                    cupDiffColor = '#4caf50'; // 無宣稱則預設綠
+                    cupDiffColor = '#4caf50'; 
                 }
 
-                // 繪製 SVG
+                // 胖瘦判定
+                const whtr = w / h;
+                let shapeColor = '#4caf50', whtrText = '標準';
+                if (whtr < 0.36) { shapeColor = '#2196f3'; whtrText = '瘦'; }
+                else if (whtr > 0.41) { shapeColor = '#e91e63'; whtrText = '胖'; }
+
+                // SVG 繪製 (頭部圓形 + 身體曲線)
                 const avgH = 158, avgB = 82, avgW = 61, avgH_p = 86;
                 const scaleY = 100 / 180, scaleX = 0.8; 
                 const getPoints = (height, bust, waist, hip) => {
@@ -488,62 +516,71 @@
                 const avg = getPoints(avgH, avgB, avgW, avgH_p);
                 const tgt = getPoints(h, b, w, hp);
                 
-                const whtr = w / h;
-                let shapeColor = '#4caf50';
-                if (whtr < 0.36) shapeColor = '#2196f3';
-                else if (whtr > 0.41) shapeColor = '#e91e63';
+                const makeShape = (p, color, isDashed) => {
+                    const strokeAttr = isDashed ? `stroke="#ccc" stroke-dasharray="2,2" fill="none"` : `fill="${color}" opacity="0.6" stroke="${color}"`;
+                    return `
+                        <circle cx="${p.cx}" cy="${p.yHead}" r="${p.wHead*0.7}" ${strokeAttr} />
+                        <path d="M ${p.cx - p.wHead*0.4},${p.yHead+5}
+                                 Q ${p.cx - p.wBust},${p.yBust - 5} ${p.cx - p.wBust},${p.yBust}
+                                 Q ${p.cx - p.wWaist*0.8},${(p.yBust+p.yWaist)/2} ${p.cx - p.wWaist},${p.yWaist}
+                                 Q ${p.cx - p.wHip*1.1},${(p.yWaist+p.yHip)/2} ${p.cx - p.wHip},${p.yHip}
+                                 L ${p.cx - p.wFoot},${p.yFoot}
+                                 L ${p.cx + p.wFoot},${p.yFoot}
+                                 L ${p.cx + p.wHip},${p.yHip}
+                                 Q ${p.cx + p.wHip*1.1},${(p.yWaist+p.yHip)/2} ${p.cx + p.wWaist},${p.yWaist}
+                                 Q ${p.cx + p.wWaist*0.8},${(p.yBust+p.yWaist)/2} ${p.cx + p.wBust},${p.yBust}
+                                 Q ${p.cx + p.wBust},${p.yBust - 5} ${p.cx + p.wHead*0.4},${p.yHead+5} Z"
+                              ${strokeAttr} />
+                    `;
+                };
 
-                const makePath = (p) => `M ${p.cx - p.wHead},${p.yHead} L ${p.cx + p.wHead},${p.yHead} Q ${p.cx + p.wBust},${p.yHead + (p.yBust - p.yHead)/2} ${p.cx + p.wBust},${p.yBust} Q ${p.cx + p.wWaist*0.8},${(p.yBust+p.yWaist)/2} ${p.cx + p.wWaist},${p.yWaist} Q ${p.cx + p.wHip*1.1},${(p.yWaist+p.yHip)/2} ${p.cx + p.wHip},${p.yHip} L ${p.cx + p.wFoot},${p.yFoot} L ${p.cx - p.wFoot},${p.yFoot} L ${p.cx - p.wHip},${p.yHip} Q ${p.cx - p.wHip*1.1},${(p.yWaist+p.yHip)/2} ${p.cx - p.wWaist},${p.yWaist} Q ${p.cx - p.wWaist*0.8},${(p.yBust+p.yWaist)/2} ${p.cx - p.wBust},${p.yBust} Q ${p.cx - p.wBust},${p.yHead + (p.yBust - p.yHead)/2} ${p.cx - p.wHead},${p.yHead} Z`;
-
-                const avgPath = makePath(avg);
-                const tgtPath = makePath(tgt);
+                const avgShape = makeShape(avg, '#ccc', true);
+                const tgtShape = makeShape(tgt, shapeColor, false);
 
                 const svgHtml = `
-                    <svg width="100%" height="100%" viewBox="0 0 80 100" preserveAspectRatio="xMidYMid meet">
-                        <path d="${avgPath}" fill="none" stroke="#ccc" stroke-dasharray="2,2" stroke-width="1.5" opacity="0.8"/>
-                        <path d="${tgtPath}" fill="${shapeColor}" opacity="0.6" stroke="${shapeColor}" stroke-width="1"/>
+                    <svg width="100%" height="26px" viewBox="0 0 80 100" preserveAspectRatio="xMidYMid meet">
+                        ${avgShape}
+                        ${tgtShape}
                     </svg>
+                    <div style="font-size:10px; font-weight:bold; color:${shapeColor}; margin-top:2px;">${whtrText}</div>
                 `;
 
-                return { score, scoreColor, trueCup, cupDiffColor, svgHtml };
+                return { score, scoreColor, trueCup, cupDiffColor, svgHtml, shapeType, shapeIcon };
             }
 
-            // 修改跨日轉換邏輯：從 6 點切割 (9:00 不再被算成隔日)
+            // ===== 時間軸與行事曆渲染核心 =====
             static timeToMins(tStr) {
                 let [h, m] = tStr.split(':').map(Number);
                 if (h < 6) h += 24; 
                 return h * 60 + m;
             }
 
-            // 生成直列式微型視覺化行事曆
             static generateScheduleHTML(scheduleStr) {
                 if (!scheduleStr) return '';
                 const lines = scheduleStr.split('\n').filter(l => l.trim() !== '').slice(0, 7);
                 if (lines.length === 0) return '';
 
-                let html = '<div class="sch-container-vert">';
-                
+                let schHtml = '';
                 lines.forEach(line => {
                     const match = line.match(/^(\d{1,2}\/\d{1,2})\s*(\(.\))?\s*(.+)$/);
                     if (match) {
                         const date = match[1];
-                        const dayRaw = match[2] || '';
-                        const dayClean = dayRaw.replace(/[()]/g, ''); 
+                        const dayClean = (match[2] || '').replace(/[()]/g, ''); 
                         const timeStr = match[3];
 
                         let trackHtml = '';
                         if (timeStr.includes('休') || timeStr.includes('み')) {
-                            trackHtml = `<div class="sch-fill-vert off" title="${date} ${dayRaw} 休息"></div>`;
+                            trackHtml = `<div class="sch-fill-vert off" title="${date} 休息"></div>`;
                         } else {
                             const tMatch = timeStr.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
                             if (tMatch) {
                                 let startMins = this.timeToMins(tMatch[1]);
                                 let endMins = this.timeToMins(tMatch[2]);
-                                if (endMins < startMins) endMins += 24 * 60; 
+                                if (endMins <= startMins) endMins += 24 * 60; 
 
-                                // 基準設定: 早上 09:00 (540分) 到 隔日清晨 05:00 (1740分)，總區間 1200分
+                                // 基準：09:00 (540分) ~ 06:00 (1800分) = 總共 1260 分
                                 const BASE_MINS = 540;
-                                const TOTAL_MINS = 1200;
+                                const TOTAL_MINS = 1260;
 
                                 let renderStart = Math.max(BASE_MINS, startMins);
                                 let renderEnd = Math.min(BASE_MINS + TOTAL_MINS, endMins);
@@ -554,22 +591,42 @@
                                 if(heightPct < 0) heightPct = 0;
                                 if(topPct + heightPct > 100) heightPct = 100 - topPct;
 
-                                trackHtml = `<div class="sch-fill-vert" style="top:${topPct}%; height:${heightPct}%;" title="${date} ${dayRaw} ${tMatch[1]}-${tMatch[2]}"></div>`;
+                                trackHtml = `<div class="sch-fill-vert" style="top:${topPct}%; height:${heightPct}%;" title="${date} ${tMatch[1]}-${tMatch[2]}"></div>`;
                             }
                         }
 
-                        html += `
+                        schHtml += `
                             <div class="sch-col">
                                 <div class="sch-day">${date}<br>${dayClean}</div>
-                                <div class="sch-track-vert" title="${date} ${dayRaw} ${timeStr}">
+                                <div class="sch-track-vert" title="${date} ${timeStr}">
                                     ${trackHtml}
                                 </div>
                             </div>
                         `;
                     }
                 });
-                html += '</div>';
-                return html;
+
+                // 加入橫向刻度線與時間標籤 (12, 18, 24, 6)
+                // 12:00 = 180m (180/1260 = 14.3%)
+                // 18:00 = 540m (540/1260 = 42.9%)
+                // 24:00 = 900m (900/1260 = 71.4%)
+                // 06:00 = 1260m (100%)
+                return `
+                    <div class="sch-wrapper">
+                        <div class="sch-time-axis">
+                            <span style="top:14.3%;">12</span>
+                            <span style="top:42.9%;">18</span>
+                            <span style="top:71.4%;">24</span>
+                        </div>
+                        <div class="sch-container-vert">
+                            <div class="sch-grid-line" style="top:14.3%;"></div>
+                            <div class="sch-grid-line" style="top:42.9%;"></div>
+                            <div class="sch-grid-line" style="top:71.4%;"></div>
+                            <div class="sch-grid-line" style="top:100%;"></div>
+                            ${schHtml}
+                        </div>
+                    </div>
+                `;
             }
         }
 
@@ -672,6 +729,7 @@
                 this.registerKeyboardShortcuts();
                 this.setupDatePasting();
                 this.setupSchedulePasting();
+                this.setupMagicPasting(); 
             }
 
             get currentSheet() { return document.getElementById('v_sheet').value; }
@@ -693,82 +751,48 @@
                 }
             }
 
+            setupMagicPasting() {
+                const magicInput = document.getElementById('v_magic_paste');
+                if (!magicInput) return;
+
+                magicInput.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    let text = (e.clipboardData || window.clipboardData).getData('text');
+                    
+                    let mName = text.match(/(?:Name|名前)\s*([^\sAge年齢]+)/i);
+                    if (mName) document.getElementById('v_name').value = mName[1].trim();
+
+                    let mAge = text.match(/(?:Age|年齢)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才)/);
+                    if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
+
+                    let mStats = text.match(/(?:BodySize|Size|スタイル)\s*(T\d+.*?)(?:EntryDay|出勤情報|入店|$)/i) || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
+                    if (mStats) document.getElementById('v_stats').value = mStats[1].trim();
+
+                    let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
+                    if (mDate) {
+                        document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
+                    }
+
+                    let scheduleText = text;
+                    let mSch = text.match(/出勤情報\s*([\s\S]+)/);
+                    if (mSch) {
+                        scheduleText = mSch[1];
+                    }
+                    
+                    document.getElementById('v_schedule').value = Utility.parseAndFormatSchedule(scheduleText);
+                    
+                    Utility.showToast('✨ 総合情報を解析し、各項目に自動入力しました！');
+                    setTimeout(() => { magicInput.value = ''; }, 100);
+                });
+            }
+
             setupSchedulePasting() {
                 const scheduleInput = document.getElementById('v_schedule');
                 scheduleInput.addEventListener('paste', (e) => {
                     e.preventDefault();
                     let pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                    
-                    if (/\d{1,2}\/\d{1,2}/.test(pastedText)) {
-                        const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日',
-                                        '一':'一', '二':'二', '三':'三', '四':'四', '五':'五', '六':'六'};
-                                        
-                        const regex = /(\d{1,2}\/\d{1,2})\s*(\([月火水木金土日一二三四五六]\))?([\s\S]*?)(?=\d{1,2}\/\d{1,2}|$)/g;
-                        let cleanedLines = [];
-                        let match;
-                        
-                        while ((match = regex.exec(pastedText)) !== null) {
-                            let date = match[1];
-                            let rawDay = match[2] ? match[2].replace(/[()]/g, '') : '';
-                            let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : '';
-                            let content = match[3]; 
-                            
-                            let timeStr = "";
-                            const timeMatch = content.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
-                            
-                            if (timeMatch) {
-                                timeStr = `${timeMatch[1]}-${timeMatch[2]}`;
-                            } else if (content.includes('休') || content.includes('み')) {
-                                timeStr = '休息';
-                            } else {
-                                timeStr = '休息'; 
-                            }
-                            
-                            let cleanLine = `${date} ${day} ${timeStr}`.trim();
-                            cleanedLines.push(cleanLine);
-                        }
-                        
-                        if (cleanedLines.length > 0) {
-                            let firstDateStr = cleanedLines[0].split(' ')[0];
-                            let dateMatch = firstDateStr.match(/(\d+)\/(\d+)/);
-                            if (dateMatch) {
-                                let m = parseInt(dateMatch[1], 10);
-                                let d = parseInt(dateMatch[2], 10);
-                                let year = new Date().getFullYear();
-                                
-                                if (new Date().getMonth() === 11 && m === 1) year += 1;
-                                
-                                let finalLines = [];
-                                const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-                                for (let i = 0; i < 7; i++) {
-                                    let curDate = new Date(year, m - 1, d + i);
-                                    let curM = curDate.getMonth() + 1;
-                                    let curD = curDate.getDate();
-                                    let dateStr = `${curM}/${curD}`;
-                                    
-                                    let existing = cleanedLines.find(l => l.startsWith(dateStr + ' ') || l === dateStr);
-                                    if (existing) {
-                                        let exMatch = existing.match(/^(\d{1,2}\/\d{1,2})\s*(?:\(.\))?\s*(.+)$/);
-                                        if (exMatch) {
-                                            let correctDay = `(${dayNames[curDate.getDay()]})`;
-                                            finalLines.push(`${exMatch[1]} ${correctDay} ${exMatch[2]}`);
-                                        } else {
-                                            finalLines.push(existing);
-                                        }
-                                    } else {
-                                        let dayStr = `(${dayNames[curDate.getDay()]})`;
-                                        finalLines.push(`${dateStr} ${dayStr} 休息`);
-                                    }
-                                }
-                                scheduleInput.value = finalLines.join('\n');
-                                Utility.showToast('✅ 已成功擷取並自動補齊 7 天班表！');
-                                return;
-                            }
-                        }
-                    }
-                    
-                    scheduleInput.value = pastedText.replace(/\n\s*\n/g, '\n').trim();
-                    Utility.showToast('✅ 班表已貼上');
+                    scheduleInput.value = Utility.parseAndFormatSchedule(pastedText);
+                    Utility.showToast('✅ 班表已成功解析貼上');
                 });
             }
 
@@ -785,7 +809,7 @@
                         let d = match[3].padStart(2, '0');
                         dateInput.value = `${y}-${m}-${d}`;
                     } else {
-                        Utility.showToast('⚠️ 無法辨識日期格式，請手手動選擇或輸入', true);
+                        Utility.showToast('⚠️ 無法辨識日期格式，請手動選擇或輸入', true);
                     }
                 });
             }
@@ -1393,7 +1417,10 @@
                     const shapeData = Utility.getBodyShapeData(r[this.colMap.stats]);
                     let nameRowHtml = '';
                     if (shapeData) {
-                        // ===== 全新姓名與徽章佈局 =====
+                        // 新增身型分類標籤
+                        tagsHtml += `<span class="tag-item" style="background:#546e7a; color:white;" title="身型分類">${shapeData.shapeIcon} ${shapeData.shapeType}</span>`;
+                        tagsContainer = `<div class="tags-row">${tagsHtml}</div>`;
+
                         nameRowHtml = `
                             <div class="name-row">
                                 <div class="mini-svg-box" title="實色: 該技師體型\n虛線: 日本女性平均體型">${shapeData.svgHtml}</div>
@@ -1407,6 +1434,7 @@
                             </div>
                         `;
                     } else {
+                        tagsContainer = `<div class="tags-row">${tagsHtml}</div>`;
                         nameRowHtml = `<div class="tech-name">${r[this.colMap.name] || '未命名'} ${ageStr}</div>`;
                     }
 
@@ -1424,7 +1452,7 @@
                     card.title = titleStr;
                     
                     card.onclick = (e) => {
-                        if (e.target.closest('.sch-container-vert')) return;
+                        if (e.target.closest('.sch-container-vert') || e.target.closest('.sch-wrapper')) return;
                         
                         if (this.isEditMode) {
                             this.editRecord(index); 
