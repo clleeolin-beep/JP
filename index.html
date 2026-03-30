@@ -447,7 +447,8 @@
                 const {h, b, w, hp, cup} = parsed;
                 if (!h || !b || !w || !hp) return null;
 
-                let s2 = h * 0.46; // 推算肩寬*2
+                // 業界作假常態濾鏡：判斷是否為「魔鬼型 (疑造假)」
+                let s2 = h * 0.46; 
                 let shapeType = "H型", shapeIcon = "▯";
                 let bustDiff = b - w;
                 let hipDiff = hp - w;
@@ -553,23 +554,28 @@
                 return h * 60 + m;
             }
 
-            // ===== 智慧班表貼上攔截器 =====
+            // ===== 智慧班表貼上攔截器 (修復：更暴力的日期捕捉器) =====
             static parseAndFormatSchedule(rawText) {
                 if (!rawText) return '';
                 
                 const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'};
-                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2})|$)/g;
+                
+                // 更暴力的正則：直接找尋所有 月/日 的開頭
+                const regex = /(\d{1,2}\/\d{1,2})\s*(\([月火水木金土日一二三四五六]\))?([\s\S]*?)(?=\d{1,2}\/\d{1,2}|$)/g;
                 let cleanedLines = [];
                 let match;
                 
                 while ((match = regex.exec(rawText)) !== null) {
-                    let m = parseInt(match[1], 10);
-                    let d = parseInt(match[2], 10);
-                    let date = `${m}/${d}`;
+                    let dateStr = match[1];
+                    let dateMatch = dateStr.match(/(\d+)\/(\d+)/);
+                    if (!dateMatch) continue;
                     
-                    let rawDay = match[3] || '';
+                    let date = `${parseInt(dateMatch[1],10)}/${parseInt(dateMatch[2],10)}`;
+                    
+                    let rawDay = match[2] ? match[2].replace(/[()]/g, '') : '';
                     let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
-                    let content = match[4] || ''; 
+                    
+                    let content = match[3] || ''; 
                     
                     let timeStr = "休息";
                     const timeMatch = content.match(/(\d{1,2}[:：]\d{2})\s*[-~〜ー]\s*(\d{1,2}[:：]\d{2})/);
@@ -598,9 +604,9 @@
                             let curDate = new Date(year, m - 1, d + i);
                             let curM = curDate.getMonth() + 1;
                             let curD = curDate.getDate();
-                            let dateStr = `${curM}/${curD}`;
+                            let tgtDate = `${curM}/${curD}`;
                             
-                            let existing = cleanedLines.find(l => l.startsWith(dateStr + ' ') || l === dateStr);
+                            let existing = cleanedLines.find(l => l.startsWith(tgtDate + ' ') || l === tgtDate);
                             if (existing) {
                                 let exMatch = existing.match(/^(\d{1,2}\/\d{1,2})\s*(?:\(.\))?\s*(.+)$/);
                                 if (exMatch) {
@@ -611,7 +617,7 @@
                                 }
                             } else {
                                 let dayStr = `(${dayNames[curDate.getDay()]})`;
-                                finalLines.push(`${dateStr} ${dayStr} 休息`);
+                                finalLines.push(`${tgtDate} ${dayStr} 休息`);
                             }
                         }
                         return finalLines.join('\n');
@@ -812,7 +818,6 @@
                 }
             }
 
-            // ===== 魔法貼上攔截器 (雙重解析 + 隱藏屬性擷取) =====
             setupMagicPasting() {
                 const magicInput = document.getElementById('v_magic_paste');
                 if (!magicInput) return;
@@ -822,7 +827,6 @@
                     let text = (e.clipboardData || window.clipboardData).getData('text');
                     let html = (e.clipboardData || window.clipboardData).getData('text/html') || '';
                     
-                    // 1. 解析店名與姓名 (找尋「名字 | 店名」的格式)
                     let lines = text.split('\n').map(l => l.trim()).filter(l => l);
                     for(let i=0; i < Math.min(5, lines.length); i++) {
                         let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
@@ -833,39 +837,51 @@
                         }
                     }
 
-                    // 2. 備用姓名解析
                     let mName = text.match(/(?:Name|名前)\s*([^\sAge年齢]+)/i);
                     if (mName && !document.getElementById('v_name').value) {
                         document.getElementById('v_name').value = mName[1].trim();
                     }
 
-                    // 3. 年齡
                     let mAge = text.match(/(?:Age|年齢)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才)/);
                     if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
 
-                    // 4. 數值
                     let mStats = text.match(/(?:BodySize|Size|スタイル)\s*(T\d+.*?)(?:EntryDay|出勤情報|スケジュール|入店|$)/i) || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
                     if (mStats) document.getElementById('v_stats').value = mStats[1].trim();
 
-                    // 5. 到職日
                     let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
                     if (mDate) {
                         document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
                     }
                     
-                    // 6. 圖像屬性標籤 (AF) - 從 HTML 抓圖檔名
-                    let tags = [];
-                    if (html.includes('tbc_tag.png')) tags.push('禁菸');
-                    if (html.includes('ppn_tag.png')) tags.push('P');
-                    if (html.includes('pee_tag.png')) tags.push('潮');
-                    if (html.includes('mat_tag.png')) tags.push('M');
-                    if (html.includes('denma_tag.png')) tags.push('電');
-                    
-                    if (tags.length > 0) {
-                        document.getElementById('v_af').value = tags.join('/');
+                    // 從 HTML 抓圖檔名字典
+                    const tagMap = {
+                        'tbc_tag': '禁菸',
+                        'ppn_tag': 'P',
+                        'pee_tag': '潮',
+                        'mat_tag': 'M',
+                        'denma_tag': '電',
+                        'tbc_iqos': 'iQOS',
+                        'tto_tag': '刺青',
+                        'dbl_tag': '雙人'
+                    };
+
+                    let imgRegex = /<img[^>]+src=["'][^"']*?\/img\/([^/"']+)\.png["']/ig;
+                    let imgMatch;
+                    let foundTags = new Set();
+                    while ((imgMatch = imgRegex.exec(html)) !== null) {
+                        let filename = imgMatch[1];
+                        if (filename.endsWith('_tag') || filename === 'tbc_iqos') {
+                            if (tagMap[filename]) {
+                                foundTags.add(tagMap[filename]);
+                            } else {
+                                foundTags.add(`[${filename}]`);
+                            }
+                        }
+                    }
+                    if (foundTags.size > 0) {
+                        document.getElementById('v_af').value = Array.from(foundTags).join('/');
                     }
 
-                    // 7. 班表解析
                     let scheduleText = text;
                     let mSch = text.match(/(?:出勤情報|スケジュール)[\s\S]*/);
                     if (mSch) {
@@ -1456,7 +1472,11 @@
                     const twoShiftVal = r[this.colMap.twoShift] || '';
                     const levelVal = r[this.colMap.level] || '';
                     
-                    if (afVal) tagsHtml += `<span class="tag-item">AF: ${afVal}</span>`;
+                    if (afVal) {
+                        afVal.split('/').forEach(t => {
+                            if (t.trim()) tagsHtml += `<span class="tag-item">AF: ${t.trim()}</span>`;
+                        });
+                    }
                     if (twoShiftVal) tagsHtml += `<span class="tag-item">二輪: ${twoShiftVal}</span>`;
                     if (levelVal) tagsHtml += `<span class="tag-item">等級: ${levelVal}</span>`;
                     
