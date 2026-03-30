@@ -23,15 +23,15 @@
         .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .sheet-selector-wrapper { display: flex; align-items: center; gap: 8px; background: white; padding: 5px 15px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-        /* 版面網格佈局 (預設為電腦版雙欄) */
+        /* 版面網格佈局 */
         #app-container { display: grid; grid-template-columns: 500px 1fr; gap: 15px; flex: 1; min-height: 0; transition: all 0.3s ease; }
         .panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
         
-        /* 模式切換邏輯 (電腦版) */
+        /* 模式切換邏輯 */
         #app-container.view-mode { grid-template-columns: 1fr; }
         #app-container.view-mode #panel-form { display: none; }
         
-        /* ================= RWD 手機版適應 (螢幕小於 850px) ================= */
+        /* ================= RWD 手機版適應 ================= */
         @media (max-width: 850px) {
             body { padding: 8px; }
             .app-title { display: none; } 
@@ -43,11 +43,8 @@
             .btn-text { display: none; } 
             .top-bar button { padding: 6px 10px; font-size: 18px; } 
             
-            /* 手機版編輯模式：表單與清單上下排列，並讓容器整體可捲動 */
             #app-container { display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
             .panel { flex: none; overflow-y: visible; height: auto; margin-bottom: 10px; }
-            
-            /* 手機版瀏覽模式：只隱藏表單 */
             #app-container.view-mode #panel-form { display: none; }
             
             .form-grid { grid-template-columns: 1fr; gap: 8px; }
@@ -73,7 +70,7 @@
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
         .form-group { margin-bottom: 8px; }
         .form-group.full { grid-column: span 2; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85em; color: #666; }
+        label { display: flex; justify-content: space-between; align-items: center; font-weight: bold; margin-bottom: 5px; font-size: 0.85em; color: #666; }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; transition: 0.2s; }
         input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(69,39,160,0.1); }
         input[readonly] { background: #f8f9fa; cursor: not-allowed; }
@@ -248,6 +245,13 @@
                     <input type="text" id="v_url" placeholder="個人主頁或相關連結">
                 </div>
             </div>
+            
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>本周班表 (行事曆)</label>
+                    <textarea id="v_schedule" rows="4" placeholder="對列表卡片按右鍵開啟網頁，複製班表後在此「Ctrl+V」貼上 (系統將自動排版)" style="resize: vertical; font-family: monospace;"></textarea>
+                </div>
+            </div>
 
             <input type="file" id="fileInputPhoto" accept="image/*" style="display:none;">
             <input type="hidden" id="v_photo_url">
@@ -347,6 +351,10 @@
                 
                 document.addEventListener('paste', (e) => {
                     if (!window.app || !window.app.accessToken) return;
+                    
+                    // 確保我們不是在輸入文字框內貼上 (防衝突)
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
                     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
                     for (let index in items) {
                         const item = items[index];
@@ -432,9 +440,49 @@
                 
                 this.registerKeyboardShortcuts();
                 this.setupDatePasting();
+                this.setupSchedulePasting();
             }
 
             get currentSheet() { return document.getElementById('v_sheet').value; }
+
+            // ===== 班表貼上攔截器與碎裂文字重組 =====
+            setupSchedulePasting() {
+                const scheduleInput = document.getElementById('v_schedule');
+                scheduleInput.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    let pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    const urlVal = document.getElementById('v_url').value || '';
+                    
+                    // 針對 yoasobi-heaven 或是類似碎裂格式進行強大清洗
+                    if (urlVal.includes('yoasobi-heaven.com')) {
+                        // 支援日文(月火水木金土日)與中文(一二三四五六日)
+                        const regex = /(\d{1,2}\/\d{1,2})\s*(\([^)]+\))?\s*(休\s*み|公\s*休|休\s*假|\d{1,2}:\d{2}\s*[-~〜ー]\s*\d{1,2}:\d{2})/g;
+                        let cleanedLines = [];
+                        let match;
+                        
+                        while ((match = regex.exec(pastedText)) !== null) {
+                            let date = match[1];
+                            let day = match[2] ? match[2] : '';
+                            // 移除時間或休み字串中間的所有換行與空白，例如將「14:00\n-\n22:00」變成「14:00-22:00」
+                            let time = match[3].replace(/\s+/g, ''); 
+                            
+                            // 將萃取出來的資訊組合成單行
+                            let cleanLine = `${date} ${day} ${time}`.trim();
+                            cleanedLines.push(cleanLine);
+                        }
+                        
+                        if (cleanedLines.length > 0) {
+                            scheduleInput.value = cleanedLines.join('\n');
+                            Utility.showToast('✅ 已成功將碎片化文字重組為完整班表！');
+                            return;
+                        }
+                    }
+                    
+                    // 若非特定網址或正則沒抓到，僅執行一般清理 (去除非必要空行)
+                    scheduleInput.value = pastedText.replace(/\n\s*\n/g, '\n').trim();
+                    Utility.showToast('✅ 班表已貼上');
+                });
+            }
 
             setupDatePasting() {
                 const dateInput = document.getElementById('v_start_date');
@@ -605,13 +653,19 @@
                         location: getIdx('位置'), store: getIdx('店名'), techId: getIdx('技師編號'),
                         startDate: getIdx('到職日'), name: getIdx('姓名'), age: getIdx('年齡'),
                         stats: getIdx('數值'), photo: getIdx('技師照片'), price: getIdx('價金'),
-                        url: getIdx('網址'), twoShift: getIdx('二輪轉'), af: getIdx('AF'), level: getIdx('等級')
+                        url: getIdx('網址'), twoShift: getIdx('二輪轉'), af: getIdx('AF'), 
+                        level: getIdx('等級'), schedule: getIdx('行事曆')
                     };
 
                     if (this.colMap.name === -1 || this.colMap.store === -1) {
                         alert(`⚠️ 找不到必要的欄位 (姓名 或 店名)。`);
                     } else {
                         document.getElementById('btn-save').disabled = false;
+                    }
+
+                    if (this.colMap.schedule === -1) {
+                        this.colMap.schedule = this.headerRow.length;
+                        this.headerRow.push('行事曆');
                     }
 
                     this.dataStore = [];
@@ -700,6 +754,7 @@
                     setV('twoShift', document.getElementById('v_two_shift').value);
                     setV('af', document.getElementById('v_af').value);
                     setV('level', document.getElementById('v_level').value);
+                    setV('schedule', document.getElementById('v_schedule').value);
                     setV('photo', finalUrl);
 
                     let writeRes;
@@ -803,6 +858,7 @@
                 document.getElementById('v_two_shift').value = r[this.colMap.twoShift] || "";
                 document.getElementById('v_af').value = r[this.colMap.af] || "";
                 document.getElementById('v_level').value = r[this.colMap.level] || "";
+                document.getElementById('v_schedule').value = r[this.colMap.schedule] || "";
 
                 const rawUrl = r[this.colMap.photo] || "";
                 document.getElementById('v_photo_url').value = rawUrl; 
@@ -819,7 +875,6 @@
                     document.getElementById('btn_del_photo').style.display = 'none';
                 }
                 
-                // ===== 手機版點擊卡片後，自動捲動回上方表單 =====
                 if (window.innerWidth <= 850) {
                     const formPanel = document.getElementById('panel-form');
                     if (formPanel) {
@@ -830,7 +885,7 @@
 
             clearForm() {
                 document.getElementById('v_row_index').value = '';
-                const inputs = ['v_location', 'v_store', 'v_tech_id', 'v_start_date', 'v_name', 'v_age', 'v_stats', 'v_price', 'v_url', 'v_two_shift', 'v_af', 'v_level', 'v_photo_url'];
+                const inputs = ['v_location', 'v_store', 'v_tech_id', 'v_start_date', 'v_name', 'v_age', 'v_stats', 'v_price', 'v_url', 'v_two_shift', 'v_af', 'v_level', 'v_schedule', 'v_photo_url'];
                 inputs.forEach(id => document.getElementById(id).value = '');
                 document.getElementById('preview_photo').style.display = 'none';
                 document.getElementById('text_photo').style.display = 'block';
@@ -856,7 +911,7 @@
                 const originalItem = this.dataStore[oldIdx];
                 const newRaw = [...originalItem._raw];
                 
-                const colsToClear = ['photo', 'techId', 'url', 'age', 'stats', 'startDate'];
+                const colsToClear = ['photo', 'techId', 'url', 'age', 'stats', 'startDate', 'schedule'];
                 colsToClear.forEach(col => {
                     if (this.colMap[col] !== -1 && this.colMap[col] !== undefined) {
                         newRaw[this.colMap[col]] = "";
@@ -925,14 +980,12 @@
                     }
                     card.title = titleStr;
                     
-                    // ===== 依據當前模式決定左鍵行為 =====
                     card.onclick = (e) => {
                         if (e.target.closest('.price-scroll')) return;
                         
                         if (this.isEditMode) {
-                            this.editRecord(index); // 編輯模式：開啟表單
+                            this.editRecord(index); 
                         } else {
-                            // 瀏覽模式：直接開啟網址
                             if (targetUrl && targetUrl.startsWith('http')) {
                                 window.open(targetUrl, '_blank');
                             } else {
