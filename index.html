@@ -51,7 +51,7 @@
             .form-group.full { grid-column: span 1; }
             
             .filter-tools { flex-direction: row !important; flex-wrap: wrap !important; gap: 5px !important; }
-            .filter-tools input, .filter-tools select { width: 100% !important; margin-bottom: 4px !important; padding: 6px !important; font-size: 13px; }
+            .filter-tools input, .filter-tools select { margin-bottom: 4px !important; padding: 6px !important; font-size: 13px; }
             .filter-tools h3 { display: none; } 
             .time-filter-group { width: 100%; justify-content: space-between; }
             
@@ -109,14 +109,25 @@
         #toast-container { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 100000; opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 8px; }
         #toast-container.show { opacity: 1; top: 30px; }
 
-        /* ====== 卡片與排版深度優化 (重點) ====== */
+        /* ====== 卡片與排版深度優化 ====== */
         .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 15px; align-content: start;}
         .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; background: white; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(69,39,160,0.15); border-color: var(--secondary); }
-        .card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #f8f9fa; margin-bottom: 10px; pointer-events: none; }
-        .card .badge { position: absolute; top: 20px; left: 20px; background: var(--accent); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none; z-index: 5; }
+        .card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #f8f9fa; pointer-events: none; }
         
-        /* 店面：顯示 2 排文字，自動縮小 */
+        .img-container { position: relative; line-height: 0; margin-bottom: 10px; }
+        .card .badge { position: absolute; top: 10px; left: 10px; background: var(--accent); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none; z-index: 5; }
+        
+        /* 體型判定 HUD 疊加層 */
+        .shape-hud {
+            position: absolute; bottom: 10px; right: 10px; background: rgba(255, 255, 255, 0.85); 
+            border-radius: 8px; padding: 6px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex; flex-direction: column; align-items: center; pointer-events: auto;
+            backdrop-filter: blur(4px); z-index: 10;
+        }
+        .shape-hud-title { font-size: 10px; font-weight: bold; margin-bottom: 4px; letter-spacing: 1px; }
+        .true-cup-badge { font-size: 10px; font-weight: bold; background: var(--text); color: white; padding: 2px 6px; border-radius: 4px; margin-top: 4px; }
+
         .store-name { 
             font-size: 0.8em; color: var(--secondary); font-weight: bold; 
             margin-bottom: 4px; pointer-events: none; 
@@ -124,38 +135,26 @@
             overflow: hidden; text-overflow: ellipsis; line-height: 1.3; min-height: 2.6em; 
         }
         
-        /* 姓名：整齊對齊靠左 */
         .tech-name { 
             font-size: 1.2em; color: var(--text); font-weight: bold; 
             margin-bottom: 6px; pointer-events: none; text-align: left;
         }
 
-        /* 標籤獨立排 (AF / 二輪 / 等級) */
-        .tags-row {
-            display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; pointer-events: none;
-        }
-        .tag-item {
-            font-size: 0.75em; background: #f3e5f5; color: var(--primary); 
-            padding: 2px 6px; border-radius: 4px; font-weight: bold;
-        }
+        .tags-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; pointer-events: none; }
+        .tag-item { font-size: 0.75em; background: #f3e5f5; color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: bold; }
 
-        /* 數值單列顯示與罩杯顏色 */
         .stats-row {
             display: flex; align-items: center; gap: 6px; font-size: 0.85em; color: #555; 
             margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             background: #f8f9fa; padding: 4px 6px; border-radius: 4px; pointer-events: none;
         }
-        .cup-badge {
-            font-weight: bold; padding: 2px 6px; border-radius: 4px; color: white; font-size: 0.9em; flex-shrink: 0;
-        }
+        .cup-badge { font-weight: bold; padding: 2px 6px; border-radius: 4px; color: white; font-size: 0.9em; flex-shrink: 0; }
 
-        /* 價格多列獨立顯示 */
         .price-col {
             font-size: 0.9em; font-weight: bold; color: var(--accent); text-align: left; 
             display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; pointer-events: none;
         }
 
-        /* 拖曳狀態樣式 */
         .card[draggable="true"] { cursor: grab; }
         .card[draggable="true"]:active { cursor: grabbing; }
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
@@ -172,9 +171,10 @@
         .sch-fill-vert { position: absolute; width: 100%; background: var(--accent); border-radius: 4px; left: 0; }
         .sch-fill-vert.off { background: #bdbdbd; height: 100%; top: 0; }
         
-        /* 篩選器樣式 */
+        /* 篩選器與排序選單樣式 */
         .time-filter-group { display: flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #ccc; padding: 2px 6px; border-radius: 6px; }
-        .time-filter-group select { border: none; outline: none; background: transparent; padding: 4px; font-size: 13px; margin: 0 !important; width: auto !important; }
+        .time-filter-group select, .filter-tools select { border: none; outline: none; background: transparent; padding: 4px; font-size: 13px; margin: 0 !important; width: auto !important; }
+        .filter-select { background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 6px; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -249,7 +249,7 @@
             <div class="form-grid">
                 <div class="form-group full">
                     <label>數值 (身高/體重/罩杯)</label>
-                    <input type="text" id="v_stats" placeholder="例如：160/45/D">
+                    <input type="text" id="v_stats" placeholder="例如：160/45/D 或 T160 B88 W55 H84">
                 </div>
             </div>
 
@@ -312,18 +312,32 @@
                 <h3 style="margin:0; min-width: 100px;">📚 資料庫</h3>
                 <div style="display: flex; gap: 8px; flex: 1; justify-content: flex-end; flex-wrap: wrap;">
                     <button id="btn-save-order" class="warning" onclick="app.saveOrderToGoogleSheet()" style="display: none;" title="儲存拖曳後的卡片順序">💾 儲存排序</button>
-                    <select id="filterLocation" onchange="app.renderCatalog()" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 120px; font-size: 13px;">
+                    
+                    <select id="filterStatus" class="filter-select" onchange="app.renderCatalog()">
+                        <option value="">⚪ 班表狀態</option>
+                        <option value="working">🟢 有上班</option>
+                        <option value="off">🔴 全休假</option>
+                    </select>
+                    
+                    <select id="sortOption" class="filter-select" onchange="app.renderCatalog()" title="套用排序後將暫時停用手動拖曳功能">
+                        <option value="">🔀 預設排序</option>
+                        <option value="cup">👙 罩杯排序</option>
+                        <option value="body">⏳ 完美曲線排序</option>
+                    </select>
+
+                    <select id="filterLocation" class="filter-select" onchange="app.renderCatalog()">
                         <option value="">🗺️ 所有位置</option>
                     </select>
-                    <select id="filterDate" onchange="app.renderCatalog()" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; width: 110px; font-size: 13px;">
+                    <select id="filterDate" class="filter-select" onchange="app.renderCatalog()">
                         <option value="">📅 所有日期</option>
                     </select>
+                    
                     <div class="time-filter-group" title="尋找此時段內有上班的女優">
                         <select id="filterTimeStart" onchange="app.renderCatalog()"></select>
                         <span style="color:#666; font-weight:bold;">~</span>
                         <select id="filterTimeEnd" onchange="app.renderCatalog()"></select>
                     </div>
-                    <input type="text" id="searchInput" placeholder="🔍 姓名/店名/AF..." oninput="app.renderCatalog()" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; min-width: 120px; flex: 1;">
+                    <input type="text" id="searchInput" class="filter-select" placeholder="🔍 姓名/店名/AF..." oninput="app.renderCatalog()" style="min-width: 120px; flex: 1;">
                 </div>
             </div>
             <div class="catalog-grid" id="catalogGrid"></div>
@@ -373,20 +387,117 @@
                 } else {
                     toast.style.background = 'var(--success)';
                 }
-                
                 toast.classList.add('show');
-                
                 if (this.toastTimeout) clearTimeout(this.toastTimeout);
-                
-                this.toastTimeout = setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 3000);
+                this.toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000);
             }
 
-            // 將 "HH:MM" 轉為總分鐘數 (若小於 10 點，視為跨夜的隔日時間)
+            // 解析數值核心函數
+            static parseStats(rawStats) {
+                let h=0, b=0, w=0, hp=0, cup='?';
+                if (!rawStats) return {h, b, w, hp, cup};
+
+                let hMatch = rawStats.match(/(?:T|身高|身長)?\s*(\d{3})\s*(?:cm)?/i);
+                if(hMatch) h = parseInt(hMatch[1]);
+                
+                let bMatch = rawStats.match(/B\s*(\d{2,3})/i);
+                let wMatch = rawStats.match(/W\s*(\d{2,3})/i);
+                let hMatch2 = rawStats.match(/H\s*(\d{2,3})/i);
+                
+                if (bMatch && wMatch && hMatch2) {
+                    b = parseInt(bMatch[1]); w = parseInt(wMatch[1]); hp = parseInt(hMatch2[1]);
+                } else {
+                    let nums = rawStats.match(/\b\d{2,3}\b/g);
+                    if (nums) {
+                        nums = nums.map(Number);
+                        let bwh = nums.filter(n => n < 140);
+                        if (bwh.length >= 3) { b = bwh[0]; w = bwh[1]; hp = bwh[2]; }
+                    }
+                }
+
+                let cupMatch = rawStats.match(/\(([A-Z])\)/i) || rawStats.match(/(?:^|[\s/])([A-Z])(?:[\s/]|$|cup|罩杯)/i);
+                if (cupMatch) cup = cupMatch[1].toUpperCase();
+
+                return {h, b, w, hp, cup};
+            }
+
+            // 罩杯分數 (供排序使用)
+            static getCupScore(rawStats) {
+                const {cup} = this.parseStats(rawStats);
+                if (cup === '?') return 0;
+                return cup.charCodeAt(0) - 64; 
+            }
+
+            // 曲線沙漏比例分數 (供排序使用)
+            static getBodyScore(rawStats) {
+                const {h, b, w, hp} = this.parseStats(rawStats);
+                if (!h || !b || !w || !hp) return 0;
+                let hourglass = (b - w) + (hp - w);
+                return Math.min(99, Math.max(1, 40 + hourglass)); // 最高給 99 分
+            }
+
+            // 生成 HUD
+            static generateBodyShapeOverlay(rawStats) {
+                if (!rawStats) return '';
+                const {h, b, w, hp} = this.parseStats(rawStats);
+                if (!h || !b || !w || !hp) return '';
+
+                const avgH = 158, avgB = 82, avgW = 61, avgH_p = 86;
+                const scaleY = 100 / 180, scaleX = 0.8; 
+
+                const getPoints = (height, bust, waist, hip) => {
+                    const yHead = 100 - (height * scaleY);
+                    const yBust = yHead + (height * 0.28 * scaleY);
+                    const yWaist = yHead + (height * 0.40 * scaleY);
+                    const yHip = yHead + (height * 0.52 * scaleY);
+                    const yFoot = 100, wHead = 10, wBust = bust / 2 * scaleX;
+                    const wWaist = waist / 2 * scaleX, wHip = hip / 2 * scaleX;
+                    const wFoot = 12, cx = 40; 
+                    return { yHead, yBust, yWaist, yHip, yFoot, wHead, wBust, wWaist, wHip, wFoot, cx };
+                };
+
+                const avg = getPoints(avgH, avgB, avgW, avgH_p);
+                const tgt = getPoints(h, b, w, hp);
+
+                const whtr = w / h;
+                let shapeColor = '#4caf50', shapeLabel = '標準體型';
+                if (whtr < 0.36) { shapeColor = '#2196f3'; shapeLabel = '偏瘦體型'; }
+                else if (whtr > 0.41) { shapeColor = '#e91e63'; shapeLabel = '豐滿體型'; }
+
+                const makePath = (p) => {
+                    return `M ${p.cx - p.wHead},${p.yHead} L ${p.cx + p.wHead},${p.yHead} Q ${p.cx + p.wBust},${p.yHead + (p.yBust - p.yHead)/2} ${p.cx + p.wBust},${p.yBust} Q ${p.cx + p.wWaist*0.8},${(p.yBust+p.yWaist)/2} ${p.cx + p.wWaist},${p.yWaist} Q ${p.cx + p.wHip*1.1},${(p.yWaist+p.yHip)/2} ${p.cx + p.wHip},${p.yHip} L ${p.cx + p.wFoot},${p.yFoot} L ${p.cx - p.wFoot},${p.yFoot} L ${p.cx - p.wHip},${p.yHip} Q ${p.cx - p.wHip*1.1},${(p.yWaist+p.yHip)/2} ${p.cx - p.wWaist},${p.yWaist} Q ${p.cx - p.wWaist*0.8},${(p.yBust+p.yWaist)/2} ${p.cx - p.wBust},${p.yBust} Q ${p.cx - p.wBust},${p.yHead + (p.yBust - p.yHead)/2} ${p.cx - p.wHead},${p.yHead} Z`;
+                };
+
+                const avgPath = makePath(avg), tgtPath = makePath(tgt);
+
+                // 真實罩杯逆向推斷
+                let estUB = Math.round(((w + 10) + (h * 0.43)) / 2);
+                let diff = b - estUB;
+                let cupNames = ['AA','A','B','C','D','E','F','G','H','I','J','K','L'];
+                let cupIdx = Math.floor((diff - 7.5) / 2.5);
+                let trueCup = cupIdx >= 0 ? (cupNames[Math.min(cupIdx, cupNames.length-1)]) : 'AA-';
+                
+                let bodyScore = this.getBodyScore(rawStats);
+
+                return `
+                    <div class="shape-hud" title="虛線: 日本女性平均體型\n實色: 該技師體型\n體型判定: ${shapeLabel}\n真實罩杯推算: 戳破灌水罩杯\n曲線評分: 沙漏比例綜合評分">
+                        <div class="shape-hud-title" style="color: ${shapeColor};">${shapeLabel}</div>
+                        <svg width="80" height="100" viewBox="0 0 80 100">
+                            <path d="${avgPath}" fill="none" stroke="#666" stroke-dasharray="2,2" stroke-width="1.5" opacity="0.6"/>
+                            <path d="${tgtPath}" fill="${shapeColor}" opacity="0.6" stroke="${shapeColor}" stroke-width="1"/>
+                            <line x1="0" y1="${tgt.yHead}" x2="80" y2="${tgt.yHead}" stroke="${shapeColor}" stroke-width="0.5" stroke-dasharray="1,1" />
+                            <text x="2" y="${Math.max(8, tgt.yHead - 2)}" fill="${shapeColor}" font-size="9" font-weight="bold">${h}cm</text>
+                        </svg>
+                        <div class="true-cup-badge">實推: ${trueCup}杯</div>
+                        <div class="true-cup-badge" style="background:#4caf50; margin-top:2px;">評分: ${bodyScore}</div>
+                    </div>
+                `;
+            }
+
+            // 修改跨日轉換邏輯：從 6 點切割 (9:00 不再被算成隔日)
             static timeToMins(tStr) {
                 let [h, m] = tStr.split(':').map(Number);
-                if (h < 10) h += 24; 
+                if (h < 6) h += 24; 
                 return h * 60 + m;
             }
 
@@ -416,9 +527,9 @@
                                 let endMins = this.timeToMins(tMatch[2]);
                                 if (endMins < startMins) endMins += 24 * 60; 
 
-                                // 基準設定: 早上 10:00 (600分) 到 隔日清晨 05:00 (1740分)，總區間 1140分
-                                const BASE_MINS = 600;
-                                const TOTAL_MINS = 1140;
+                                // 基準設定: 早上 09:00 (540分) 到 隔日清晨 05:00 (1740分)，總區間 1200分
+                                const BASE_MINS = 540;
+                                const TOTAL_MINS = 1200;
 
                                 let renderStart = Math.max(BASE_MINS, startMins);
                                 let renderEnd = Math.min(BASE_MINS + TOTAL_MINS, endMins);
@@ -559,7 +670,7 @@
                 startSel.innerHTML = '<option value="">🕒 起始</option>';
                 endSel.innerHTML = '<option value="">🕒 結束</option>';
                 
-                for(let h = 10; h <= 29; h++) {
+                for(let h = 9; h <= 29; h++) {
                     let displayH = h >= 24 ? h - 24 : h;
                     let label = `${displayH.toString().padStart(2,'0')}:00`;
                     let val = h * 60;
@@ -604,9 +715,41 @@
                         }
                         
                         if (cleanedLines.length > 0) {
-                            scheduleInput.value = cleanedLines.join('\n');
-                            Utility.showToast(`✅ 已成功擷取並保留 ${cleanedLines.length} 天完整班表！`);
-                            return;
+                            let firstDateStr = cleanedLines[0].split(' ')[0];
+                            let dateMatch = firstDateStr.match(/(\d+)\/(\d+)/);
+                            if (dateMatch) {
+                                let m = parseInt(dateMatch[1], 10);
+                                let d = parseInt(dateMatch[2], 10);
+                                let year = new Date().getFullYear();
+                                
+                                if (new Date().getMonth() === 11 && m === 1) year += 1;
+                                
+                                let finalLines = [];
+                                const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+                                for (let i = 0; i < 7; i++) {
+                                    let curDate = new Date(year, m - 1, d + i);
+                                    let curM = curDate.getMonth() + 1;
+                                    let curD = curDate.getDate();
+                                    let dateStr = `${curM}/${curD}`;
+                                    
+                                    let existing = cleanedLines.find(l => l.startsWith(dateStr + ' ') || l === dateStr);
+                                    if (existing) {
+                                        let exMatch = existing.match(/^(\d{1,2}\/\d{1,2})\s*(?:\(.\))?\s*(.+)$/);
+                                        if (exMatch) {
+                                            let correctDay = `(${dayNames[curDate.getDay()]})`;
+                                            finalLines.push(`${exMatch[1]} ${correctDay} ${exMatch[2]}`);
+                                        } else {
+                                            finalLines.push(existing);
+                                        }
+                                    } else {
+                                        let dayStr = `(${dayNames[curDate.getDay()]})`;
+                                        finalLines.push(`${dateStr} ${dayStr} 休息`);
+                                    }
+                                }
+                                scheduleInput.value = finalLines.join('\n');
+                                Utility.showToast('✅ 已成功擷取並自動補齊 7 天班表！');
+                                return;
+                            }
                         }
                     }
                     
@@ -1086,6 +1229,8 @@
                 const filterDate = document.getElementById('filterDate').value;
                 const filterStartStr = document.getElementById('filterTimeStart').value;
                 const filterEndStr = document.getElementById('filterTimeEnd').value;
+                const filterStatus = document.getElementById('filterStatus').value;
+                const sortOpt = document.getElementById('sortOption').value;
                 
                 const filterStart = filterStartStr ? parseInt(filterStartStr) : null;
                 const filterEnd = filterEndStr ? parseInt(filterEndStr) : null;
@@ -1093,8 +1238,11 @@
                 const grid = document.getElementById('catalogGrid');
                 grid.innerHTML = '';
 
-                const isFiltered = kw !== '' || filterLoc !== '' || filterDate !== '' || filterStart !== null || filterEnd !== null;
+                const isFiltered = kw !== '' || filterLoc !== '' || filterDate !== '' || filterStart !== null || filterEnd !== null || filterStatus !== '' || sortOpt !== '';
 
+                let displayList = [];
+
+                // 第一階段：過濾資料
                 this.dataStore.forEach((record, index) => {
                     const r = record._raw;
                     
@@ -1104,55 +1252,71 @@
                     const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${recLocation} ${r[this.colMap.twoShift]} ${r[this.colMap.af]} ${r[this.colMap.level]}`.toLowerCase();
                     if (kw && !searchStr.includes(kw)) return;
 
-                    // ===== 班表時間交集篩選邏輯 =====
-                    if (filterDate || filterStart !== null || filterEnd !== null) {
-                        const scheduleRaw = r[this.colMap.schedule] || '';
-                        if (!scheduleRaw) return;
+                    let hasAnyWork = false;
+                    let timeOverlapMatch = false;
+                    let dateEvaluated = false;
 
-                        let isWorkingMatch = false;
+                    const scheduleRaw = r[this.colMap.schedule] || '';
+                    if (scheduleRaw) {
                         const lines = scheduleRaw.split('\n');
-                        
                         for (let line of lines) {
                             const match = line.match(/^(\d{1,2}\/\d{1,2})\s*(\(.\))?\s*(.+)$/);
                             if (match) {
                                 let d = match[1];
                                 let tStr = match[3];
+                                let isOff = tStr.includes('休') || tStr.includes('み');
 
                                 if (filterDate && d !== filterDate) continue; 
+                                dateEvaluated = true;
 
-                                if (filterStart === null && filterEnd === null) {
-                                    if (!tStr.includes('休') && !tStr.includes('み')) {
-                                        isWorkingMatch = true; break;
-                                    }
-                                } else {
-                                    if (!tStr.includes('休') && !tStr.includes('み')) {
+                                if (!isOff) {
+                                    hasAnyWork = true;
+                                    if (filterStart === null && filterEnd === null) {
+                                        timeOverlapMatch = true; 
+                                    } else {
                                         const tMatch = tStr.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
                                         if (tMatch) {
                                             let tStart = Utility.timeToMins(tMatch[1]);
                                             let tEnd = Utility.timeToMins(tMatch[2]);
                                             if (tEnd <= tStart) tEnd += 24 * 60; 
-
                                             let qStart = filterStart !== null ? filterStart : 0;
                                             let qEnd = filterEnd !== null ? filterEnd : 9999;
-                                            
                                             if (Math.max(tStart, qStart) < Math.min(tEnd, qEnd)) {
-                                                isWorkingMatch = true; break;
+                                                timeOverlapMatch = true; 
                                             }
                                         }
                                     }
                                 }
                             }
                         }
-                        if (!isWorkingMatch) return; 
                     }
 
+                    if ((filterDate || filterStart !== null || filterEnd !== null) && !timeOverlapMatch) return; 
+                    if (filterStatus === 'working' && !hasAnyWork) return;
+                    if (filterStatus === 'off' && (hasAnyWork || !dateEvaluated)) return;
+
+                    displayList.push({ record, index });
+                });
+
+                // 第二階段：執行暫時性動態排序
+                if (sortOpt === 'cup') {
+                    displayList.sort((a, b) => Utility.getCupScore(b.record._raw[this.colMap.stats]) - Utility.getCupScore(a.record._raw[this.colMap.stats]));
+                } else if (sortOpt === 'body') {
+                    displayList.sort((a, b) => Utility.getBodyScore(b.record._raw[this.colMap.stats]) - Utility.getBodyScore(a.record._raw[this.colMap.stats]));
+                }
+
+                // 第三階段：渲染畫面
+                displayList.forEach(item => {
+                    const r = item.record._raw;
+                    const index = item.index; 
+
+                    const recLocation = r[this.colMap.location] || '';
                     let cleanImg = Utility.cleanDriveUrl(r[this.colMap.photo]);
                     const imgSrc = cleanImg || PLACEHOLDER_URL;
                     const ageStr = r[this.colMap.age] ? ` (${r[this.colMap.age]})` : '';
                     const storeName = r[this.colMap.store] || '無店名';
                     const targetUrl = r[this.colMap.url] || '';
                     
-                    // ===== 標籤整理 =====
                     let tagsHtml = '';
                     const afVal = r[this.colMap.af] || '';
                     const twoShiftVal = r[this.colMap.twoShift] || '';
@@ -1163,10 +1327,8 @@
                     if (levelVal) tagsHtml += `<span class="tag-item">等級: ${levelVal}</span>`;
                     let tagsContainer = tagsHtml ? `<div class="tags-row">${tagsHtml}</div>` : '';
                     
-                    // ===== 數值清洗與罩杯分級 =====
                     let rawStats = r[this.colMap.stats] || '';
                     let cup = '?';
-                    // 優先找帶括號的罩杯 (E) ，若無則找前後有空格或斜線的大寫字母
                     let cupMatch = rawStats.match(/\(([A-Z])\)/i) || rawStats.match(/(?:^|[\s/])([A-Z])(?:[\s/]|$|cup|罩杯)/i);
                     if (cupMatch) cup = cupMatch[1].toUpperCase();
 
@@ -1177,13 +1339,11 @@
                     }
                     cleanedStats = cleanedStats.replace(/[/]+/g, ' ').trim();
 
-                    // 自動辨識純數字體重並加上 cm / kg (前提是沒有B W H等英文字母)
                     if (!/[BWH]\d{2}/i.test(cleanedStats)) {
                         let hwMatch = cleanedStats.match(/^(\d{3})\s+(\d{2})$/);
                         if (hwMatch) cleanedStats = `${hwMatch[1]}cm ${hwMatch[2]}kg`;
                     }
 
-                    // 罩杯顏色判斷
                     let cupColor = '#9e9e9e';
                     if (['A','B','C'].includes(cup)) cupColor = '#4caf50';
                     else if (['D','E','F'].includes(cup)) cupColor = '#ff9800';
@@ -1197,7 +1357,6 @@
                         </div>
                     `;
 
-                    // ===== 價格清洗與分排 =====
                     let priceHtml = '';
                     let priceLines = (r[this.colMap.price] || '').split(/[\n\r;]+/).filter(l => l.trim() !== '');
                     if (priceLines.length > 0) {
@@ -1220,9 +1379,9 @@
                         priceHtml += '</div>';
                     }
 
+                    const shapeHudHTML = Utility.generateBodyShapeOverlay(r[this.colMap.stats]);
                     const schHTML = Utility.generateScheduleHTML(r[this.colMap.schedule]);
 
-                    // ===== 卡片組合 =====
                     const card = document.createElement('div');
                     card.className = 'card';
                     
@@ -1317,14 +1476,17 @@
                         card.ondragstart = (e) => {
                             e.preventDefault();
                             if (this.isEditMode) {
-                                Utility.showToast("⚠️ 請清除搜尋與篩選條件後，再進行拖曳操作！", true);
+                                Utility.showToast("⚠️ 請清除所有排序與篩選條件後，再進行手動拖曳操作！", true);
                             }
                         };
                     }
                     
                     card.innerHTML = `
-                        <span class="badge">${recLocation || '未知區'}</span>
-                        <img src="${imgSrc}" loading="lazy" onerror="this.onerror=null; this.src='${PLACEHOLDER_URL}';">
+                        <div class="img-container">
+                            <span class="badge">${recLocation || '未知區'}</span>
+                            <img src="${imgSrc}" loading="lazy" onerror="this.onerror=null; this.src='${PLACEHOLDER_URL}';">
+                            ${shapeHudHTML}
+                        </div>
                         <div class="store-name">${storeName}</div>
                         <div class="tech-name">${r[this.colMap.name] || '未命名'} ${ageStr}</div>
                         ${tagsContainer}
