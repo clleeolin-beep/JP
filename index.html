@@ -273,8 +273,8 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label>AF (屬性標籤)</label>
-                    <input type="text" id="v_af" placeholder="例如：禁菸 / P / 潮">
+                    <label>屬性</label>
+                    <input type="text" id="v_af" placeholder="例如：禁菸 / 本番 / 潮 / 3P">
                 </div>
                 <div class="form-group">
                     <label>等級</label>
@@ -344,7 +344,7 @@
                         <span style="color:#666; font-weight:bold;">~</span>
                         <select id="filterTimeEnd" onchange="app.renderCatalog()"></select>
                     </div>
-                    <input type="text" id="searchInput" class="filter-select" placeholder="🔍 姓名/店名/AF..." oninput="app.renderCatalog()" style="min-width: 120px; flex: 1;">
+                    <input type="text" id="searchInput" class="filter-select" placeholder="🔍 姓名/店名/屬性..." oninput="app.renderCatalog()" style="min-width: 120px; flex: 1;">
                 </div>
             </div>
             <div class="catalog-grid" id="catalogGrid"></div>
@@ -447,7 +447,6 @@
                 const {h, b, w, hp, cup} = parsed;
                 if (!h || !b || !w || !hp) return null;
 
-                // 業界作假常態濾鏡：判斷是否為「魔鬼型 (疑造假)」
                 let s2 = h * 0.46; 
                 let shapeType = "H型", shapeIcon = "▯";
                 let bustDiff = b - w;
@@ -554,28 +553,24 @@
                 return h * 60 + m;
             }
 
-            // ===== 智慧班表貼上攔截器 (修復：更暴力的日期捕捉器) =====
             static parseAndFormatSchedule(rawText) {
                 if (!rawText) return '';
                 
                 const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'};
                 
-                // 更暴力的正則：直接找尋所有 月/日 的開頭
-                const regex = /(\d{1,2}\/\d{1,2})\s*(\([月火水木金土日一二三四五六]\))?([\s\S]*?)(?=\d{1,2}\/\d{1,2}|$)/g;
+                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2})|$)/g;
                 let cleanedLines = [];
                 let match;
                 
                 while ((match = regex.exec(rawText)) !== null) {
-                    let dateStr = match[1];
-                    let dateMatch = dateStr.match(/(\d+)\/(\d+)/);
-                    if (!dateMatch) continue;
+                    let m = parseInt(match[1], 10);
+                    let d = parseInt(match[2], 10);
+                    let date = `${m}/${d}`;
                     
-                    let date = `${parseInt(dateMatch[1],10)}/${parseInt(dateMatch[2],10)}`;
-                    
-                    let rawDay = match[2] ? match[2].replace(/[()]/g, '') : '';
+                    let rawDay = match[3] || '';
                     let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
                     
-                    let content = match[3] || ''; 
+                    let content = match[4] || ''; 
                     
                     let timeStr = "休息";
                     const timeMatch = content.match(/(\d{1,2}[:：]\d{2})\s*[-~〜ー]\s*(\d{1,2}[:：]\d{2})/);
@@ -626,7 +621,6 @@
                 return rawText.replace(/\n\s*\n/g, '\n').trim();
             }
 
-            // 生成直列式微型視覺化行事曆
             static generateScheduleHTML(scheduleStr) {
                 if (!scheduleStr) return '';
                 const lines = scheduleStr.split('\n').filter(l => l.trim() !== '').slice(0, 7);
@@ -856,13 +850,13 @@
                     // 從 HTML 抓圖檔名字典
                     const tagMap = {
                         'tbc_tag': '禁菸',
-                        'ppn_tag': 'P',
+                        'ppn_tag': '本番',
                         'pee_tag': '潮',
-                        'mat_tag': 'M',
-                        'denma_tag': '電',
-                        'tbc_iqos': 'iQOS',
+                        'mat_tag': '墊子',
+                        'denma_tag': '電マ',
+                        'tbc_iqos': '加熱菸',
                         'tto_tag': '刺青',
-                        'dbl_tag': '雙人'
+                        'dbl_tag': '3P'
                     };
 
                     let imgRegex = /<img[^>]+src=["'][^"']*?\/img\/([^/"']+)\.png["']/ig;
@@ -1077,11 +1071,13 @@
                     this.headerRow = data.values[0];
                     const getIdx = (name) => this.headerRow.findIndex(h => String(h).trim() === name);
                     
+                    // 防呆：支援原本的 AF 或新改名的 屬性
                     this.colMap = {
                         location: getIdx('位置'), store: getIdx('店名'), techId: getIdx('技師編號'),
                         startDate: getIdx('到職日'), name: getIdx('姓名'), age: getIdx('年齡'),
                         stats: getIdx('數值'), photo: getIdx('技師照片'), price: getIdx('價金'),
-                        url: getIdx('網址'), twoShift: getIdx('二輪轉'), af: getIdx('AF'), 
+                        url: getIdx('網址'), twoShift: getIdx('二輪轉'), 
+                        af: getIdx('屬性') !== -1 ? getIdx('屬性') : getIdx('AF'), 
                         level: getIdx('等級'), schedule: getIdx('行事曆')
                     };
 
@@ -1474,7 +1470,7 @@
                     
                     if (afVal) {
                         afVal.split('/').forEach(t => {
-                            if (t.trim()) tagsHtml += `<span class="tag-item">AF: ${t.trim()}</span>`;
+                            if (t.trim()) tagsHtml += `<span class="tag-item">${t.trim()}</span>`;
                         });
                     }
                     if (twoShiftVal) tagsHtml += `<span class="tag-item">二輪: ${twoShiftVal}</span>`;
