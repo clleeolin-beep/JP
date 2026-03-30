@@ -219,7 +219,7 @@
 
             <div class="form-grid">
                 <div class="form-group full">
-                    <label>✨ 魔法貼上 (非破壞性部分疊加解析)</label>
+                    <label>✨ 魔法貼上 (全域感知支援，直接全幅處理)</label>
                     <textarea id="v_magic_paste" rows="2" placeholder="在此貼上任何「網址、影像、文字」，系統將啟動全域感知為您自動分配至正確欄位！"></textarea>
                 </div>
             </div>
@@ -318,7 +318,7 @@
             <div class="filter-tools" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--secondary); padding-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                 <h3 style="margin:0; min-width: 100px;">📚 資料庫</h3>
                 <div style="display: flex; gap: 8px; flex: 1; justify-content: flex-end; flex-wrap: wrap;">
-                    <button id="btn-save-order" class="warning" onclick="app.saveOrderToGoogleSheet()" style="display: none;" title="儲存拖曳後的卡片順序">💾 儲存排序</button>
+                    <button id="btn-save-order" class="warning" onclick="app.saveOrderToGoogleSheet(false)" style="display: none;" title="儲存拖曳後的卡片順序">💾 儲存排序</button>
                     
                     <select id="filterStatus" class="filter-select" onchange="app.renderCatalog()">
                         <option value="">⚪ 班表狀態</option>
@@ -389,7 +389,7 @@
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
-                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛')) {
+                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('背景自動儲存')) {
                     toast.style.background = 'var(--warning)';
                 } else {
                     toast.style.background = 'var(--success)';
@@ -641,6 +641,7 @@
                                 let endMins = this.timeToMins(tMatch[2]);
                                 if (endMins <= startMins) endMins += 24 * 60; 
 
+                                // 基準：09:00 (540分) ~ 06:00 (1800分) = 總共 1260 分
                                 const BASE_MINS = 540;
                                 const TOTAL_MINS = 1260;
 
@@ -694,10 +695,9 @@
                 this.cropper = null;
                 this.pendingBlob = null; 
 
-                // 綁定檔案上傳的變更事件 (點擊按鈕開啟)
                 document.getElementById('fileInputPhoto').addEventListener('change', (e) => this.handleFile(e.target.files[0], false));
                 
-                // 綁定全域貼上事件
+                // 全域監聽貼上事件
                 document.addEventListener('paste', (e) => {
                     if (!window.app || !window.app.accessToken) return;
                     const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
@@ -710,14 +710,13 @@
                             if (item.kind === 'file' && item.type.includes('image/')) {
                                 hasImage = true;
                                 const file = item.getAsFile();
-                                this.handleFile(file, true); // true 代表是從貼上而來，不要開啟視窗
+                                this.handleFile(file, true); 
                                 e.preventDefault();
                                 break; 
                             }
                         }
                     }
 
-                    // 如果沒有圖片且不是在輸入框內，則觸發全域文字魔法貼上
                     if (!hasImage && !isInput) {
                         let text = (e.clipboardData || e.originalEvent.clipboardData).getData('text');
                         let html = (e.clipboardData || e.originalEvent.clipboardData).getData('text/html') || '';
@@ -729,19 +728,17 @@
                     }
                 });
 
-                // 綁定圖片預覽區的點擊事件 (用於喚醒裁切)
+                // 點擊喚醒裁切
                 const previewBox = document.querySelector('.img-preview-box');
                 previewBox.addEventListener('click', (e) => {
                     if (e.target.id === 'btn_del_photo') return;
                     if (!window.app.accessToken) { window.app.triggerAuth(); return; }
                     
                     const previewImg = document.getElementById('preview_photo');
-                    // 如果圖片已經存在 (剛貼上的或是舊有的)，點擊就開啟裁切視窗
                     if (previewImg.style.display === 'block' && previewImg.src) {
                         this.imageElement.src = previewImg.src;
                         this.openModal();
                     } else {
-                        // 如果沒有圖片，則觸發選擇檔案
                         document.getElementById('fileInputPhoto').click();
                     }
                 });
@@ -753,7 +750,6 @@
                     reader.onload = (event) => {
                         this.imageElement.src = event.target.result;
                         if (fromPaste) {
-                            // 全幅貼上，不開啟視窗
                             document.getElementById('preview_photo').src = event.target.result;
                             document.getElementById('preview_photo').style.display = 'block';
                             document.getElementById('text_photo').style.display = 'none';
@@ -761,7 +757,6 @@
                             this.pendingBlob = file;
                             Utility.showToast('✅ 圖片已全幅貼上，點擊圖片可進行裁切調整');
                         } else {
-                            // 點擊上傳，開啟視窗
                             this.openModal();
                         }
                     };
@@ -839,7 +834,6 @@
                 this.setupSchedulePasting();
                 this.setupDragScroll(); 
 
-                // 綁定指定輸入框的魔法貼上
                 const magicInput = document.getElementById('v_magic_paste');
                 if (magicInput) {
                     magicInput.addEventListener('paste', (e) => {
@@ -919,7 +913,7 @@
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
 
-                // 若純為網址，則直接填入網址欄位
+                // 1. 純網址判定
                 let isPureUrl = /^https?:\/\/[^\s]+$/.test(text.trim());
                 if (isPureUrl) {
                     document.getElementById('v_url').value = text.trim();
@@ -928,22 +922,22 @@
                     return;
                 }
 
-                // 清空除了 v_store 以外的欄位
-                const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level', 'v_price', 'v_url'];
+                // 2. 清空欄位 (保護 v_store 店名、不洗掉 v_price 價格)
+                const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level', 'v_url'];
                 fieldsToClear.forEach(id => {
                     let el = document.getElementById(id);
                     if (el) el.value = '';
                 });
 
-                // 若包含網址且網址欄位為空，則提取
+                // 3. 網址提取 (混雜文字中)
                 let urlMatch = text.match(/https?:\/\/[^\s]+/);
                 if (urlMatch && !document.getElementById('v_url').value) {
                     document.getElementById('v_url').value = urlMatch[0];
                 }
 
                 let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
-                let siteName = isYoasobi ? 'Yoasobi Heaven' : 'Yoshiwara Soap (或通用)';
 
+                // 4. 姓名與店名解析
                 let lines = text.split('\n').map(l => l.trim()).filter(l => l);
                 if (isYoasobi) {
                     let mName = text.match(/(?:名稱|名前|Name)\s*([^\s]+)/i);
@@ -970,20 +964,25 @@
                     document.getElementById('v_store').value = mStore[1].trim();
                 }
 
+                // 5. 年齡
                 let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
                 if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
 
-                let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?:\n|from|EntryDay|出勤|スケジュール|入店|$)/i) || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
+                // 6. 數值 (加強邊界防護，避免與班表衝突)
+                let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
+                          || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
                 if (mStats) {
                     let cleanStats = mStats[1].replace(/from/i, '').trim();
                     document.getElementById('v_stats').value = cleanStats;
                 }
 
+                // 7. 到職日
                 let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
                 if (mDate) {
                     document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
                 }
                 
+                // 8. 屬性標籤 (AF) 
                 const tagMap = {
                     'tbc_tag': '禁菸',
                     'ppn_tag': '白虎',
@@ -1016,6 +1015,7 @@
                     document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
                 }
 
+                // 9. 班表
                 let scheduleText = text;
                 let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
                 if (mSch) {
@@ -1027,9 +1027,9 @@
                 
                 if (hasSchedule) {
                     document.getElementById('v_schedule').value = formattedSch;
-                    Utility.showToast(`✨ 綜合資訊已自動解析！(非破壞性疊加模式)`);
+                    Utility.showToast('✨ 綜合資訊已自動解析！(非破壞性疊加模式)');
                 } else {
-                    Utility.showToast(`✨ 已更新部分資訊 (未偵測到班表更新，保留原資料)`);
+                    Utility.showToast('✨ 已更新部分資訊 (未偵測到班表更新，保留原資料)');
                 }
                 
                 if (magicInput) {
@@ -1409,7 +1409,7 @@
                         document.getElementById('btn-save-order').style.display = 'none';
                         this.loadSheetData(); 
                     } else {
-                        Utility.showToast("✅ 自動儲存成功！");
+                        Utility.showToast("✅ 背景自動儲存成功！");
                         document.getElementById('btn-save-order').style.display = 'none';
                     }
                 } catch (e) {
@@ -1500,7 +1500,7 @@
                 this.dataStore.splice(newIdx, 0, movedItem);
                 
                 this.renderCatalog();
-                this.saveOrderToGoogleSheet(true); // 自動背景儲存
+                this.saveOrderToGoogleSheet(true); 
             }
 
             copyItem(oldIdx, newIdx) {
@@ -1523,7 +1523,7 @@
                 this.dataStore.splice(newIdx, 0, newItem);
                 
                 this.renderCatalog();
-                this.saveOrderToGoogleSheet(true); // 自動背景儲存
+                this.saveOrderToGoogleSheet(true); 
             }
 
             toggleFavorite(e, absoluteIndex) {
@@ -1536,7 +1536,7 @@
                 r[this.colMap.favorite] = currentFav === 'Y' ? '' : 'Y';
                 
                 this.renderCatalog();
-                this.saveOrderToGoogleSheet(true); // 自動背景儲存
+                this.saveOrderToGoogleSheet(true); 
             }
 
             renderCatalog() {
