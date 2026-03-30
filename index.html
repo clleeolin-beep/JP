@@ -103,6 +103,8 @@
         button.secondary:hover { background: #5c6bc0; }
         button.warning { background: var(--warning); color: #fff; }
         button.warning:hover { background: #f57c00; }
+        button.mini { padding: 4px 8px; font-size: 12px; background: #e91e63; border-radius: 4px; }
+        button.mini:hover { background: #c2185b; }
 
         /* 讀取畫面與 Toast 提示 */
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99999; justify-content: center; align-items: center; color: white; font-size: 20px; font-weight: bold; display: none; flex-direction: column; text-align: center; padding: 20px;}
@@ -126,20 +128,19 @@
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
         .card.drag-over { border: 2px dashed; } 
 
-        /* 微型視覺化行事曆區塊 (重點升級) */
+        /* 微型視覺化行事曆區塊 (重點升級：修復高度跳動問題) */
         .sch-container {
-            display: flex; flex-direction: column; gap: 4px; margin-top: 8px;
+            display: flex; flex-direction: column; gap: 0px; margin-top: 8px;
             font-size: 0.75rem; border-top: 1px dashed #e0e0e0; padding-top: 8px;
-            max-height: 90px; overflow-y: auto; pointer-events: auto; scrollbar-width: thin;
+            max-height: 120px; overflow-y: auto; pointer-events: auto; scrollbar-width: thin;
         }
         .sch-container::-webkit-scrollbar { width: 4px; }
         .sch-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-        .sch-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
-        .sch-date { width: 55px; font-weight: bold; color: #555; flex-shrink: 0; }
-        .sch-track { flex: 1; height: 6px; background: #e0e0e0; border-radius: 3px; position: relative; overflow: hidden; }
-        .sch-fill { position: absolute; height: 100%; background: var(--accent); border-radius: 3px; }
-        .sch-fill.off { background: #9e9e9e; width: 100%; position: static; }
-        .sch-time { width: 70px; text-align: right; flex-shrink: 0; color: var(--primary); font-family: monospace; font-weight: bold; }
+        .sch-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; height: 16px; }
+        .sch-date { width: 62px; font-weight: bold; color: #555; flex-shrink: 0; font-size: 11px; text-align: left; line-height: 16px; }
+        .sch-track { flex: 1; height: 6px; background: #e0e0e0; border-radius: 3px; position: relative; overflow: hidden; margin-top: 1px; }
+        .sch-fill { position: absolute; height: 100%; background: var(--accent); border-radius: 3px; top: 0; }
+        .sch-time { width: 75px; text-align: right; flex-shrink: 0; color: var(--primary); font-family: monospace; font-weight: bold; font-size: 11px; line-height: 16px; }
         
         /* 篩選器樣式 */
         .time-filter-group { display: flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #ccc; padding: 2px 6px; border-radius: 6px; }
@@ -292,7 +293,7 @@
                         <span style="color:#666; font-weight:bold;">~</span>
                         <select id="filterTimeEnd" onchange="app.renderCatalog()"></select>
                     </div>
-                    <input type="text" id="searchInput" placeholder="🔍 姓名/店名..." oninput="app.renderCatalog()" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; min-width: 120px; flex: 1;">
+                    <input type="text" id="searchInput" placeholder="🔍 姓名/店名/AF..." oninput="app.renderCatalog()" style="padding: 6px; border-radius: 6px; border: 1px solid #ccc; min-width: 120px; flex: 1;">
                 </div>
             </div>
             <div class="catalog-grid" id="catalogGrid"></div>
@@ -366,7 +367,6 @@
                 let html = '<div class="sch-container">';
                 
                 lines.forEach(line => {
-                    // 解析 3/30(一) 14:00-22:00
                     const match = line.match(/^(\d{1,2}\/\d{1,2})\s*(\(.\))?\s*(.+)$/);
                     if (match) {
                         const date = match[1];
@@ -374,7 +374,8 @@
                         const timeStr = match[3];
 
                         if (timeStr.includes('休') || timeStr.includes('み')) {
-                            html += `<div class="sch-row"><div class="sch-date">${date}${day}</div><div class="sch-track"><div class="sch-fill off">休</div></div><div class="sch-time">休息</div></div>`;
+                            // 修正：休假不填入文字，保持 6px 純淨灰色軌道，解決忽高忽低問題
+                            html += `<div class="sch-row"><div class="sch-date">${date}${day}</div><div class="sch-track"></div><div class="sch-time" style="color:#9e9e9e;">休息</div></div>`;
                         } else {
                             const tMatch = timeStr.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
                             if (tMatch) {
@@ -516,7 +517,7 @@
             populateTimeDropdowns() {
                 const startSel = document.getElementById('filterTimeStart');
                 const endSel = document.getElementById('filterTimeEnd');
-                if(startSel.options.length > 0) return; // 避免重複建立
+                if(startSel.options.length > 0) return; 
 
                 startSel.innerHTML = '<option value="">🕒 起始</option>';
                 endSel.innerHTML = '<option value="">🕒 結束</option>';
@@ -530,42 +531,55 @@
                 }
             }
 
-            // ===== 智慧班表貼上攔截器 (台日雙語自動轉換 + 無視雜訊重組) =====
+            // ===== 智慧班表貼上攔截器 (修復：確保完整擷取所有天數不漏抓) =====
             setupSchedulePasting() {
                 const scheduleInput = document.getElementById('v_schedule');
                 scheduleInput.addEventListener('paste', (e) => {
                     e.preventDefault();
                     let pastedText = (e.clipboardData || window.clipboardData).getData('text');
                     
-                    const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日',
-                                    '一':'一', '二':'二', '三':'三', '四':'四', '五':'五', '六':'六'};
-                                    
-                    // 尋找日期、可選括號星期、與時間區段(中間允許無限換行與空白干擾)
-                    const regex = /(\d{1,2}\/\d{1,2})\s*(\([月火水木金土日一二三四五六]\))?\s*(休\s*み|公\s*休|休\s*假|\d{1,2}:\d{2}\s*[-~〜ー]\s*\d{1,2}:\d{2})/g;
-                    let cleanedLines = [];
-                    let match;
-                    
-                    while ((match = regex.exec(pastedText)) !== null) {
-                        let date = match[1];
+                    // 只要偵測到有日期格式，就啟動強大清洗邏輯
+                    if (/\d{1,2}\/\d{1,2}/.test(pastedText)) {
+                        const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日',
+                                        '一':'一', '二':'二', '三':'三', '四':'四', '五':'五', '六':'六'};
+                                        
+                        // 利用 Lookahead 將每一天的區塊完整切出來，避免中間的換行或奇怪字串導致判斷斷掉
+                        const regex = /(\d{1,2}\/\d{1,2})\s*(\([月火水木金土日一二三四五六]\))?([\s\S]*?)(?=\d{1,2}\/\d{1,2}|$)/g;
+                        let cleanedLines = [];
+                        let match;
                         
-                        // 轉換星期為繁體中文
-                        let rawDay = match[2] ? match[2].replace(/[()]/g, '') : '';
-                        let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : '';
+                        while ((match = regex.exec(pastedText)) !== null) {
+                            let date = match[1];
+                            let rawDay = match[2] ? match[2].replace(/[()]/g, '') : '';
+                            let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : '';
+                            let content = match[3]; // 該天附帶的所有內容
+                            
+                            let timeStr = "";
+                            const timeMatch = content.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
+                            
+                            // 先找有無時間區段，沒有的話看裡面有沒有包含休字
+                            if (timeMatch) {
+                                timeStr = `${timeMatch[1]}-${timeMatch[2]}`;
+                            } else if (content.includes('休') || content.includes('み')) {
+                                timeStr = '休息';
+                            } else {
+                                timeStr = '休息'; // 容錯機制，假設無法辨識視同休息
+                            }
+                            
+                            let cleanLine = `${date} ${day} ${timeStr}`.trim();
+                            cleanedLines.push(cleanLine);
+                        }
                         
-                        // 移除時間文字中間的所有干擾(如換行、多餘空白)
-                        let time = match[3].replace(/\s+/g, ''); 
-                        
-                        let cleanLine = `${date} ${day} ${time}`.trim();
-                        cleanedLines.push(cleanLine);
+                        if (cleanedLines.length > 0) {
+                            scheduleInput.value = cleanedLines.join('\n');
+                            Utility.showToast(`✅ 已成功擷取並保留 ${cleanedLines.length} 天完整班表！`);
+                            return;
+                        }
                     }
                     
-                    if (cleanedLines.length > 0) {
-                        scheduleInput.value = cleanedLines.join('\n');
-                        Utility.showToast('✅ 已成功洗淨排版並轉為中文星期！');
-                    } else {
-                        scheduleInput.value = pastedText.replace(/\n\s*\n/g, '\n').trim();
-                        Utility.showToast('✅ 班表已貼上');
-                    }
+                    // 若無日期格式，則進行一般清理 (去除非必要空行)
+                    scheduleInput.value = pastedText.replace(/\n\s*\n/g, '\n').trim();
+                    Utility.showToast('✅ 班表已貼上');
                 });
             }
 
@@ -1049,24 +1063,21 @@
                 const grid = document.getElementById('catalogGrid');
                 grid.innerHTML = '';
 
-                // 只要有任何一種篩選條件被觸發，就暫時關閉拖曳功能以防卡片順序錯亂
                 const isFiltered = kw !== '' || filterLoc !== '' || filterDate !== '' || filterStart !== null || filterEnd !== null;
 
                 this.dataStore.forEach((record, index) => {
                     const r = record._raw;
                     
-                    // 1. 位置篩選
                     const recLocation = r[this.colMap.location] || '';
                     if (filterLoc && recLocation !== filterLoc) return;
                     
-                    // 2. 關鍵字搜尋
                     const searchStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${recLocation} ${r[this.colMap.twoShift]} ${r[this.colMap.af]} ${r[this.colMap.level]}`.toLowerCase();
                     if (kw && !searchStr.includes(kw)) return;
 
-                    // 3. 班表時間交集篩選邏輯 (強大媒合功能)
+                    // ===== 班表時間交集篩選邏輯 =====
                     if (filterDate || filterStart !== null || filterEnd !== null) {
                         const scheduleRaw = r[this.colMap.schedule] || '';
-                        if (!scheduleRaw) return; // 沒班表的直接隱藏
+                        if (!scheduleRaw) return;
 
                         let isWorkingMatch = false;
                         const lines = scheduleRaw.split('\n');
@@ -1077,20 +1088,19 @@
                                 let d = match[1];
                                 let tStr = match[3];
 
-                                if (filterDate && d !== filterDate) continue; // 找尋指定的那一天
+                                if (filterDate && d !== filterDate) continue; 
 
                                 if (filterStart === null && filterEnd === null) {
                                     if (!tStr.includes('休') && !tStr.includes('み')) {
                                         isWorkingMatch = true; break;
                                     }
                                 } else {
-                                    // 確認有指定時間時，判斷兩條時間線是否有交疊
                                     if (!tStr.includes('休') && !tStr.includes('み')) {
                                         const tMatch = tStr.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
                                         if (tMatch) {
                                             let tStart = Utility.timeToMins(tMatch[1]);
                                             let tEnd = Utility.timeToMins(tMatch[2]);
-                                            if (tEnd <= tStart) tEnd += 24 * 60; // 跨日處理
+                                            if (tEnd <= tStart) tEnd += 24 * 60; 
 
                                             let qStart = filterStart !== null ? filterStart : 0;
                                             let qEnd = filterEnd !== null ? filterEnd : 9999;
@@ -1104,10 +1114,9 @@
                                 }
                             }
                         }
-                        if (!isWorkingMatch) return; // 這個人這天沒班，或者時間沒對上，不顯示！
+                        if (!isWorkingMatch) return; 
                     }
 
-                    // 開始渲染符合條件的卡片
                     let cleanImg = Utility.cleanDriveUrl(r[this.colMap.photo]);
                     const imgSrc = cleanImg || PLACEHOLDER_URL;
                     const ageStr = r[this.colMap.age] ? ` (${r[this.colMap.age]})` : '';
@@ -1143,7 +1152,6 @@
                     card.title = titleStr;
                     
                     card.onclick = (e) => {
-                        // 避免點擊班表捲動軸時觸發開啟
                         if (e.target.closest('.sch-container')) return;
                         
                         if (this.isEditMode) {
