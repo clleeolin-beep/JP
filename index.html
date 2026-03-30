@@ -25,7 +25,7 @@
 
         /* 版面網格佈局 */
         #app-container { display: grid; grid-template-columns: 500px 1fr; gap: 15px; flex: 1; min-height: 0; transition: all 0.3s ease; }
-        .panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
+        .panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
         
         /* 模式切換邏輯 */
         #app-container.view-mode { grid-template-columns: 1fr; }
@@ -81,7 +81,7 @@
         .img-preview-box { width: 100%; height: 350px; background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; transition: 0.2s; }
         .img-preview-box img { width: 100%; height: 100%; object-fit: contain; }
         .img-preview-box:hover { border-color: var(--primary); background: #f3e5f5; }
-        .img-preview-box span { font-size: 0.9em; color: #777; text-align: center; line-height: 1.5; padding: 10px; }
+        .img-preview-box span { font-size: 0.9em; color: #777; text-align: center; line-height: 1.5; padding: 10px; pointer-events: none; }
         
         /* 照片刪除按鈕 */
         .btn-delete-img { position: absolute; top: 10px; right: 10px; background: rgba(233, 30, 99, 0.9); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: 0.2s; z-index: 10; }
@@ -120,6 +120,10 @@
         
         .img-container { position: relative; line-height: 0; margin-bottom: 10px; }
         .card .badge { position: absolute; top: 10px; left: 10px; background: var(--accent); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none; z-index: 5; }
+        
+        /* 💖 最愛按鈕 */
+        .fav-btn { position: absolute; top: 10px; right: 10px; z-index: 10; font-size: 20px; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.4); transition: transform 0.2s; user-select: none; }
+        .fav-btn:hover { transform: scale(1.2); }
 
         .store-name { 
             font-size: 0.8em; color: var(--secondary); font-weight: bold; 
@@ -158,7 +162,7 @@
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
         .card.drag-over { border: 2px dashed; } 
 
-        /* 直列式微型視覺化行事曆區塊 (含刻度線) */
+        /* 直列式微型視覺化行事曆區塊 */
         .sch-wrapper { display: flex; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e0e0; position: relative; }
         .sch-time-axis { display: flex; flex-direction: column; width: 18px; position: relative; font-size: 9px; color: #999; margin-top: 24px; font-weight: bold; }
         .sch-time-axis span { position: absolute; right: 4px; transform: translateY(-50%); }
@@ -216,7 +220,7 @@
             <div class="form-grid">
                 <div class="form-group full">
                     <label>✨ 魔法貼上 (非破壞性部分疊加解析)</label>
-                    <textarea id="v_magic_paste" rows="2" placeholder="在此貼上包含「姓名、店名、數值、班表」的完整或部分文字，系統會自動萃取並保留未被覆蓋的舊資料..."></textarea>
+                    <textarea id="v_magic_paste" rows="2" placeholder="在此貼上任何「網址、影像、文字」，系統將啟動全域感知為您自動分配至正確欄位！"></textarea>
                 </div>
             </div>
 
@@ -297,9 +301,9 @@
 
             <div class="photo-upload-area">
                 <label>📷 技師照片 (自動命名：店名-姓名)</label>
-                <div class="img-preview-box" onclick="if(app.accessToken) document.getElementById('fileInputPhoto').click(); else app.triggerAuth();" title="可直接使用 Ctrl+V 貼上截圖">
-                    <img id="preview_photo" src="" style="display:none;">
-                    <span id="text_photo">點擊上傳，或 <b>Ctrl+V</b> 貼上截圖<br>(自動裁切 3:4 比例)</span>
+                <div class="img-preview-box" title="點擊上傳或調整裁切，或直接全域 Ctrl+V 貼上截圖">
+                    <img id="preview_photo" src="" style="display:none; pointer-events: none;">
+                    <span id="text_photo">點擊上傳，或 <b>Ctrl+V</b> 貼上截圖</span>
                     <button id="btn_del_photo" class="btn-delete-img" onclick="app.deleteImage(event)" style="display:none;" title="刪除照片">✖</button>
                 </div>
             </div>
@@ -351,7 +355,7 @@
         <div class="cropper-wrapper">
             <h3 style="margin-top:0; color: var(--primary);">✂️ 調整照片 (3:4 人像比例)</h3>
             <div style="flex: 1; background: #eee; min-height: 0; border-radius: 8px; overflow: hidden;">
-                <img id="cropperImage" src="" style="max-width: 100%; max-height: 100%;">
+                <img id="cropperImage" src="" style="max-width: 100%; max-height: 100%;" crossorigin="anonymous">
             </div>
             <div style="margin-top: 15px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="danger" onclick="cropperSvc.closeModal()">取消</button>
@@ -385,7 +389,7 @@
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
-                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留')) {
+                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛')) {
                     toast.style.background = 'var(--warning)';
                 } else {
                     toast.style.background = 'var(--success)';
@@ -437,7 +441,6 @@
                 return Math.min(99, Math.max(1, 40 + hourglass)); 
             }
 
-            // ===== 核心演算法：生成體型 SVG 與 計算評分罩杯顏色 =====
             static getBodyShapeData(rawStats) {
                 const parsed = this.parseStats(rawStats);
                 const {h, b, w, hp, cup} = parsed;
@@ -549,12 +552,10 @@
                 return h * 60 + m;
             }
 
-            // ===== 智慧班表貼上攔截器 (修復：支援跨網域強大特徵抓取，處理 - 號休假) =====
             static parseAndFormatSchedule(rawText) {
                 if (!rawText) return '';
                 
                 const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'};
-                
                 const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2})|$)/g;
                 let cleanedLines = [];
                 let match;
@@ -566,7 +567,6 @@
                     
                     let rawDay = match[3] ? match[3].replace(/[()]/g, '') : '';
                     let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
-                    
                     let content = match[4] || ''; 
                     
                     let timeStr = "休息";
@@ -641,7 +641,6 @@
                                 let endMins = this.timeToMins(tMatch[2]);
                                 if (endMins <= startMins) endMins += 24 * 60; 
 
-                                // 基準：09:00 (540分) ~ 06:00 (1800分) = 總共 1260 分
                                 const BASE_MINS = 540;
                                 const TOTAL_MINS = 1260;
 
@@ -695,31 +694,76 @@
                 this.cropper = null;
                 this.pendingBlob = null; 
 
-                document.getElementById('fileInputPhoto').addEventListener('change', (e) => this.handleFile(e.target.files[0]));
+                // 綁定檔案上傳的變更事件 (點擊按鈕開啟)
+                document.getElementById('fileInputPhoto').addEventListener('change', (e) => this.handleFile(e.target.files[0], false));
                 
+                // 綁定全域貼上事件
                 document.addEventListener('paste', (e) => {
                     if (!window.app || !window.app.accessToken) return;
-                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                    const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
 
                     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-                    for (let index in items) {
-                        const item = items[index];
-                        if (item.kind === 'file' && item.type.includes('image/')) {
-                            const file = item.getAsFile();
-                            this.handleFile(file);
-                            e.preventDefault();
-                            break; 
+                    let hasImage = false;
+                    if (items) {
+                        for (let index in items) {
+                            const item = items[index];
+                            if (item.kind === 'file' && item.type.includes('image/')) {
+                                hasImage = true;
+                                const file = item.getAsFile();
+                                this.handleFile(file, true); // true 代表是從貼上而來，不要開啟視窗
+                                e.preventDefault();
+                                break; 
+                            }
                         }
+                    }
+
+                    // 如果沒有圖片且不是在輸入框內，則觸發全域文字魔法貼上
+                    if (!hasImage && !isInput) {
+                        let text = (e.clipboardData || e.originalEvent.clipboardData).getData('text');
+                        let html = (e.clipboardData || e.originalEvent.clipboardData).getData('text/html') || '';
+                        if (text) {
+                            e.preventDefault();
+                            if (!window.app.isEditMode) window.app.toggleMode();
+                            window.app.processMagicPaste(text, html);
+                        }
+                    }
+                });
+
+                // 綁定圖片預覽區的點擊事件 (用於喚醒裁切)
+                const previewBox = document.querySelector('.img-preview-box');
+                previewBox.addEventListener('click', (e) => {
+                    if (e.target.id === 'btn_del_photo') return;
+                    if (!window.app.accessToken) { window.app.triggerAuth(); return; }
+                    
+                    const previewImg = document.getElementById('preview_photo');
+                    // 如果圖片已經存在 (剛貼上的或是舊有的)，點擊就開啟裁切視窗
+                    if (previewImg.style.display === 'block' && previewImg.src) {
+                        this.imageElement.src = previewImg.src;
+                        this.openModal();
+                    } else {
+                        // 如果沒有圖片，則觸發選擇檔案
+                        document.getElementById('fileInputPhoto').click();
                     }
                 });
             }
 
-            handleFile(file) {
+            handleFile(file, fromPaste = false) {
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
                         this.imageElement.src = event.target.result;
-                        this.openModal();
+                        if (fromPaste) {
+                            // 全幅貼上，不開啟視窗
+                            document.getElementById('preview_photo').src = event.target.result;
+                            document.getElementById('preview_photo').style.display = 'block';
+                            document.getElementById('text_photo').style.display = 'none';
+                            document.getElementById('btn_del_photo').style.display = 'flex';
+                            this.pendingBlob = file;
+                            Utility.showToast('✅ 圖片已全幅貼上，點擊圖片可進行裁切調整');
+                        } else {
+                            // 點擊上傳，開啟視窗
+                            this.openModal();
+                        }
                     };
                     reader.readAsDataURL(file);
                 }
@@ -739,16 +783,22 @@
 
             cropAndPrepare() {
                 if(this.cropper) {
-                    const canvas = this.cropper.getCroppedCanvas({ width: 600, height: 800 });
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                    
-                    document.getElementById('preview_photo').src = dataUrl;
-                    document.getElementById('preview_photo').style.display = 'block';
-                    document.getElementById('text_photo').style.display = 'none';
-                    document.getElementById('btn_del_photo').style.display = 'flex';
-                    
-                    canvas.toBlob((blob) => { this.pendingBlob = blob; }, 'image/jpeg', 0.85);
-                    this.closeModal();
+                    try {
+                        const canvas = this.cropper.getCroppedCanvas({ width: 600, height: 800 });
+                        if (!canvas) throw new Error('CORS Issue');
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                        
+                        document.getElementById('preview_photo').src = dataUrl;
+                        document.getElementById('preview_photo').style.display = 'block';
+                        document.getElementById('text_photo').style.display = 'none';
+                        document.getElementById('btn_del_photo').style.display = 'flex';
+                        
+                        canvas.toBlob((blob) => { this.pendingBlob = blob; }, 'image/jpeg', 0.85);
+                        this.closeModal();
+                    } catch(e) {
+                        Utility.showToast('⚠️ 無法裁切此圖片 (外部網址權限限制)，請重新貼上截圖', true);
+                        this.closeModal();
+                    }
                 }
             }
 
@@ -787,10 +837,65 @@
                 this.registerKeyboardShortcuts();
                 this.setupDatePasting();
                 this.setupSchedulePasting();
-                this.setupMagicPasting(); 
+                this.setupDragScroll(); 
+
+                // 綁定指定輸入框的魔法貼上
+                const magicInput = document.getElementById('v_magic_paste');
+                if (magicInput) {
+                    magicInput.addEventListener('paste', (e) => {
+                        e.preventDefault();
+                        let text = (e.clipboardData || window.clipboardData).getData('text');
+                        let html = (e.clipboardData || window.clipboardData).getData('text/html') || '';
+                        this.processMagicPaste(text, html);
+                    });
+                }
             }
 
             get currentSheet() { return document.getElementById('v_sheet').value; }
+
+            setupDragScroll() {
+                let scrollY = 0;
+                let scrollInterval = null;
+
+                document.addEventListener('dragover', (e) => {
+                    if (!this.isEditMode) return;
+                    
+                    const threshold = 60;
+                    const clientY = e.clientY;
+                    const windowHeight = window.innerHeight;
+
+                    if (clientY < threshold) {
+                        scrollY = -15; 
+                    } else if (windowHeight - clientY < threshold) {
+                        scrollY = 15; 
+                    } else {
+                        scrollY = 0;
+                    }
+
+                    if (scrollY !== 0 && !scrollInterval) {
+                        scrollInterval = setInterval(() => {
+                            const catalog = document.getElementById('panel-catalog');
+                            const appContainer = document.getElementById('app-container');
+                            
+                            if (window.innerWidth <= 850) {
+                                appContainer.scrollBy(0, scrollY);
+                            } else {
+                                catalog.scrollBy(0, scrollY);
+                            }
+                        }, 20);
+                    } else if (scrollY === 0 && scrollInterval) {
+                        clearInterval(scrollInterval);
+                        scrollInterval = null;
+                    }
+                });
+
+                document.addEventListener('dragend', () => {
+                    if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null; }
+                });
+                document.addEventListener('drop', () => {
+                    if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null; }
+                });
+            }
 
             populateTimeDropdowns() {
                 const startSel = document.getElementById('filterTimeStart');
@@ -809,116 +914,127 @@
                 }
             }
 
-            // ===== 魔法貼上攔截器 (部分疊加解析模式 + Yoasobi 防呆) =====
-            setupMagicPasting() {
+            // ===== 核心：全域/指定共用的魔法解析器 =====
+            processMagicPaste(text, html) {
+                if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
-                if (!magicInput) return;
 
-                magicInput.addEventListener('paste', (e) => {
-                    e.preventDefault();
-                    let text = (e.clipboardData || window.clipboardData).getData('text');
-                    let html = (e.clipboardData || window.clipboardData).getData('text/html') || '';
-                    
-                    // 1. 解析店鋪與姓名 (找尋「名字 | 店名」的格式)
-                    let lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                // 若純為網址，則直接填入網址欄位
+                let isPureUrl = /^https?:\/\/[^\s]+$/.test(text.trim());
+                if (isPureUrl) {
+                    document.getElementById('v_url').value = text.trim();
+                    Utility.showToast('✨ 已自動辨識並填入網址！');
+                    if (magicInput) magicInput.value = '';
+                    return;
+                }
+
+                // 清空除了 v_store 以外的欄位
+                const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level', 'v_price', 'v_url'];
+                fieldsToClear.forEach(id => {
+                    let el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+
+                // 若包含網址且網址欄位為空，則提取
+                let urlMatch = text.match(/https?:\/\/[^\s]+/);
+                if (urlMatch && !document.getElementById('v_url').value) {
+                    document.getElementById('v_url').value = urlMatch[0];
+                }
+
+                let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
+                let siteName = isYoasobi ? 'Yoasobi Heaven' : 'Yoshiwara Soap (或通用)';
+
+                let lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                if (isYoasobi) {
+                    let mName = text.match(/(?:名稱|名前|Name)\s*([^\s]+)/i);
+                    if (mName) document.getElementById('v_name').value = mName[1].trim();
+                } else {
                     for(let i=0; i < Math.min(5, lines.length); i++) {
                         let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
                         if (nameStoreMatch && !lines[i].includes('http')) {
                             document.getElementById('v_name').value = nameStoreMatch[1].trim();
-                            // 不覆蓋已有店名，除非為空
                             if (!document.getElementById('v_store').value) {
                                 document.getElementById('v_store').value = nameStoreMatch[2].trim();
                             }
                             break;
                         }
                     }
-
-                    // 尋找「店名\n XXX」
-                    let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
-                    if (mStore && !document.getElementById('v_store').value) {
-                        document.getElementById('v_store').value = mStore[1].trim();
-                    }
-
-                    // 2. 姓名
-                    let mName = text.match(/(?:Name|名前|名稱)\s*(.*?)(?=\s*Age|\s*年齢|\s*年齡|\n|$)/i);
-                    if (mName && mName[1].trim() !== '') {
+                    let mName = text.match(/(?:Name|名前)\s*([^\sAge年齢]+)/i);
+                    if (mName && !document.getElementById('v_name').value) {
                         document.getElementById('v_name').value = mName[1].trim();
                     }
+                }
 
-                    // 3. 年齡
-                    let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
-                    if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
+                let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
+                if (mStore && !document.getElementById('v_store').value) {
+                    document.getElementById('v_store').value = mStore[1].trim();
+                }
 
-                    // 4. 數值 (加強對 from 的截斷)
-                    let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?:\n|from|EntryDay|出勤|スケジュール|入店|$)/i) || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
-                    if (mStats) {
-                        // 清洗可能附帶的 from 字眼
-                        let cleanStats = mStats[1].replace(/from/i, '').trim();
-                        document.getElementById('v_stats').value = cleanStats;
-                    }
+                let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
+                if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
 
-                    // 5. 到職日
-                    let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
-                    if (mDate) {
-                        document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
-                    }
-                    
-                    // 6. 圖像屬性標籤 (AF) - 從 HTML 抓圖檔名
-                    const tagMap = {
-                        'tbc_tag': '禁菸',
-                        'ppn_tag': '白虎',
-                        'pee_tag': '潮',
-                        'mat_tag': '墊子',
-                        'denma_tag': '電マ',
-                        'tbc_iqos': '加熱菸',
-                        'tto_tag': '刺青',
-                        'dbl_tag': '3P'
-                    };
+                let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?:\n|from|EntryDay|出勤|スケジュール|入店|$)/i) || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
+                if (mStats) {
+                    let cleanStats = mStats[1].replace(/from/i, '').trim();
+                    document.getElementById('v_stats').value = cleanStats;
+                }
 
-                    let imgRegex = /<img[^>]+src=["'][^"']*?\/img\/([^/"']+)\.png["']/ig;
-                    let imgMatch;
-                    let foundTags = new Set();
-                    // 保留既有標籤
-                    let existingTags = document.getElementById('v_af').value.split('/').map(t=>t.trim()).filter(t=>t);
-                    existingTags.forEach(t => foundTags.add(t));
-                    
-                    let htmlHasTags = false;
-                    while ((imgMatch = imgRegex.exec(html)) !== null) {
-                        htmlHasTags = true;
-                        let filename = imgMatch[1];
-                        if (filename.endsWith('_tag') || filename === 'tbc_iqos') {
-                            if (tagMap[filename]) {
-                                foundTags.add(tagMap[filename]);
-                            } else {
-                                foundTags.add(`[${filename}]`);
-                            }
+                let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
+                if (mDate) {
+                    document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
+                }
+                
+                const tagMap = {
+                    'tbc_tag': '禁菸',
+                    'ppn_tag': '白虎',
+                    'pee_tag': '潮',
+                    'mat_tag': '墊子',
+                    'denma_tag': '電マ',
+                    'tbc_iqos': '加熱菸',
+                    'tto_tag': '刺青',
+                    'dbl_tag': '3P'
+                };
+                let imgRegex = /<img[^>]+src=["'][^"']*?\/img\/([^/"']+)\.png["']/ig;
+                let imgMatch;
+                let foundTags = new Set();
+                let existingTags = document.getElementById('v_af').value.split('/').map(t=>t.trim()).filter(t=>t);
+                existingTags.forEach(t => foundTags.add(t));
+                
+                let htmlHasTags = false;
+                while ((imgMatch = imgRegex.exec(html)) !== null) {
+                    htmlHasTags = true;
+                    let filename = imgMatch[1];
+                    if (filename.endsWith('_tag') || filename === 'tbc_iqos') {
+                        if (tagMap[filename]) {
+                            foundTags.add(tagMap[filename]);
+                        } else {
+                            foundTags.add(`[${filename}]`);
                         }
                     }
-                    if (htmlHasTags && foundTags.size > 0) {
-                        document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
-                    }
+                }
+                if (htmlHasTags && foundTags.size > 0) {
+                    document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
+                }
 
-                    // 7. 班表解析
-                    let scheduleText = text;
-                    let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
-                    if (mSch) {
-                        scheduleText = mSch[0];
-                    }
-                    
-                    let formattedSch = Utility.parseAndFormatSchedule(scheduleText);
-                    
-                    // 判斷是否真的有抓到有效班表，避免部分貼上時洗掉原班表
-                    let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
-                    
-                    if (hasSchedule) {
-                        document.getElementById('v_schedule').value = formattedSch;
-                        Utility.showToast('✨ 綜合資訊已自動解析！(非破壞性疊加模式)');
-                    } else {
-                        Utility.showToast('✨ 已更新部分資訊 (未偵測到班表更新，保留原資料)');
-                    }
-                    
+                let scheduleText = text;
+                let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
+                if (mSch) {
+                    scheduleText = mSch[0];
+                }
+                
+                let formattedSch = Utility.parseAndFormatSchedule(scheduleText);
+                let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
+                
+                if (hasSchedule) {
+                    document.getElementById('v_schedule').value = formattedSch;
+                    Utility.showToast(`✨ 綜合資訊已自動解析！(非破壞性疊加模式)`);
+                } else {
+                    Utility.showToast(`✨ 已更新部分資訊 (未偵測到班表更新，保留原資料)`);
+                }
+                
+                if (magicInput) {
                     setTimeout(() => { magicInput.value = ''; }, 100);
-                });
+                }
             }
 
             setupSchedulePasting() {
@@ -1097,14 +1213,14 @@
                     this.headerRow = data.values[0];
                     const getIdx = (name) => this.headerRow.findIndex(h => String(h).trim() === name);
                     
-                    // 防呆：支援原本的 AF 或新改名的 屬性
                     this.colMap = {
                         location: getIdx('位置'), store: getIdx('店名'), techId: getIdx('技師編號'),
                         startDate: getIdx('到職日'), name: getIdx('姓名'), age: getIdx('年齡'),
                         stats: getIdx('數值'), photo: getIdx('技師照片'), price: getIdx('價金'),
                         url: getIdx('網址'), 
                         af: getIdx('屬性') !== -1 ? getIdx('屬性') : getIdx('AF'), 
-                        level: getIdx('等級'), schedule: getIdx('行事曆')
+                        level: getIdx('等級'), schedule: getIdx('行事曆'),
+                        favorite: getIdx('最愛') !== -1 ? getIdx('最愛') : getIdx('Favorite')
                     };
 
                     if (this.colMap.name === -1 || this.colMap.store === -1) {
@@ -1116,6 +1232,10 @@
                     if (this.colMap.schedule === -1) {
                         this.colMap.schedule = this.headerRow.length;
                         this.headerRow.push('行事曆');
+                    }
+                    if (this.colMap.favorite === -1 || this.colMap.favorite === undefined) {
+                        this.colMap.favorite = this.headerRow.length;
+                        this.headerRow.push('最愛');
                     }
 
                     this.dataStore = [];
@@ -1263,13 +1383,18 @@
                 }
             }
 
-            async saveOrderToGoogleSheet() {
+            // ===== 靜默背景儲存引擎 =====
+            async saveOrderToGoogleSheet(isBackground = false) {
                 if (!this.accessToken) { this.triggerAuth(); return; }
                 const sheetName = this.currentSheet;
-                
                 const values = this.dataStore.map(record => record._raw);
                 
-                Utility.showLoading("儲存排序與複製資料中...");
+                if (!isBackground) {
+                    Utility.showLoading("儲存排序與複製資料中...");
+                } else {
+                    Utility.showToast("💾 背景自動儲存中...");
+                }
+
                 try {
                     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A2?valueInputOption=USER_ENTERED`, {
                         method: 'PUT', 
@@ -1279,13 +1404,20 @@
                     
                     if (!res.ok) throw new Error("儲存失敗");
                     
-                    Utility.showToast("✅ 變更與排序儲存成功！");
-                    document.getElementById('btn-save-order').style.display = 'none';
-                    this.loadSheetData(); 
+                    if (!isBackground) {
+                        Utility.showToast("✅ 變更與排序儲存成功！");
+                        document.getElementById('btn-save-order').style.display = 'none';
+                        this.loadSheetData(); 
+                    } else {
+                        Utility.showToast("✅ 自動儲存成功！");
+                        document.getElementById('btn-save-order').style.display = 'none';
+                    }
                 } catch (e) {
                     Utility.showToast(`❌ 錯誤: ${e.message}`, true);
                 } finally { 
-                    Utility.hideLoading(); 
+                    if (!isBackground) {
+                        Utility.hideLoading(); 
+                    }
                 }
             }
 
@@ -1367,16 +1499,15 @@
                 const movedItem = this.dataStore.splice(oldIdx, 1)[0];
                 this.dataStore.splice(newIdx, 0, movedItem);
                 
-                document.getElementById('btn-save-order').style.display = 'inline-flex';
-                Utility.showToast("💡 順序已變更，請記得點擊「儲存排序」以寫入試算表！");
                 this.renderCatalog();
+                this.saveOrderToGoogleSheet(true); // 自動背景儲存
             }
 
             copyItem(oldIdx, newIdx) {
                 const originalItem = this.dataStore[oldIdx];
                 const newRaw = [...originalItem._raw];
                 
-                const colsToClear = ['photo', 'techId', 'url', 'age', 'stats', 'startDate', 'schedule'];
+                const colsToClear = ['photo', 'techId', 'url', 'age', 'stats', 'startDate', 'schedule', 'favorite'];
                 colsToClear.forEach(col => {
                     if (this.colMap[col] !== -1 && this.colMap[col] !== undefined) {
                         newRaw[this.colMap[col]] = "";
@@ -1391,9 +1522,21 @@
                 
                 this.dataStore.splice(newIdx, 0, newItem);
                 
-                document.getElementById('btn-save-order').style.display = 'inline-flex';
-                Utility.showToast("💡 資料已複製（已自動清空特定欄位），請記得點擊「儲存排序」以寫入！");
                 this.renderCatalog();
+                this.saveOrderToGoogleSheet(true); // 自動背景儲存
+            }
+
+            toggleFavorite(e, absoluteIndex) {
+                e.stopPropagation();
+                const record = this.dataStore[absoluteIndex];
+                if (!record) return;
+                
+                const r = record._raw;
+                const currentFav = r[this.colMap.favorite];
+                r[this.colMap.favorite] = currentFav === 'Y' ? '' : 'Y';
+                
+                this.renderCatalog();
+                this.saveOrderToGoogleSheet(true); // 自動背景儲存
             }
 
             renderCatalog() {
@@ -1410,8 +1553,6 @@
 
                 const grid = document.getElementById('catalogGrid');
                 grid.innerHTML = '';
-
-                const isFiltered = kw !== '' || filterLoc !== '' || filterDate !== '' || filterStart !== null || filterEnd !== null || filterStatus !== '' || sortOpt !== '';
 
                 let displayList = [];
 
@@ -1467,19 +1608,29 @@
                     if (filterStatus === 'working' && !hasAnyWork) return;
                     if (filterStatus === 'off' && (hasAnyWork || !dateEvaluated)) return;
 
-                    displayList.push({ record, index });
+                    displayList.push({ record, index }); 
                 });
 
-                if (sortOpt === 'cup') {
-                    displayList.sort((a, b) => Utility.getCupScore(b.record._raw[this.colMap.stats]) - Utility.getCupScore(a.record._raw[this.colMap.stats]));
-                } else if (sortOpt === 'body') {
-                    displayList.sort((a, b) => Utility.getBodyScore(b.record._raw[this.colMap.stats]) - Utility.getBodyScore(a.record._raw[this.colMap.stats]));
-                }
+                displayList.sort((a, b) => {
+                    let aFav = a.record._raw[this.colMap.favorite] === 'Y' ? 1 : 0;
+                    let bFav = b.record._raw[this.colMap.favorite] === 'Y' ? 1 : 0;
+
+                    if (aFav !== bFav) return bFav - aFav; 
+
+                    if (sortOpt === 'cup') {
+                        return Utility.getCupScore(b.record._raw[this.colMap.stats]) - Utility.getCupScore(a.record._raw[this.colMap.stats]);
+                    } else if (sortOpt === 'body') {
+                        return Utility.getBodyScore(b.record._raw[this.colMap.stats]) - Utility.getBodyScore(a.record._raw[this.colMap.stats]);
+                    }
+                    
+                    return a.index - b.index;
+                });
 
                 displayList.forEach(item => {
                     const r = item.record._raw;
                     const index = item.index; 
 
+                    const isFav = r[this.colMap.favorite] === 'Y';
                     const recLocation = r[this.colMap.location] || '';
                     let cleanImg = Utility.cleanDriveUrl(r[this.colMap.photo]);
                     const imgSrc = cleanImg || PLACEHOLDER_URL;
@@ -1581,14 +1732,14 @@
                     
                     let titleStr = "";
                     if (this.isEditMode) {
-                        titleStr = isFiltered ? "左鍵：編輯資料\n右鍵：開啟專屬網址" : "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序\n按住 Ctrl 或 Command 拖曳可複製(清空特定欄位)";
+                        titleStr = "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序\n按住 Ctrl 拖曳可複製(清空特定欄位)";
                     } else {
                         titleStr = "點擊：開啟專屬網址\n右鍵：開啟專屬網址";
                     }
                     card.title = titleStr;
                     
                     card.onclick = (e) => {
-                        if (e.target.closest('.sch-container-vert') || e.target.closest('.sch-wrapper')) return;
+                        if (e.target.closest('.sch-container-vert') || e.target.closest('.sch-wrapper') || e.target.closest('.fav-btn')) return;
                         
                         if (this.isEditMode) {
                             this.editRecord(index); 
@@ -1607,12 +1758,12 @@
                         else Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
                     };
 
-                    if (!isFiltered && this.isEditMode) {
+                    if (this.isEditMode) {
                         card.draggable = true;
                         
                         card.ondragstart = (e) => {
                             e.dataTransfer.effectAllowed = 'copyMove'; 
-                            e.dataTransfer.setData('text/plain', index);
+                            e.dataTransfer.setData('text/plain', index); 
                             setTimeout(() => card.classList.add('dragging'), 0);
                         };
                         
@@ -1669,15 +1820,15 @@
                         card.draggable = false;
                         card.ondragstart = (e) => {
                             e.preventDefault();
-                            if (this.isEditMode) {
-                                Utility.showToast("⚠️ 請清除搜尋與篩選條件後，再進行手動拖曳操作！", true);
-                            }
                         };
                     }
                     
                     card.innerHTML = `
                         <div class="img-container">
                             <span class="badge">${recLocation || '未知區'}</span>
+                            <div class="fav-btn" onclick="app.toggleFavorite(event, ${index})" title="加入/移除最愛 (置頂)">
+                                ${isFav ? '❤️' : '🤍'}
+                            </div>
                             <img src="${imgSrc}" loading="lazy" onerror="this.onerror=null; this.src='${PLACEHOLDER_URL}';">
                         </div>
                         <div class="store-name">${storeName}</div>
