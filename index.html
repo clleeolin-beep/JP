@@ -215,8 +215,8 @@
 
             <div class="form-grid">
                 <div class="form-group full">
-                    <label>✨ 魔法貼上 (泛用型情報網 AI 解析)</label>
-                    <textarea id="v_magic_paste" rows="2" placeholder="在此貼上包含「姓名、店名、數值、班表」的完整文字 (支援 Yoasobi / Yoshiwara 等不同格式，自動抓取)..."></textarea>
+                    <label>✨ 魔法貼上 (非破壞性部分疊加解析)</label>
+                    <textarea id="v_magic_paste" rows="2" placeholder="在此貼上包含「姓名、店名、數值、班表」的完整或部分文字，系統會自動萃取並保留未被覆蓋的舊資料..."></textarea>
                 </div>
             </div>
 
@@ -385,7 +385,7 @@
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
-                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('解析')) {
+                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留')) {
                     toast.style.background = 'var(--warning)';
                 } else {
                     toast.style.background = 'var(--success)';
@@ -549,7 +549,7 @@
                 return h * 60 + m;
             }
 
-            // ===== 智慧班表貼上攔截器 (修復：支援跨網域強大特徵抓取) =====
+            // ===== 智慧班表貼上攔截器 (修復：支援跨網域強大特徵抓取，處理 - 號休假) =====
             static parseAndFormatSchedule(rawText) {
                 if (!rawText) return '';
                 
@@ -574,7 +574,7 @@
                     
                     if (timeMatch) {
                         timeStr = `${timeMatch[1].replace('：',':')}-${timeMatch[2].replace('：',':')}`;
-                    } else if (content.includes('休') || content.includes('み') || content.includes('缺')) {
+                    } else if (content.includes('休') || content.includes('み') || content.includes('缺') || /^\s*-\s*$/.test(content)) {
                         timeStr = '休息';
                     }
                     
@@ -809,7 +809,7 @@
                 }
             }
 
-            // ===== 魔法貼上攔截器 (店鋪保護機制) =====
+            // ===== 魔法貼上攔截器 (部分疊加解析模式 + Yoasobi 防呆) =====
             setupMagicPasting() {
                 const magicInput = document.getElementById('v_magic_paste');
                 if (!magicInput) return;
@@ -819,46 +819,43 @@
                     let text = (e.clipboardData || window.clipboardData).getData('text');
                     let html = (e.clipboardData || window.clipboardData).getData('text/html') || '';
                     
-                    // 1. 清空除了 v_store 以外的欄位
-                    const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level', 'v_price', 'v_url'];
-                    fieldsToClear.forEach(id => {
-                        let el = document.getElementById(id);
-                        if (el) el.value = '';
-                    });
-
-                    let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
-                    let siteName = isYoasobi ? 'Yoasobi Heaven' : 'Yoshiwara Soap (或通用)';
-
-                    // 2. 姓名解析
+                    // 1. 解析店鋪與姓名 (找尋「名字 | 店名」的格式)
                     let lines = text.split('\n').map(l => l.trim()).filter(l => l);
-                    if (isYoasobi) {
-                        let mName = text.match(/(?:名稱|名前|Name)\s*([^\s]+)/i);
-                        if (mName) document.getElementById('v_name').value = mName[1].trim();
-                        // Yoasobi 格式下，店名不強制覆蓋，由使用者自行輸入或保留原值
-                    } else {
-                        for(let i=0; i < Math.min(5, lines.length); i++) {
-                            let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
-                            if (nameStoreMatch && !lines[i].includes('http')) {
-                                document.getElementById('v_name').value = nameStoreMatch[1].trim();
-                                if (!document.getElementById('v_store').value) {
-                                    document.getElementById('v_store').value = nameStoreMatch[2].trim();
-                                }
-                                break;
+                    for(let i=0; i < Math.min(5, lines.length); i++) {
+                        let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
+                        if (nameStoreMatch && !lines[i].includes('http')) {
+                            document.getElementById('v_name').value = nameStoreMatch[1].trim();
+                            // 不覆蓋已有店名，除非為空
+                            if (!document.getElementById('v_store').value) {
+                                document.getElementById('v_store').value = nameStoreMatch[2].trim();
                             }
+                            break;
                         }
-                        let mName = text.match(/(?:Name|名前)\s*([^\sAge年齢]+)/i);
-                        if (mName && !document.getElementById('v_name').value) {
-                            document.getElementById('v_name').value = mName[1].trim();
-                        }
+                    }
+
+                    // 尋找「店名\n XXX」
+                    let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
+                    if (mStore && !document.getElementById('v_store').value) {
+                        document.getElementById('v_store').value = mStore[1].trim();
+                    }
+
+                    // 2. 姓名
+                    let mName = text.match(/(?:Name|名前|名稱)\s*(.*?)(?=\s*Age|\s*年齢|\s*年齡|\n|$)/i);
+                    if (mName && mName[1].trim() !== '') {
+                        document.getElementById('v_name').value = mName[1].trim();
                     }
 
                     // 3. 年齡
                     let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
                     if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
 
-                    // 4. 數值
-                    let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?:EntryDay|出勤|スケジュール|入店|from|$)/i) || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
-                    if (mStats) document.getElementById('v_stats').value = mStats[1].trim();
+                    // 4. 數值 (加強對 from 的截斷)
+                    let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?:\n|from|EntryDay|出勤|スケジュール|入店|$)/i) || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
+                    if (mStats) {
+                        // 清洗可能附帶的 from 字眼
+                        let cleanStats = mStats[1].replace(/from/i, '').trim();
+                        document.getElementById('v_stats').value = cleanStats;
+                    }
 
                     // 5. 到職日
                     let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
@@ -866,7 +863,7 @@
                         document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
                     }
                     
-                    // 6. 圖像屬性標籤 (AF) 
+                    // 6. 圖像屬性標籤 (AF) - 從 HTML 抓圖檔名
                     const tagMap = {
                         'tbc_tag': '禁菸',
                         'ppn_tag': '白虎',
@@ -877,10 +874,17 @@
                         'tto_tag': '刺青',
                         'dbl_tag': '3P'
                     };
+
                     let imgRegex = /<img[^>]+src=["'][^"']*?\/img\/([^/"']+)\.png["']/ig;
                     let imgMatch;
                     let foundTags = new Set();
+                    // 保留既有標籤
+                    let existingTags = document.getElementById('v_af').value.split('/').map(t=>t.trim()).filter(t=>t);
+                    existingTags.forEach(t => foundTags.add(t));
+                    
+                    let htmlHasTags = false;
                     while ((imgMatch = imgRegex.exec(html)) !== null) {
+                        htmlHasTags = true;
                         let filename = imgMatch[1];
                         if (filename.endsWith('_tag') || filename === 'tbc_iqos') {
                             if (tagMap[filename]) {
@@ -890,11 +894,11 @@
                             }
                         }
                     }
-                    if (foundTags.size > 0) {
-                        document.getElementById('v_af').value = Array.from(foundTags).join('/');
+                    if (htmlHasTags && foundTags.size > 0) {
+                        document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
                     }
 
-                    // 8. 班表解析
+                    // 7. 班表解析
                     let scheduleText = text;
                     let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
                     if (mSch) {
@@ -902,12 +906,15 @@
                     }
                     
                     let formattedSch = Utility.parseAndFormatSchedule(scheduleText);
-                    document.getElementById('v_schedule').value = formattedSch;
                     
-                    if (formattedSch.includes('休息') || formattedSch.includes(':')) {
-                        Utility.showToast(`✨ 成功識別 ${siteName} 格式並自動解析填入！`);
+                    // 判斷是否真的有抓到有效班表，避免部分貼上時洗掉原班表
+                    let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
+                    
+                    if (hasSchedule) {
+                        document.getElementById('v_schedule').value = formattedSch;
+                        Utility.showToast('✨ 綜合資訊已自動解析！(非破壞性疊加模式)');
                     } else {
-                        Utility.showToast(`⚠️ 解析完成 (${siteName})，但未發現標準班表格式。`);
+                        Utility.showToast('✨ 已更新部分資訊 (未偵測到班表更新，保留原資料)');
                     }
                     
                     setTimeout(() => { magicInput.value = ''; }, 100);
@@ -1090,6 +1097,7 @@
                     this.headerRow = data.values[0];
                     const getIdx = (name) => this.headerRow.findIndex(h => String(h).trim() === name);
                     
+                    // 防呆：支援原本的 AF 或新改名的 屬性
                     this.colMap = {
                         location: getIdx('位置'), store: getIdx('店名'), techId: getIdx('技師編號'),
                         startDate: getIdx('到職日'), name: getIdx('姓名'), age: getIdx('年齡'),
@@ -1484,7 +1492,7 @@
                     const levelVal = r[this.colMap.level] || '';
                     
                     if (afVal) {
-                        afVal.split('/').forEach(t => {
+                        afVal.split(/[/／]/).forEach(t => {
                             if (t.trim()) tagsHtml += `<span class="tag-item">${t.trim()}</span>`;
                         });
                     }
