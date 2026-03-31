@@ -162,7 +162,7 @@
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
         .card.drag-over { border: 2px dashed; } 
 
-        /* 直列式微型視覺化行事曆區塊 */
+        /* 直列式微型視覺化行事曆區塊 (含刻度線) */
         .sch-wrapper { display: flex; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e0e0; position: relative; }
         .sch-time-axis { display: flex; flex-direction: column; width: 18px; position: relative; font-size: 9px; color: #999; margin-top: 24px; font-weight: bold; }
         .sch-time-axis span { position: absolute; right: 4px; transform: translateY(-50%); }
@@ -355,7 +355,7 @@
         <div class="cropper-wrapper">
             <h3 style="margin-top:0; color: var(--primary);">✂️ 調整照片 (3:4 人像比例)</h3>
             <div style="flex: 1; background: #eee; min-height: 0; border-radius: 8px; overflow: hidden;">
-                <img id="cropperImage" src="" style="max-width: 100%; max-height: 100%;" crossorigin="anonymous">
+                <img id="cropperImage" src="" style="max-width: 100%; max-height: 100%;">
             </div>
             <div style="margin-top: 15px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="danger" onclick="cropperSvc.closeModal()">取消</button>
@@ -389,7 +389,7 @@
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
-                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('背景自動儲存')) {
+                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('自動儲存')) {
                     toast.style.background = 'var(--warning)';
                 } else {
                     toast.style.background = 'var(--success)';
@@ -641,7 +641,6 @@
                                 let endMins = this.timeToMins(tMatch[2]);
                                 if (endMins <= startMins) endMins += 24 * 60; 
 
-                                // 基準：09:00 (540分) ~ 06:00 (1800分) = 總共 1260 分
                                 const BASE_MINS = 540;
                                 const TOTAL_MINS = 1260;
 
@@ -697,7 +696,7 @@
 
                 document.getElementById('fileInputPhoto').addEventListener('change', (e) => this.handleFile(e.target.files[0], false));
                 
-                // 全域監聽貼上事件
+                // 全域監聽貼上事件 (影像/網址/文字皆自動分配)
                 document.addEventListener('paste', (e) => {
                     if (!window.app || !window.app.accessToken) return;
                     const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
@@ -717,6 +716,7 @@
                         }
                     }
 
+                    // 文字全域解析 (包含網址)
                     if (!hasImage && !isInput) {
                         let text = (e.clipboardData || e.originalEvent.clipboardData).getData('text');
                         let html = (e.clipboardData || e.originalEvent.clipboardData).getData('text/html') || '';
@@ -728,7 +728,7 @@
                     }
                 });
 
-                // 點擊喚醒裁切
+                // 點擊喚醒裁切 (延遲保證 Modal 渲染)
                 const previewBox = document.querySelector('.img-preview-box');
                 previewBox.addEventListener('click', (e) => {
                     if (e.target.id === 'btn_del_photo') return;
@@ -736,6 +736,11 @@
                     
                     const previewImg = document.getElementById('preview_photo');
                     if (previewImg.style.display === 'block' && previewImg.src) {
+                        if (previewImg.src.startsWith('http') && !previewImg.src.startsWith('data:')) {
+                            Utility.showToast('⚠️ 雲端圖片無法二次裁切，請直接使用 Ctrl+V 貼上新截圖！', true);
+                            return;
+                        }
+                        this.imageElement.removeAttribute('crossorigin');
                         this.imageElement.src = previewImg.src;
                         this.openModal();
                     } else {
@@ -748,6 +753,7 @@
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
+                        this.imageElement.removeAttribute('crossorigin');
                         this.imageElement.src = event.target.result;
                         if (fromPaste) {
                             document.getElementById('preview_photo').src = event.target.result;
@@ -755,7 +761,7 @@
                             document.getElementById('text_photo').style.display = 'none';
                             document.getElementById('btn_del_photo').style.display = 'flex';
                             this.pendingBlob = file;
-                            Utility.showToast('✅ 圖片已全幅貼上，點擊圖片可進行裁切調整');
+                            Utility.showToast('✅ 圖片已全幅貼上，若需裁切請直接點擊圖片！');
                         } else {
                             this.openModal();
                         }
@@ -766,8 +772,18 @@
 
             openModal() {
                 this.modal.style.display = 'flex';
-                if(this.cropper) this.cropper.destroy();
-                this.cropper = new Cropper(this.imageElement, { aspectRatio: 3 / 4, viewMode: 1, autoCropArea: 1 });
+                if(this.cropper) {
+                    this.cropper.destroy();
+                    this.cropper = null;
+                }
+                setTimeout(() => {
+                    this.cropper = new Cropper(this.imageElement, { 
+                        aspectRatio: 3 / 4, 
+                        viewMode: 1, 
+                        autoCropArea: 1,
+                        checkCrossOrigin: false 
+                    });
+                }, 50);
             }
 
             closeModal() {
@@ -780,7 +796,7 @@
                 if(this.cropper) {
                     try {
                         const canvas = this.cropper.getCroppedCanvas({ width: 600, height: 800 });
-                        if (!canvas) throw new Error('CORS Issue');
+                        if (!canvas) throw new Error('無法讀取畫布');
                         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
                         
                         document.getElementById('preview_photo').src = dataUrl;
@@ -791,7 +807,7 @@
                         canvas.toBlob((blob) => { this.pendingBlob = blob; }, 'image/jpeg', 0.85);
                         this.closeModal();
                     } catch(e) {
-                        Utility.showToast('⚠️ 無法裁切此圖片 (外部網址權限限制)，請重新貼上截圖', true);
+                        Utility.showToast('⚠️ 圖片來源發生錯誤，請重新貼上', true);
                         this.closeModal();
                     }
                 }
@@ -913,7 +929,6 @@
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
 
-                // 1. 純網址判定
                 let isPureUrl = /^https?:\/\/[^\s]+$/.test(text.trim());
                 if (isPureUrl) {
                     document.getElementById('v_url').value = text.trim();
@@ -922,14 +937,13 @@
                     return;
                 }
 
-                // 2. 清空欄位 (保護 v_store 店名、不洗掉 v_price 價格)
+                // 清空欄位 (保護 v_store 且 不覆蓋 v_price)
                 const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level', 'v_url'];
                 fieldsToClear.forEach(id => {
                     let el = document.getElementById(id);
                     if (el) el.value = '';
                 });
 
-                // 3. 網址提取 (混雜文字中)
                 let urlMatch = text.match(/https?:\/\/[^\s]+/);
                 if (urlMatch && !document.getElementById('v_url').value) {
                     document.getElementById('v_url').value = urlMatch[0];
@@ -937,7 +951,6 @@
 
                 let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
 
-                // 4. 姓名與店名解析
                 let lines = text.split('\n').map(l => l.trim()).filter(l => l);
                 if (isYoasobi) {
                     let mName = text.match(/(?:名稱|名前|Name)\s*([^\s]+)/i);
@@ -964,11 +977,10 @@
                     document.getElementById('v_store').value = mStore[1].trim();
                 }
 
-                // 5. 年齡
                 let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
                 if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
 
-                // 6. 數值 (加強邊界防護，避免與班表衝突)
+                // 修正：遇到口コミ或換行就斷開，避免抓到班表
                 let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
                           || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
                 if (mStats) {
@@ -976,13 +988,11 @@
                     document.getElementById('v_stats').value = cleanStats;
                 }
 
-                // 7. 到職日
                 let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
                 if (mDate) {
                     document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
                 }
                 
-                // 8. 屬性標籤 (AF) 
                 const tagMap = {
                     'tbc_tag': '禁菸',
                     'ppn_tag': '白虎',
@@ -1015,7 +1025,6 @@
                     document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
                 }
 
-                // 9. 班表
                 let scheduleText = text;
                 let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
                 if (mSch) {
@@ -1383,7 +1392,6 @@
                 }
             }
 
-            // ===== 靜默背景儲存引擎 =====
             async saveOrderToGoogleSheet(isBackground = false) {
                 if (!this.accessToken) { this.triggerAuth(); return; }
                 const sheetName = this.currentSheet;
