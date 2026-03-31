@@ -163,7 +163,7 @@
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
         .card.drag-over { border: 2px dashed; } 
 
-        /* 直列式微型視覺化行事曆區塊 */
+        /* 直列式微型視覺化行事曆區塊 (含刻度線) */
         .sch-wrapper { display: flex; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e0e0; position: relative; }
         .sch-time-axis { display: flex; flex-direction: column; width: 18px; position: relative; font-size: 9px; color: #999; margin-top: 24px; font-weight: bold; }
         .sch-time-axis span { position: absolute; right: 4px; transform: translateY(-50%); }
@@ -359,7 +359,7 @@
         <div class="cropper-wrapper modal-wrapper">
             <h3>✂️ 調整照片 (3:4 人像比例)</h3>
             <div style="flex: 1; background: #eee; min-height: 0; border-radius: 8px; overflow: hidden;">
-                <img id="cropperImage" src="" style="max-width: 100%; max-height: 100%;">
+                <img id="cropperImage" src="" style="max-width: 100%; max-height: 100%;" crossorigin="anonymous">
             </div>
             <div style="margin-top: 15px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="danger" onclick="cropperSvc.closeModal()">取消</button>
@@ -405,7 +405,7 @@
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
-                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('自動儲存')) {
+                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('自動儲存') || msg.includes('載入舊資料')) {
                     toast.style.background = 'var(--warning)';
                 } else {
                     toast.style.background = 'var(--success)';
@@ -757,6 +757,10 @@
                     
                     const previewImg = document.getElementById('preview_photo');
                     if (previewImg.style.display === 'block' && previewImg.src) {
+                        if (previewImg.src.startsWith('http') && !previewImg.src.startsWith('data:')) {
+                            Utility.showToast('⚠️ 雲端圖片無法二次裁切，請直接使用 Ctrl+V 貼上新截圖！', true);
+                            return;
+                        }
                         this.imageElement.removeAttribute('crossorigin');
                         this.imageElement.src = previewImg.src;
                         this.openModal();
@@ -941,7 +945,6 @@
                 }
             }
 
-            // ===== 批次班表與標籤更新精靈邏輯 =====
             openBatchModal() {
                 if (!this.accessToken) {
                     Utility.showToast('⚠️ 請先完成 Google 登入授權！', true);
@@ -1035,23 +1038,43 @@
                 }, 100); 
             }
 
-            // ===== 核心：完全感知聯動的防呆更新引擎 =====
+            // ===== 核心：防呆網址優先比對 =====
             processMagicPaste(text, html) {
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
 
-                // 1. 純網址判定
+                // 1. 網址提取
+                let extractedUrl = "";
+                let urlMatch = text.match(/https?:\/\/[^\s]+/);
+                if (urlMatch) {
+                    extractedUrl = urlMatch[0];
+                }
+
+                // 2. 預先進行資料庫防呆比對 (優先以網址比對)
+                let recordIdx = -1;
+                if (extractedUrl) {
+                    recordIdx = this.dataStore.findIndex(r => {
+                        let dbUrl = (r._raw[this.colMap.url] || "").trim();
+                        return dbUrl && dbUrl === extractedUrl;
+                    });
+                }
+
+                // 3. 純網址貼上的情境
                 let isPureUrl = /^https?:\/\/[^\s]+$/.test(text.trim());
                 if (isPureUrl) {
-                    document.getElementById('v_url').value = text.trim();
-                    Utility.showToast('✨ 已自動辨識並填入網址！');
+                    if (recordIdx !== -1) {
+                        this.editRecord(recordIdx);
+                        Utility.showToast('✨ 偵測到資料庫已有此網址，已自動載入該技師資料！');
+                    } else {
+                        document.getElementById('v_url').value = extractedUrl;
+                        Utility.showToast('✨ 已自動辨識並填入新網址！');
+                    }
                     if (magicInput) magicInput.value = '';
                     return;
                 }
 
                 let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
 
-                // 2. 預先提取姓名與店名 (Dry-run extraction)
                 let rawNameExt = "";
                 let extStore = "";
                 let lines = text.split('\n').map(l => l.trim()).filter(l => l);
@@ -1080,7 +1103,6 @@
                 }
                 if (!extStore) extStore = document.getElementById('v_store').value.trim();
 
-                // 淨化姓名以利比對
                 let pureName = "";
                 if (rawNameExt) {
                     pureName = rawNameExt.replace(/(AFOK|#AF|3POK|#3P)/ig, '')
@@ -1089,22 +1111,22 @@
                                          .trim();
                 }
 
-                // 3. 資料庫比對 (Database Matching)
+                // 4. 資料庫次要比對 (如果網址沒找到，改用純淨姓名 + 店名比對)
                 let isExisting = false;
-                if (pureName && extStore) {
-                    const recordIdx = this.dataStore.findIndex(r => {
+                if (recordIdx === -1 && pureName && extStore) {
+                    recordIdx = this.dataStore.findIndex(r => {
                         let dbName = (r._raw[this.colMap.name] || "").replace(/(AFOK|#AF|3POK|#3P)/ig, '').replace(/[♤♠♡♥♧♣♦♢]/g, '').replace(/[\s\u3000|｜・]+$/, '').trim();
                         let dbStore = (r._raw[this.colMap.store] || "").trim();
                         return dbName.toLowerCase() === pureName.toLowerCase() && dbStore.toLowerCase() === extStore.toLowerCase();
                     });
-
-                    if (recordIdx !== -1) {
-                        this.editRecord(recordIdx); // 載入舊資料 (包含原本的標籤、照片、價格等)
-                        isExisting = true;
-                    }
                 }
 
-                // 4. 清理將被覆蓋的欄位 (保留安全屬性)
+                if (recordIdx !== -1) {
+                    this.editRecord(recordIdx); 
+                    isExisting = true;
+                }
+
+                // 5. 清理將被覆蓋的欄位 (保護 v_store, v_price, v_url 不被清空，不碰 AF, Level 達成純疊加)
                 const fieldsToClear = ['v_age', 'v_stats', 'v_start_date', 'v_schedule'];
                 fieldsToClear.forEach(id => {
                     let el = document.getElementById(id);
@@ -1114,18 +1136,11 @@
                 if (!isExisting) {
                     document.getElementById('v_row_index').value = '';
                     document.getElementById('v_tech_id').value = '';
-                    document.getElementById('v_name').value = pureName; 
-                    document.getElementById('v_store').value = extStore;
-                } else {
-                    document.getElementById('v_name').value = pureName;
-                    document.getElementById('v_store').value = extStore;
                 }
-
-                // 5. 其他屬性疊加更新
-                let urlMatch = text.match(/https?:\/\/[^\s]+/);
-                if (urlMatch && !document.getElementById('v_url').value) {
-                    document.getElementById('v_url').value = urlMatch[0];
-                }
+                
+                if (pureName) document.getElementById('v_name').value = pureName; 
+                if (extStore) document.getElementById('v_store').value = extStore;
+                if (extractedUrl) document.getElementById('v_url').value = extractedUrl;
 
                 let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
                 if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
@@ -1142,7 +1157,6 @@
                     document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
                 }
                 
-                // 6. 標籤與等級處理
                 const tagMap = {
                     'tbc_tag': '禁菸',
                     'ppn_tag': '白虎',
@@ -1170,7 +1184,7 @@
                 }
                 
                 if (/肛交\s*[○〇]/.test(text)) { foundTags.add('AF'); isTagUpdated = true; }
-                if (/三人組\s*[○〇]/.test(text)) { foundTags.add('3P'); isTagUpdated = true; }
+                if (/(?:三人組|3P)\s*[○〇]/i.test(text)) { foundTags.add('3P'); isTagUpdated = true; }
 
                 if (rawNameExt) {
                     if (/(AFOK|#AF)/i.test(rawNameExt)) { foundTags.add('AF'); isTagUpdated = true; }
@@ -1185,7 +1199,6 @@
                     document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
                 }
 
-                // 7. 班表處理
                 let scheduleText = text;
                 let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
                 if (mSch) {
@@ -1201,7 +1214,7 @@
 
                 // 8. 智慧提示
                 if (isExisting) {
-                    Utility.showToast('✨ 偵測到已有該技師，已自動載入舊資料並更新最新班表！請確認後儲存。');
+                    Utility.showToast('✨ 偵測到已有該技師，已自動載入舊資料並更新！請確認後儲存。');
                 } else if (hasSchedule) {
                     Utility.showToast('✨ 綜合資訊已自動解析！(新建立技師資料)');
                 } else {
