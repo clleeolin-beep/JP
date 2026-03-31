@@ -163,7 +163,7 @@
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
         .card.drag-over { border: 2px dashed; } 
 
-        /* 直列式微型視覺化行事曆區塊 (含刻度線) */
+        /* 直列式微型視覺化行事曆區塊 */
         .sch-wrapper { display: flex; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e0e0; position: relative; }
         .sch-time-axis { display: flex; flex-direction: column; width: 18px; position: relative; font-size: 9px; color: #999; margin-top: 24px; font-weight: bold; }
         .sch-time-axis span { position: absolute; right: 4px; transform: translateY(-50%); }
@@ -946,6 +946,27 @@
                 }
             }
 
+            // ===== 智慧分店判定引擎 =====
+            isSameStore(dbStore, extStore) {
+                if (!dbStore || !extStore) return true;
+                let s1 = dbStore.toLowerCase().replace(/[\s　]/g, '');
+                let s2 = extStore.toLowerCase().replace(/[\s　]/g, '');
+                
+                if (s1 === s2) return true;
+                
+                if (s1.includes(s2) || s2.includes(s1)) {
+                    let longer = s1.length > s2.length ? s1 : s2;
+                    let shorter = s1.length > s2.length ? s2 : s1;
+                    let extra = longer.replace(shorter, '');
+                    
+                    if (/(in|店|branch|浅草|asakusa|新宿|shinjuku|池袋|ikebukuro|渋谷|shibuya|五反田|gotanda|目黒|meguro|白金|shirokane|上野|ueno|秋葉原|akihabara|新橋|shinbashi|品川|shinagawa)/i.test(extra)) {
+                        return false; 
+                    }
+                    return true; 
+                }
+                return false;
+            }
+
             openBatchModal() {
                 if (!this.accessToken) {
                     Utility.showToast('⚠️ 請先完成 Google 登入授權！', true);
@@ -972,6 +993,9 @@
                 this.closeBatchModal();
 
                 setTimeout(() => {
+                    let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
+                    let batchStore = mStore ? mStore[1].trim() : document.getElementById('v_store').value.trim();
+
                     const blocks = text.split(/收藏夾/g).filter(b => b.trim().length > 10);
                     let updateCount = 0;
 
@@ -984,9 +1008,9 @@
                         if (!mName) return;
                         
                         let fullNameStr = mName[1];
-                        let pureName = fullNameStr.replace(/(AFOK|#AF|3POK|#3P)/ig, '')
+                        let pureName = fullNameStr.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '')
                                                .replace(/[♤♠♡♥♧♣♦♢]/g, '')
-                                               .replace(/[\s\u3000|｜・]+$/, '')
+                                               .replace(/[\s\u3000|｜・_＿]+$/, '')
                                                .trim();
 
                         let mSch = block.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
@@ -997,11 +1021,17 @@
                             if (hasSchedule) {
                                 const recordIdx = this.dataStore.findIndex(r => {
                                     let dbName = r._raw[this.colMap.name] || "";
-                                    let cleanDbName = dbName.replace(/(AFOK|#AF|3POK|#3P)/ig, '')
+                                    let cleanDbName = dbName.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '')
                                                .replace(/[♤♠♡♥♧♣♦♢]/g, '')
-                                               .replace(/[\s\u3000|｜・]+$/, '')
+                                               .replace(/[\s\u3000|｜・_＿]+$/, '')
                                                .trim();
-                                    return cleanDbName.toLowerCase() === pureName.toLowerCase();
+                                    
+                                    let dbStore = r._raw[this.colMap.store] || "";
+                                    
+                                    let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
+                                    let storeMatch = this.isSameStore(dbStore, batchStore);
+
+                                    return nameMatch && storeMatch;
                                 });
 
                                 if (recordIdx !== -1) {
@@ -1010,8 +1040,8 @@
                                     let originalDbAf = this.dataStore[recordIdx]._raw[this.colMap.af] || "";
                                     let foundTags = new Set(originalDbAf.split(/[\/／]/).map(t=>t.trim()).filter(t=>t));
                                     
-                                    if (/(AFOK|#AF)/i.test(fullNameStr)) foundTags.add('AF');
-                                    if (/(3POK|#3P)/i.test(fullNameStr)) foundTags.add('3P');
+                                    if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(fullNameStr)) foundTags.add('AF');
+                                    if (/(3POK|#3P|３ＰＯＫ|＃３Ｐ)/i.test(fullNameStr)) foundTags.add('3P');
                                     
                                     if (foundTags.size > 0) {
                                         this.dataStore[recordIdx]._raw[this.colMap.af] = Array.from(foundTags).join(' / ');
@@ -1039,7 +1069,6 @@
                 }, 100); 
             }
 
-            // ===== 核心：Google 試算表刪除功能 =====
             async deleteRecord() {
                 if (!this.accessToken) { this.triggerAuth(); return; }
                 
@@ -1059,7 +1088,7 @@
                 try {
                     const sheetSelect = document.getElementById('v_sheet');
                     const sheetId = sheetSelect.options[sheetSelect.selectedIndex].dataset.sheetId;
-                    const rowIdx = parseInt(targetRowIdx) - 1; // 轉換為 0-based 索引
+                    const rowIdx = parseInt(targetRowIdx) - 1; 
 
                     const batchUpdateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`;
                     const payload = {
@@ -1113,7 +1142,9 @@
                 if (extractedUrl) {
                     recordIdx = this.dataStore.findIndex(r => {
                         let dbUrl = (r._raw[this.colMap.url] || "").trim();
-                        return dbUrl && dbUrl === extractedUrl;
+                        let cleanDbUrl = dbUrl.split('?')[0].replace(/\/$/, "");
+                        let cleanExtUrl = extractedUrl.split('?')[0].replace(/\/$/, "");
+                        return cleanDbUrl && cleanDbUrl === cleanExtUrl;
                     });
                 }
 
@@ -1162,18 +1193,22 @@
 
                 let pureName = "";
                 if (rawNameExt) {
-                    pureName = rawNameExt.replace(/(AFOK|#AF|3POK|#3P)/ig, '')
+                    pureName = rawNameExt.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '')
                                          .replace(/[♤♠♡♥♧♣♦♢]/g, '')
-                                         .replace(/[\s\u3000|｜・]+$/, '')
+                                         .replace(/[\s\u3000|｜・_＿]+$/, '')
                                          .trim();
                 }
 
                 let isExisting = false;
-                if (recordIdx === -1 && pureName && extStore) {
+                if (recordIdx === -1 && pureName) {
                     recordIdx = this.dataStore.findIndex(r => {
-                        let dbName = (r._raw[this.colMap.name] || "").replace(/(AFOK|#AF|3POK|#3P)/ig, '').replace(/[♤♠♡♥♧♣♦♢]/g, '').replace(/[\s\u3000|｜・]+$/, '').trim();
+                        let dbName = (r._raw[this.colMap.name] || "").replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '').replace(/[♤♠♡♥♧♣♦♢]/g, '').replace(/[\s\u3000|｜・_＿]+$/, '').trim();
                         let dbStore = (r._raw[this.colMap.store] || "").trim();
-                        return dbName.toLowerCase() === pureName.toLowerCase() && dbStore.toLowerCase() === extStore.toLowerCase();
+                        
+                        let nameMatch = dbName.toLowerCase() === pureName.toLowerCase();
+                        let storeMatch = this.isSameStore(dbStore, extStore);
+
+                        return nameMatch && storeMatch;
                     });
                 }
 
@@ -1242,8 +1277,8 @@
                 if (/(?:三人組|3P)\s*[○〇]/i.test(text)) { foundTags.add('3P'); isTagUpdated = true; }
 
                 if (rawNameExt) {
-                    if (/(AFOK|#AF)/i.test(rawNameExt)) { foundTags.add('AF'); isTagUpdated = true; }
-                    if (/(3POK|#3P)/i.test(rawNameExt)) { foundTags.add('3P'); isTagUpdated = true; }
+                    if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(rawNameExt)) { foundTags.add('AF'); isTagUpdated = true; }
+                    if (/(3POK|#3P|３ＰＯＫ|＃３Ｐ)/i.test(rawNameExt)) { foundTags.add('3P'); isTagUpdated = true; }
                     let symbolMatch = rawNameExt.match(/([♤♠♡♥♧♣♦♢])/);
                     if (symbolMatch) {
                         document.getElementById('v_level').value = symbolMatch[1];
@@ -1401,7 +1436,7 @@
                             const opt = document.createElement('option');
                             opt.value = s.properties.title;
                             opt.innerText = s.properties.title;
-                            opt.dataset.sheetId = s.properties.sheetId; // 綁定 sheetId 以供刪除使用
+                            opt.dataset.sheetId = s.properties.sheetId; 
                             select.appendChild(opt);
                         });
                         this.loadSheetData(); 
@@ -1647,7 +1682,6 @@
                     
                     if (!res.ok) throw new Error("儲存失敗");
                     
-                    // 成功後，更新本地的 _rowIndex 確保索引對齊
                     this.dataStore.forEach((item, idx) => {
                         item._rowIndex = idx + 2; 
                     });
@@ -1720,7 +1754,6 @@
                     document.getElementById('btn_del_photo').style.display = 'none';
                 }
 
-                // 顯示刪除按鈕
                 document.getElementById('btn-delete').style.display = 'inline-flex';
                 
                 if (window.innerWidth <= 850) {
@@ -1739,7 +1772,6 @@
                 document.getElementById('text_photo').style.display = 'block';
                 document.getElementById('btn_del_photo').style.display = 'none';
                 
-                // 隱藏刪除按鈕
                 document.getElementById('btn-delete').style.display = 'none';
 
                 cropperSvc.pendingBlob = null;
