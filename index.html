@@ -274,7 +274,7 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>屬性</label>
-                    <input type="text" id="v_af" placeholder="例如：禁菸 / 白虎 / 潮 / 3P">
+                    <input type="text" id="v_af" placeholder="例如：禁菸 / 白虎 / 潮 / 3P / AF">
                 </div>
                 <div class="form-group">
                     <label>等級</label>
@@ -552,7 +552,7 @@
                 return h * 60 + m;
             }
 
-            // ===== 智慧班表貼上攔截器 =====
+            // ===== 智慧班表貼上攔截器 (完全防斷行截斷) =====
             static parseAndFormatSchedule(rawText) {
                 if (!rawText) return '';
                 
@@ -925,7 +925,7 @@
                 }
             }
 
-            // ===== 核心：完全非破壞性疊加模式 (不主動清空任何欄位) =====
+            // ===== 核心：全域/指定共用的魔法解析器 (加入文字屬性辨識: 肛交) =====
             processMagicPaste(text, html) {
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
@@ -939,7 +939,13 @@
                     return;
                 }
 
-                // 2. 網址提取 (混雜文字中)
+                // 2. 清空欄位 (保護 v_store, v_price, v_url)
+                const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level'];
+                fieldsToClear.forEach(id => {
+                    let el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+
                 let urlMatch = text.match(/https?:\/\/[^\s]+/);
                 if (urlMatch && !document.getElementById('v_url').value) {
                     document.getElementById('v_url').value = urlMatch[0];
@@ -947,7 +953,6 @@
 
                 let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
 
-                // 3. 姓名與店名解析
                 let lines = text.split('\n').map(l => l.trim()).filter(l => l);
                 if (isYoasobi) {
                     let mName = text.match(/(?:名稱|名前|Name)\s*([^\s]+)/i);
@@ -974,11 +979,9 @@
                     document.getElementById('v_store').value = mStore[1].trim();
                 }
 
-                // 4. 年齡
                 let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
                 if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
 
-                // 5. 數值 (加強邊界防護，避免與班表衝突)
                 let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
                           || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
                 if (mStats) {
@@ -986,13 +989,12 @@
                     document.getElementById('v_stats').value = cleanStats;
                 }
 
-                // 6. 到職日
                 let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
                 if (mDate) {
                     document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
                 }
                 
-                // 7. 屬性標籤 (AF) - 合併既有標籤
+                // 7. 屬性標籤 (AF) - 合併既有標籤與純文字解析
                 const tagMap = {
                     'tbc_tag': '禁菸',
                     'ppn_tag': '白虎',
@@ -1009,9 +1011,9 @@
                 let existingTags = document.getElementById('v_af').value.split(/[\/／]/).map(t=>t.trim()).filter(t=>t);
                 existingTags.forEach(t => foundTags.add(t));
                 
-                let htmlHasTags = false;
+                let isTagUpdated = false;
                 while ((imgMatch = imgRegex.exec(html)) !== null) {
-                    htmlHasTags = true;
+                    isTagUpdated = true;
                     let filename = imgMatch[1];
                     if (filename.endsWith('_tag') || filename === 'tbc_iqos') {
                         if (tagMap[filename]) {
@@ -1021,11 +1023,17 @@
                         }
                     }
                 }
-                if (htmlHasTags && foundTags.size > 0) {
+                
+                // 純文字特徵捕捉 (例如: 肛交)
+                if (/肛交\s*[○〇]/.test(text)) {
+                    foundTags.add('AF');
+                    isTagUpdated = true;
+                }
+
+                if (isTagUpdated && foundTags.size > 0) {
                     document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
                 }
 
-                // 8. 班表
                 let scheduleText = text;
                 let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
                 if (mSch) {
@@ -1037,7 +1045,7 @@
                 
                 if (hasSchedule) {
                     document.getElementById('v_schedule').value = formattedSch;
-                    Utility.showToast('✨ 綜合資訊已自動解析！(完全非破壞性疊加模式)');
+                    Utility.showToast('✨ 綜合資訊已自動解析！(非破壞性疊加模式)');
                 } else {
                     Utility.showToast('✨ 已更新部分資訊 (未偵測到班表更新，保留原資料)');
                 }
