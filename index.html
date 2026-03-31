@@ -313,8 +313,9 @@
             </div>
             
             <div style="margin-top: auto; display: flex; gap: 10px; padding-top: 10px;">
-                <button id="btn-save" onclick="app.saveToGoogleSheet()" style="flex: 2;" disabled title="快速鍵：Ctrl + S">💾 寫入儲存 (Ctrl+S)</button>
-                <button onclick="app.clearForm()" class="danger" style="flex: 1;">🧹 清空</button>
+                <button id="btn-save" onclick="app.saveToGoogleSheet()" style="flex: 2;" disabled title="快速鍵：Ctrl + S">💾 儲存</button>
+                <button id="btn-delete" onclick="app.deleteRecord()" class="danger" style="flex: 1; display: none;" title="永久刪除此筆資料">🗑️ 刪除</button>
+                <button onclick="app.clearForm()" class="secondary" style="flex: 1;">🧹 清空</button>
             </div>
         </div>
 
@@ -1038,19 +1039,76 @@
                 }, 100); 
             }
 
-            // ===== 核心：防呆網址優先比對 =====
+            // ===== 核心：Google 試算表刪除功能 =====
+            async deleteRecord() {
+                if (!this.accessToken) { this.triggerAuth(); return; }
+                
+                const targetRowIdx = document.getElementById('v_row_index').value;
+                const nameVal = document.getElementById('v_name').value || '此技師';
+                
+                if (!targetRowIdx) {
+                    Utility.showToast("⚠️ 請先選擇要刪除的資料！", true);
+                    return;
+                }
+                
+                if (!confirm(`⚠️ 警告：確定要永久刪除「${nameVal}」的資料嗎？\n此操作會從資料庫中完全移除，無法復原！`)) {
+                    return;
+                }
+
+                Utility.showLoading("刪除資料中...");
+                try {
+                    const sheetSelect = document.getElementById('v_sheet');
+                    const sheetId = sheetSelect.options[sheetSelect.selectedIndex].dataset.sheetId;
+                    const rowIdx = parseInt(targetRowIdx) - 1; // 轉換為 0-based 索引
+
+                    const batchUpdateUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`;
+                    const payload = {
+                        requests: [
+                            {
+                                deleteDimension: {
+                                    range: {
+                                        sheetId: parseInt(sheetId),
+                                        dimension: "ROWS",
+                                        startIndex: rowIdx,
+                                        endIndex: rowIdx + 1
+                                    }
+                                }
+                            }
+                        ]
+                    };
+
+                    const res = await fetch(batchUpdateUrl, {
+                        method: 'POST',
+                        headers: { 
+                            'Authorization': `Bearer ${this.accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) throw new Error("刪除失敗，請確認權限或連線狀態");
+
+                    Utility.showToast(`✅ 已成功刪除 [${nameVal}] 的資料！`);
+                    this.clearForm();
+                    await this.loadSheetData(); 
+                    
+                } catch (e) {
+                    Utility.showToast(`❌ 錯誤: ${e.message}`, true);
+                } finally {
+                    Utility.hideLoading();
+                }
+            }
+
             processMagicPaste(text, html) {
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
 
-                // 1. 網址提取
                 let extractedUrl = "";
                 let urlMatch = text.match(/https?:\/\/[^\s]+/);
                 if (urlMatch) {
                     extractedUrl = urlMatch[0];
                 }
 
-                // 2. 預先進行資料庫防呆比對 (優先以網址比對)
                 let recordIdx = -1;
                 if (extractedUrl) {
                     recordIdx = this.dataStore.findIndex(r => {
@@ -1059,7 +1117,6 @@
                     });
                 }
 
-                // 3. 純網址貼上的情境
                 let isPureUrl = /^https?:\/\/[^\s]+$/.test(text.trim());
                 if (isPureUrl) {
                     if (recordIdx !== -1) {
@@ -1111,7 +1168,6 @@
                                          .trim();
                 }
 
-                // 4. 資料庫次要比對 (如果網址沒找到，改用純淨姓名 + 店名比對)
                 let isExisting = false;
                 if (recordIdx === -1 && pureName && extStore) {
                     recordIdx = this.dataStore.findIndex(r => {
@@ -1126,7 +1182,6 @@
                     isExisting = true;
                 }
 
-                // 5. 清理將被覆蓋的欄位 (保護 v_store, v_price, v_url 不被清空，不碰 AF, Level 達成純疊加)
                 const fieldsToClear = ['v_age', 'v_stats', 'v_start_date', 'v_schedule'];
                 fieldsToClear.forEach(id => {
                     let el = document.getElementById(id);
@@ -1212,7 +1267,6 @@
                     document.getElementById('v_schedule').value = formattedSch;
                 }
 
-                // 8. 智慧提示
                 if (isExisting) {
                     Utility.showToast('✨ 偵測到已有該技師，已自動載入舊資料並更新！請確認後儲存。');
                 } else if (hasSchedule) {
@@ -1327,7 +1381,7 @@
             async fetchSheetNames() {
                 if (!this.accessToken) return;
                 try {
-                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets.properties.title`, {
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets.properties(title,sheetId)`, {
                         headers: { 'Authorization': `Bearer ${this.accessToken}` }
                     });
                     const data = await res.json();
@@ -1347,6 +1401,7 @@
                             const opt = document.createElement('option');
                             opt.value = s.properties.title;
                             opt.innerText = s.properties.title;
+                            opt.dataset.sheetId = s.properties.sheetId; // 綁定 sheetId 以供刪除使用
                             select.appendChild(opt);
                         });
                         this.loadSheetData(); 
@@ -1592,10 +1647,15 @@
                     
                     if (!res.ok) throw new Error("儲存失敗");
                     
+                    // 成功後，更新本地的 _rowIndex 確保索引對齊
+                    this.dataStore.forEach((item, idx) => {
+                        item._rowIndex = idx + 2; 
+                    });
+
                     if (!isBackground) {
                         Utility.showToast("✅ 變更與排序儲存成功！");
                         document.getElementById('btn-save-order').style.display = 'none';
-                        this.loadSheetData(); 
+                        this.renderCatalog();
                     } else {
                         Utility.showToast("✅ 背景自動儲存成功！");
                         document.getElementById('btn-save-order').style.display = 'none';
@@ -1659,6 +1719,9 @@
                     document.getElementById('text_photo').style.display = 'block';
                     document.getElementById('btn_del_photo').style.display = 'none';
                 }
+
+                // 顯示刪除按鈕
+                document.getElementById('btn-delete').style.display = 'inline-flex';
                 
                 if (window.innerWidth <= 850) {
                     const formPanel = document.getElementById('panel-form');
@@ -1675,6 +1738,10 @@
                 document.getElementById('preview_photo').style.display = 'none';
                 document.getElementById('text_photo').style.display = 'block';
                 document.getElementById('btn_del_photo').style.display = 'none';
+                
+                // 隱藏刪除按鈕
+                document.getElementById('btn-delete').style.display = 'none';
+
                 cropperSvc.pendingBlob = null;
                 
                 if(!this.isEditMode) {
