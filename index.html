@@ -355,7 +355,7 @@
         <div class="cropper-wrapper">
             <h3 style="margin-top:0; color: var(--primary);">✂️ 調整照片 (3:4 人像比例)</h3>
             <div style="flex: 1; background: #eee; min-height: 0; border-radius: 8px; overflow: hidden;">
-                <img id="cropperImage" src="" style="max-width: 100%; max-height: 100%;">
+                <img id="cropperImage" src="" style="max-width: 100%; max-height: 100%;" crossorigin="anonymous">
             </div>
             <div style="margin-top: 15px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="danger" onclick="cropperSvc.closeModal()">取消</button>
@@ -641,6 +641,7 @@
                                 let endMins = this.timeToMins(tMatch[2]);
                                 if (endMins <= startMins) endMins += 24 * 60; 
 
+                                // 基準：09:00 (540分) ~ 06:00 (1800分) = 總共 1260 分
                                 const BASE_MINS = 540;
                                 const TOTAL_MINS = 1260;
 
@@ -929,6 +930,7 @@
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
 
+                // 1. 純網址判定
                 let isPureUrl = /^https?:\/\/[^\s]+$/.test(text.trim());
                 if (isPureUrl) {
                     document.getElementById('v_url').value = text.trim();
@@ -937,15 +939,16 @@
                     return;
                 }
 
-                // 清空欄位 (保護 v_store 且 不覆蓋 v_price)
-                const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level', 'v_url'];
+                // 2. 清空欄位 (保護 v_store 且 不覆蓋 v_price, 取消網址欄位覆蓋)
+                const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level'];
                 fieldsToClear.forEach(id => {
                     let el = document.getElementById(id);
                     if (el) el.value = '';
                 });
 
+                // 3. 網址提取 (混雜文字中)
                 let urlMatch = text.match(/https?:\/\/[^\s]+/);
-                if (urlMatch && !document.getElementById('v_url').value) {
+                if (urlMatch) {
                     document.getElementById('v_url').value = urlMatch[0];
                 }
 
@@ -1222,6 +1225,7 @@
                     this.headerRow = data.values[0];
                     const getIdx = (name) => this.headerRow.findIndex(h => String(h).trim() === name);
                     
+                    // 防呆：支援原本的 AF 或新改名的 屬性
                     this.colMap = {
                         location: getIdx('位置'), store: getIdx('店名'), techId: getIdx('技師編號'),
                         startDate: getIdx('到職日'), name: getIdx('姓名'), age: getIdx('年齡'),
