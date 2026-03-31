@@ -568,16 +568,18 @@
                 return h * 60 + m;
             }
 
-            // ===== 智慧班表貼上攔截器 (修復防斷行與店鋪資訊干擾) =====
             static parseAndFormatSchedule(rawText) {
                 if (!rawText) return '';
+                
+                let stopIndex = rawText.search(/(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記)/);
+                let cleanText = stopIndex !== -1 ? rawText.substring(0, stopIndex) : rawText;
                 
                 const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'};
                 const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2})|$)/g;
                 let cleanedLines = [];
                 let match;
                 
-                while ((match = regex.exec(rawText)) !== null) {
+                while ((match = regex.exec(cleanText)) !== null) {
                     let m = parseInt(match[1], 10);
                     let d = parseInt(match[2], 10);
                     let date = `${m}/${d}`;
@@ -586,7 +588,6 @@
                     let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
                     
                     let content = match[4] || ''; 
-                    // 防止最後一天往下抓到口碑或營業時間
                     let stopMatch = content.search(/(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記)/);
                     if (stopMatch !== -1) {
                         content = content.substring(0, stopMatch);
@@ -756,10 +757,7 @@
                     
                     const previewImg = document.getElementById('preview_photo');
                     if (previewImg.style.display === 'block' && previewImg.src) {
-                        if (previewImg.src.startsWith('http') && !previewImg.src.startsWith('data:')) {
-                            Utility.showToast('⚠️ 雲端圖片無法二次裁切，請直接使用 Ctrl+V 貼上新截圖！', true);
-                            return;
-                        }
+                        this.imageElement.removeAttribute('crossorigin');
                         this.imageElement.src = previewImg.src;
                         this.openModal();
                     } else {
@@ -772,6 +770,7 @@
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
+                        this.imageElement.removeAttribute('crossorigin');
                         this.imageElement.src = event.target.result;
                         if (fromPaste) {
                             document.getElementById('preview_photo').src = event.target.result;
@@ -969,7 +968,6 @@
                 this.closeBatchModal();
 
                 setTimeout(() => {
-                    // 使用「收藏夾」作為分隔符切分塊
                     const blocks = text.split(/收藏夾/g).filter(b => b.trim().length > 10);
                     let updateCount = 0;
 
@@ -1003,10 +1001,8 @@
                                 });
 
                                 if (recordIdx !== -1) {
-                                    // 1. 寫入新班表
                                     this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
                                     
-                                    // 2. 寫入標籤 AF/3P
                                     let originalDbAf = this.dataStore[recordIdx]._raw[this.colMap.af] || "";
                                     let foundTags = new Set(originalDbAf.split(/[\/／]/).map(t=>t.trim()).filter(t=>t));
                                     
@@ -1017,7 +1013,6 @@
                                         this.dataStore[recordIdx]._raw[this.colMap.af] = Array.from(foundTags).join(' / ');
                                     }
 
-                                    // 3. 寫入裝飾符 (等級)
                                     let symbolMatch = fullNameStr.match(/([♤♠♡♥♧♣♦♢])/);
                                     if (symbolMatch) {
                                         this.dataStore[recordIdx]._raw[this.colMap.level] = symbolMatch[1];
@@ -1040,11 +1035,12 @@
                 }, 100); 
             }
 
-            // ===== 核心：完全非破壞性疊加模式 (不主動清空任何欄位) =====
+            // ===== 核心：完全感知聯動的防呆更新引擎 =====
             processMagicPaste(text, html) {
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
 
+                // 1. 純網址判定
                 let isPureUrl = /^https?:\/\/[^\s]+$/.test(text.trim());
                 if (isPureUrl) {
                     document.getElementById('v_url').value = text.trim();
@@ -1053,50 +1049,87 @@
                     return;
                 }
 
-                // 清空欄位 (保護 v_store 且 不覆蓋 v_price, v_url, v_af, v_level)
-                const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule'];
+                let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
+
+                // 2. 預先提取姓名與店名 (Dry-run extraction)
+                let rawNameExt = "";
+                let extStore = "";
+                let lines = text.split('\n').map(l => l.trim()).filter(l => l);
+
+                if (isYoasobi) {
+                    let mName = text.match(/(?:名稱|名前|Name)\s*([^\n\s]+)/i); 
+                    if (mName) rawNameExt = mName[1].trim();
+                } else {
+                    for(let i=0; i < Math.min(5, lines.length); i++) {
+                        let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
+                        if (nameStoreMatch && !lines[i].includes('http')) {
+                            rawNameExt = nameStoreMatch[1].trim();
+                            extStore = nameStoreMatch[2].trim();
+                            break;
+                        }
+                    }
+                    if (!rawNameExt) {
+                        let mName = text.match(/(?:Name|名前)\s*([^\sAge年齢]+)/i);
+                        if (mName) rawNameExt = mName[1].trim();
+                    }
+                }
+
+                let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
+                if (mStore) {
+                    extStore = mStore[1].trim();
+                }
+                if (!extStore) extStore = document.getElementById('v_store').value.trim();
+
+                // 淨化姓名以利比對
+                let pureName = "";
+                if (rawNameExt) {
+                    pureName = rawNameExt.replace(/(AFOK|#AF|3POK|#3P)/ig, '')
+                                         .replace(/[♤♠♡♥♧♣♦♢]/g, '')
+                                         .replace(/[\s\u3000|｜・]+$/, '')
+                                         .trim();
+                }
+
+                // 3. 資料庫比對 (Database Matching)
+                let isExisting = false;
+                if (pureName && extStore) {
+                    const recordIdx = this.dataStore.findIndex(r => {
+                        let dbName = (r._raw[this.colMap.name] || "").replace(/(AFOK|#AF|3POK|#3P)/ig, '').replace(/[♤♠♡♥♧♣♦♢]/g, '').replace(/[\s\u3000|｜・]+$/, '').trim();
+                        let dbStore = (r._raw[this.colMap.store] || "").trim();
+                        return dbName.toLowerCase() === pureName.toLowerCase() && dbStore.toLowerCase() === extStore.toLowerCase();
+                    });
+
+                    if (recordIdx !== -1) {
+                        this.editRecord(recordIdx); // 載入舊資料 (包含原本的標籤、照片、價格等)
+                        isExisting = true;
+                    }
+                }
+
+                // 4. 清理將被覆蓋的欄位 (保留安全屬性)
+                const fieldsToClear = ['v_age', 'v_stats', 'v_start_date', 'v_schedule'];
                 fieldsToClear.forEach(id => {
                     let el = document.getElementById(id);
                     if (el) el.value = '';
                 });
 
+                if (!isExisting) {
+                    document.getElementById('v_row_index').value = '';
+                    document.getElementById('v_tech_id').value = '';
+                    document.getElementById('v_name').value = pureName; 
+                    document.getElementById('v_store').value = extStore;
+                } else {
+                    document.getElementById('v_name').value = pureName;
+                    document.getElementById('v_store').value = extStore;
+                }
+
+                // 5. 其他屬性疊加更新
                 let urlMatch = text.match(/https?:\/\/[^\s]+/);
                 if (urlMatch && !document.getElementById('v_url').value) {
                     document.getElementById('v_url').value = urlMatch[0];
                 }
 
-                let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
-
-                let lines = text.split('\n').map(l => l.trim()).filter(l => l);
-                if (isYoasobi) {
-                    let mName = text.match(/(?:名稱|名前|Name)\s*([^\s]+)/i);
-                    if (mName) document.getElementById('v_name').value = mName[1].trim();
-                } else {
-                    for(let i=0; i < Math.min(5, lines.length); i++) {
-                        let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
-                        if (nameStoreMatch && !lines[i].includes('http')) {
-                            document.getElementById('v_name').value = nameStoreMatch[1].trim();
-                            if (!document.getElementById('v_store').value) {
-                                document.getElementById('v_store').value = nameStoreMatch[2].trim();
-                            }
-                            break;
-                        }
-                    }
-                    let mName = text.match(/(?:Name|名前)\s*([^\sAge年齢]+)/i);
-                    if (mName && !document.getElementById('v_name').value) {
-                        document.getElementById('v_name').value = mName[1].trim();
-                    }
-                }
-
-                let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
-                if (mStore && !document.getElementById('v_store').value) {
-                    document.getElementById('v_store').value = mStore[1].trim();
-                }
-
                 let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
                 if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
 
-                // 數值
                 let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
                           || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
                 if (mStats) {
@@ -1109,7 +1142,7 @@
                     document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
                 }
                 
-                // 屬性標籤合併
+                // 6. 標籤與等級處理
                 const tagMap = {
                     'tbc_tag': '禁菸',
                     'ppn_tag': '白虎',
@@ -1123,6 +1156,7 @@
                 let imgRegex = /<img[^>]+src=["'][^"']*?\/img\/([^/"']+)\.png["']/ig;
                 let imgMatch;
                 let foundTags = new Set();
+                
                 let existingTags = document.getElementById('v_af').value.split(/[\/／]/).map(t=>t.trim()).filter(t=>t);
                 existingTags.forEach(t => foundTags.add(t));
                 
@@ -1130,53 +1164,20 @@
                 while ((imgMatch = imgRegex.exec(html)) !== null) {
                     isTagUpdated = true;
                     let filename = imgMatch[1];
-                    if (filename.endsWith('_tag') || filename === 'tbc_iqos') {
-                        if (tagMap[filename]) {
-                            foundTags.add(tagMap[filename]);
-                        } else {
-                            foundTags.add(`[${filename}]`);
-                        }
+                    if (tagMap[filename] || filename.endsWith('_tag')) {
+                        foundTags.add(tagMap[filename] || `[${filename}]`);
                     }
                 }
                 
-                // 特徵文字捕捉
-                if (/肛交\s*[○〇]/.test(text)) {
-                    foundTags.add('AF');
-                    isTagUpdated = true;
-                }
-                if (/三人組\s*[○〇]/.test(text)) {
-                    foundTags.add('3P');
-                    isTagUpdated = true;
-                }
+                if (/肛交\s*[○〇]/.test(text)) { foundTags.add('AF'); isTagUpdated = true; }
+                if (/三人組\s*[○〇]/.test(text)) { foundTags.add('3P'); isTagUpdated = true; }
 
-                // 姓名萃取標籤與淨化
-                let tempName = document.getElementById('v_name').value;
-                if (tempName) {
-                    let nameMatched = false;
-                    
-                    if (/(AFOK|#AF)/i.test(tempName)) {
-                        foundTags.add('AF');
-                        isTagUpdated = true;
-                        nameMatched = true;
-                    }
-                    if (/(3POK|#3P)/i.test(tempName)) {
-                        foundTags.add('3P');
-                        isTagUpdated = true;
-                        nameMatched = true;
-                    }
-
-                    let symbolMatch = tempName.match(/([♤♠♡♥♧♣♦♢])/);
+                if (rawNameExt) {
+                    if (/(AFOK|#AF)/i.test(rawNameExt)) { foundTags.add('AF'); isTagUpdated = true; }
+                    if (/(3POK|#3P)/i.test(rawNameExt)) { foundTags.add('3P'); isTagUpdated = true; }
+                    let symbolMatch = rawNameExt.match(/([♤♠♡♥♧♣♦♢])/);
                     if (symbolMatch) {
                         document.getElementById('v_level').value = symbolMatch[1];
-                        nameMatched = true;
-                    }
-
-                    if (nameMatched) {
-                        tempName = tempName.replace(/(AFOK|#AF|3POK|#3P)/ig, '')
-                                           .replace(/[♤♠♡♥♧♣♦♢]/g, '')
-                                           .replace(/[\s\u3000|｜・]+$/, '')
-                                           .trim();
-                        document.getElementById('v_name').value = tempName;
                     }
                 }
 
@@ -1184,7 +1185,7 @@
                     document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
                 }
 
-                // 班表解析
+                // 7. 班表處理
                 let scheduleText = text;
                 let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
                 if (mSch) {
@@ -1196,9 +1197,15 @@
                 
                 if (hasSchedule) {
                     document.getElementById('v_schedule').value = formattedSch;
-                    Utility.showToast('✨ 綜合資訊已自動解析！(完全非破壞性疊加模式)');
+                }
+
+                // 8. 智慧提示
+                if (isExisting) {
+                    Utility.showToast('✨ 偵測到已有該技師，已自動載入舊資料並更新最新班表！請確認後儲存。');
+                } else if (hasSchedule) {
+                    Utility.showToast('✨ 綜合資訊已自動解析！(新建立技師資料)');
                 } else {
-                    Utility.showToast('✨ 已更新部分資訊 (未偵測到班表更新，保留原資料)');
+                    Utility.showToast('✨ 已更新部分資訊 (未偵測到班表)');
                 }
                 
                 if (magicInput) {
