@@ -552,11 +552,10 @@
                 return h * 60 + m;
             }
 
-            // ===== 智慧班表貼上攔截器 (完全防斷行截斷) =====
+            // ===== 智慧班表貼上攔截器 =====
             static parseAndFormatSchedule(rawText) {
                 if (!rawText) return '';
                 
-                // 阻斷標籤：避免將下方「店鋪資訊」的營業時間誤認為班表
                 let stopIndex = rawText.search(/(?:口碑|口コミ|女孩部落格|写メ日記|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム)/);
                 let cleanText = stopIndex !== -1 ? rawText.substring(0, stopIndex) : rawText;
                 
@@ -701,7 +700,6 @@
 
                 document.getElementById('fileInputPhoto').addEventListener('change', (e) => this.handleFile(e.target.files[0], false));
                 
-                // 全域監聽貼上事件 (影像/網址/文字皆自動分配)
                 document.addEventListener('paste', (e) => {
                     if (!window.app || !window.app.accessToken) return;
                     const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
@@ -721,7 +719,6 @@
                         }
                     }
 
-                    // 文字全域解析 (包含網址)
                     if (!hasImage && !isInput) {
                         let text = (e.clipboardData || e.originalEvent.clipboardData).getData('text');
                         let html = (e.clipboardData || e.originalEvent.clipboardData).getData('text/html') || '';
@@ -733,7 +730,6 @@
                     }
                 });
 
-                // 點擊喚醒裁切 (延遲保證 Modal 渲染)
                 const previewBox = document.querySelector('.img-preview-box');
                 previewBox.addEventListener('click', (e) => {
                     if (e.target.id === 'btn_del_photo') return;
@@ -929,7 +925,7 @@
                 }
             }
 
-            // ===== 核心：全域/指定共用的魔法解析器 (不洗掉 v_price) =====
+            // ===== 核心：完全非破壞性疊加模式 (不主動清空任何欄位) =====
             processMagicPaste(text, html) {
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
@@ -943,14 +939,7 @@
                     return;
                 }
 
-                // 2. 清空欄位 (保護 v_store, v_price, v_url 不被自動清空)
-                const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level'];
-                fieldsToClear.forEach(id => {
-                    let el = document.getElementById(id);
-                    if (el) el.value = '';
-                });
-
-                // 3. 網址提取 (混雜文字中)
+                // 2. 網址提取 (混雜文字中)
                 let urlMatch = text.match(/https?:\/\/[^\s]+/);
                 if (urlMatch && !document.getElementById('v_url').value) {
                     document.getElementById('v_url').value = urlMatch[0];
@@ -958,6 +947,7 @@
 
                 let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
 
+                // 3. 姓名與店名解析
                 let lines = text.split('\n').map(l => l.trim()).filter(l => l);
                 if (isYoasobi) {
                     let mName = text.match(/(?:名稱|名前|Name)\s*([^\s]+)/i);
@@ -984,10 +974,11 @@
                     document.getElementById('v_store').value = mStore[1].trim();
                 }
 
+                // 4. 年齡
                 let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
                 if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
 
-                // 6. 數值 (加強邊界防護，避免與班表衝突)
+                // 5. 數值 (加強邊界防護，避免與班表衝突)
                 let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
                           || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
                 if (mStats) {
@@ -995,11 +986,13 @@
                     document.getElementById('v_stats').value = cleanStats;
                 }
 
+                // 6. 到職日
                 let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
                 if (mDate) {
                     document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
                 }
                 
+                // 7. 屬性標籤 (AF) - 合併既有標籤
                 const tagMap = {
                     'tbc_tag': '禁菸',
                     'ppn_tag': '白虎',
@@ -1013,7 +1006,7 @@
                 let imgRegex = /<img[^>]+src=["'][^"']*?\/img\/([^/"']+)\.png["']/ig;
                 let imgMatch;
                 let foundTags = new Set();
-                let existingTags = document.getElementById('v_af').value.split('/').map(t=>t.trim()).filter(t=>t);
+                let existingTags = document.getElementById('v_af').value.split(/[\/／]/).map(t=>t.trim()).filter(t=>t);
                 existingTags.forEach(t => foundTags.add(t));
                 
                 let htmlHasTags = false;
@@ -1032,6 +1025,7 @@
                     document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
                 }
 
+                // 8. 班表
                 let scheduleText = text;
                 let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
                 if (mSch) {
@@ -1043,7 +1037,7 @@
                 
                 if (hasSchedule) {
                     document.getElementById('v_schedule').value = formattedSch;
-                    Utility.showToast('✨ 綜合資訊已自動解析！(非破壞性疊加模式)');
+                    Utility.showToast('✨ 綜合資訊已自動解析！(完全非破壞性疊加模式)');
                 } else {
                     Utility.showToast('✨ 已更新部分資訊 (未偵測到班表更新，保留原資料)');
                 }
