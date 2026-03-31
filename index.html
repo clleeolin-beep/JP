@@ -552,15 +552,20 @@
                 return h * 60 + m;
             }
 
+            // ===== 智慧班表貼上攔截器 (完全防斷行截斷) =====
             static parseAndFormatSchedule(rawText) {
                 if (!rawText) return '';
+                
+                // 阻斷標籤：避免將下方「店鋪資訊」的營業時間誤認為班表
+                let stopIndex = rawText.search(/(?:口碑|口コミ|女孩部落格|写メ日記|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム)/);
+                let cleanText = stopIndex !== -1 ? rawText.substring(0, stopIndex) : rawText;
                 
                 const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'};
                 const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2})|$)/g;
                 let cleanedLines = [];
                 let match;
                 
-                while ((match = regex.exec(rawText)) !== null) {
+                while ((match = regex.exec(cleanText)) !== null) {
                     let m = parseInt(match[1], 10);
                     let d = parseInt(match[2], 10);
                     let date = `${m}/${d}`;
@@ -574,7 +579,7 @@
                     
                     if (timeMatch) {
                         timeStr = `${timeMatch[1].replace('：',':')}-${timeMatch[2].replace('：',':')}`;
-                    } else if (content.includes('休') || content.includes('み') || content.includes('缺') || /^\s*-\s*$/.test(content)) {
+                    } else if (content.includes('休') || content.includes('み') || content.includes('缺') || /^\s*-\s*$/.test(content.trim()) || content.trim() === '-') {
                         timeStr = '休息';
                     }
                     
@@ -641,7 +646,6 @@
                                 let endMins = this.timeToMins(tMatch[2]);
                                 if (endMins <= startMins) endMins += 24 * 60; 
 
-                                // 基準：09:00 (540分) ~ 06:00 (1800分) = 總共 1260 分
                                 const BASE_MINS = 540;
                                 const TOTAL_MINS = 1260;
 
@@ -925,7 +929,7 @@
                 }
             }
 
-            // ===== 核心：全域/指定共用的魔法解析器 =====
+            // ===== 核心：全域/指定共用的魔法解析器 (不洗掉 v_price) =====
             processMagicPaste(text, html) {
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
@@ -939,7 +943,7 @@
                     return;
                 }
 
-                // 2. 清空欄位 (保護 v_store 且 不覆蓋 v_price, 取消網址欄位覆蓋)
+                // 2. 清空欄位 (保護 v_store, v_price, v_url 不被自動清空)
                 const fieldsToClear = ['v_name', 'v_age', 'v_stats', 'v_start_date', 'v_schedule', 'v_af', 'v_level'];
                 fieldsToClear.forEach(id => {
                     let el = document.getElementById(id);
@@ -948,7 +952,7 @@
 
                 // 3. 網址提取 (混雜文字中)
                 let urlMatch = text.match(/https?:\/\/[^\s]+/);
-                if (urlMatch) {
+                if (urlMatch && !document.getElementById('v_url').value) {
                     document.getElementById('v_url').value = urlMatch[0];
                 }
 
@@ -983,7 +987,7 @@
                 let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
                 if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
 
-                // 修正：遇到口コミ或換行就斷開，避免抓到班表
+                // 6. 數值 (加強邊界防護，避免與班表衝突)
                 let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
                           || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
                 if (mStats) {
@@ -1225,7 +1229,6 @@
                     this.headerRow = data.values[0];
                     const getIdx = (name) => this.headerRow.findIndex(h => String(h).trim() === name);
                     
-                    // 防呆：支援原本的 AF 或新改名的 屬性
                     this.colMap = {
                         location: getIdx('位置'), store: getIdx('店名'), techId: getIdx('技師編號'),
                         startDate: getIdx('到職日'), name: getIdx('姓名'), age: getIdx('年齡'),
