@@ -946,7 +946,6 @@
                 }
             }
 
-            // ===== 智慧分店判定引擎 =====
             isSameStore(dbStore, extStore) {
                 if (!dbStore || !extStore) return true;
                 let s1 = dbStore.toLowerCase().replace(/[\s　]/g, '');
@@ -1013,6 +1012,11 @@
                                                .replace(/[\s\u3000|｜・_＿]+$/, '')
                                                .trim();
 
+                        let extStats = "";
+                        let mStats = block.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
+                                  || block.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
+                        if (mStats) extStats = mStats[1].replace(/from/i, '').trim();
+
                         let mSch = block.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
                         if (mSch) {
                             let formattedSch = Utility.parseAndFormatSchedule(mSch[0]);
@@ -1027,11 +1031,15 @@
                                                .trim();
                                     
                                     let dbStore = r._raw[this.colMap.store] || "";
+                                    let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
                                     
                                     let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
                                     let storeMatch = this.isSameStore(dbStore, batchStore);
+                                    
+                                    let cleanExtStats = extStats.replace(/[\s\/]/g, '');
+                                    let statsMatch = cleanExtStats && dbStats && (dbStats.includes(cleanExtStats) || cleanExtStats.includes(dbStats));
 
-                                    return nameMatch && storeMatch;
+                                    return nameMatch && (storeMatch || statsMatch);
                                 });
 
                                 if (recordIdx !== -1) {
@@ -1128,6 +1136,7 @@
                 }
             }
 
+            // ===== 單張全域魔法貼上 =====
             processMagicPaste(text, html) {
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
@@ -1180,7 +1189,7 @@
                         }
                     }
                     if (!rawNameExt) {
-                        let mName = text.match(/(?:Name|名前)\s*([^\sAge年齢]+)/i);
+                        let mName = text.match(/(?:Name|名前)\s*(.*?)(?=\n|年齡|年齢|Age|$)/i);
                         if (mName) rawNameExt = mName[1].trim();
                     }
                 }
@@ -1190,6 +1199,13 @@
                     extStore = mStore[1].trim();
                 }
                 if (!extStore) extStore = document.getElementById('v_store').value.trim();
+
+                let extStats = "";
+                let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
+                          || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
+                if (mStats) {
+                    extStats = mStats[1].replace(/from/i, '').trim();
+                }
 
                 let pureName = "";
                 if (rawNameExt) {
@@ -1204,11 +1220,15 @@
                     recordIdx = this.dataStore.findIndex(r => {
                         let dbName = (r._raw[this.colMap.name] || "").replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '').replace(/[♤♠♡♥♧♣♦♢]/g, '').replace(/[\s\u3000|｜・_＿]+$/, '').trim();
                         let dbStore = (r._raw[this.colMap.store] || "").trim();
+                        let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
                         
                         let nameMatch = dbName.toLowerCase() === pureName.toLowerCase();
                         let storeMatch = this.isSameStore(dbStore, extStore);
+                        
+                        let cleanExtStats = extStats.replace(/[\s\/]/g, '');
+                        let statsMatch = cleanExtStats && dbStats && (dbStats.includes(cleanExtStats) || cleanExtStats.includes(dbStats));
 
-                        return nameMatch && storeMatch;
+                        return nameMatch && (storeMatch || statsMatch);
                     });
                 }
 
@@ -1231,16 +1251,10 @@
                 if (pureName) document.getElementById('v_name').value = pureName; 
                 if (extStore) document.getElementById('v_store').value = extStore;
                 if (extractedUrl) document.getElementById('v_url').value = extractedUrl;
+                if (extStats) document.getElementById('v_stats').value = extStats;
 
                 let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
                 if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
-
-                let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
-                          || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
-                if (mStats) {
-                    let cleanStats = mStats[1].replace(/from/i, '').trim();
-                    document.getElementById('v_stats').value = cleanStats;
-                }
 
                 let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
                 if (mDate) {
@@ -1274,7 +1288,7 @@
                 }
                 
                 if (/肛交\s*[○〇]/.test(text)) { foundTags.add('AF'); isTagUpdated = true; }
-                if (/(?:三人組|3P)\s*[○〇]/i.test(text)) { foundTags.add('3P'); isTagUpdated = true; }
+                if (/(?:三人組|3P|３Ｐ)\s*[○〇]/i.test(text)) { foundTags.add('3P'); isTagUpdated = true; }
 
                 if (rawNameExt) {
                     if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(rawNameExt)) { foundTags.add('AF'); isTagUpdated = true; }
