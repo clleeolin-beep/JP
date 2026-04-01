@@ -214,7 +214,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <h3 style="margin:0;">📝 資料編輯</h3>
-                    <button class="warning mini" onclick="app.openBatchModal()" title="從「女優一覽」複製所有班表來自動覆蓋">⚡ 批次更新班表</button>
+                    <button class="warning mini" onclick="app.openBatchModal()" title="從「女優一覽」複製所有班表來自動建立與更新">⚡ 批次建立 / 更新</button>
                 </div>
                 <button class="success" onclick="app.clearForm()" style="padding: 5px 10px; font-size: 12px;">➕ 新增</button>
             </div>
@@ -231,7 +231,7 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>店名 *</label>
-                    <input type="text" id="v_store" placeholder="例如：台北星光">
+                    <input type="text" id="v_store" placeholder="例如：台北星光 (批次建立時會作為字尾追加)">
                 </div>
                 <div class="form-group">
                     <label>姓名 *</label>
@@ -278,7 +278,7 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>屬性</label>
-                    <input type="text" id="v_af" placeholder="例如：禁菸 / 白虎 / 潮 / 3P">
+                    <input type="text" id="v_af" placeholder="例如：禁菸 / 白虎 / 潮 / 3P (批次建立會自動追加)">
                 </div>
                 <div class="form-group">
                     <label>等級</label>
@@ -372,11 +372,11 @@
     <div id="batchModal" class="modal-overlay">
         <div class="modal-wrapper">
             <h3>⚡ 班表與標籤批次更新精靈</h3>
-            <p style="font-size:13px; color:#555; margin-top:0;">請直接將「女優一覽」的整頁內容全選貼在此處，系統將自動比對姓名並寫入最新班表，同時自動萃取隱藏的標籤與裝飾符。</p>
+            <p style="font-size:13px; color:#555; margin-top:0;">請直接將「女優一覽」的整頁內容全選貼在此處，系統將自動比對姓名並寫入最新班表。若無重複，系統將為您自動建立新卡片！<br><span style="color:var(--accent);">提示：若左側表單的「店名」或「屬性」有輸入文字，批次建立時會自動繼承並附加進去喔！</span></p>
             <textarea id="batchInput" rows="12" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; resize: vertical; margin-bottom: 15px; font-size:12px;"></textarea>
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button class="danger" onclick="app.closeBatchModal()">取消</button>
-                <button class="warning" onclick="app.executeBatchUpdate()">執行同步更新</button>
+                <button class="warning" onclick="app.executeBatchUpdate()">執行同步與建立</button>
             </div>
         </div>
     </div>
@@ -406,7 +406,7 @@
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
-                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('自動儲存') || msg.includes('載入舊資料')) {
+                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('自動儲存') || msg.includes('載入舊資料') || msg.includes('批次完成')) {
                     toast.style.background = 'var(--warning)';
                 } else {
                     toast.style.background = 'var(--success)';
@@ -984,6 +984,7 @@
                 document.getElementById('batchInput').value = '';
             }
 
+            // ===== 核心：批次建立與更新引擎 =====
             executeBatchUpdate() {
                 const text = document.getElementById('batchInput').value.trim();
                 if (!text) {
@@ -991,15 +992,22 @@
                     return;
                 }
 
-                Utility.showLoading("批次比對並同步資料中...");
+                Utility.showLoading("批次解析與同步資料中...");
                 this.closeBatchModal();
 
                 setTimeout(() => {
+                    // 取得左側表單的店名字尾與屬性
+                    const formStoreVal = document.getElementById('v_store').value.trim();
+                    const formAfVal = document.getElementById('v_af').value.trim();
+                    const formTags = formAfVal.split(/[\/／]/).map(t => t.trim()).filter(t => t);
+
+                    // 從貼上的文字中抓取基礎店名
                     let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
-                    let batchStore = mStore ? mStore[1].trim() : document.getElementById('v_store').value.trim();
+                    let baseStore = mStore ? mStore[1].trim() : "";
 
                     const blocks = text.split(/收藏夾/g).filter(b => b.trim().length > 10);
                     let updateCount = 0;
+                    let createCount = 0;
 
                     blocks.forEach(block => {
                         let mName = block.match(/No\.\d+\s*\n\s*([^\n(]+)/i); 
@@ -1015,6 +1023,16 @@
                                                .replace(/[\s\u3000|｜・_＿]+$/, '')
                                                .trim();
 
+                        // 組合最終店名 (基礎店名 + 表單輸入的字尾)
+                        let finalStore = baseStore;
+                        if (formStoreVal) {
+                            if (finalStore && !finalStore.includes(formStoreVal)) {
+                                finalStore += " " + formStoreVal;
+                            } else if (!finalStore) {
+                                finalStore = formStoreVal;
+                            }
+                        }
+
                         let extStats = "";
                         let mStats = block.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
                                   || block.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
@@ -1025,7 +1043,24 @@
                             let formattedSch = Utility.parseAndFormatSchedule(mSch[0]);
                             let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
                             
-                            if (hasSchedule) {
+                            // 只要有班表或三圍，就視為有效區塊
+                            if (hasSchedule || extStats) {
+                                
+                                // 處理標籤 (自動辨識 + 表單繼承)
+                                let tagSet = new Set();
+                                if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(fullNameStr)) tagSet.add('AF');
+                                if (/(3POK|#3P|３ＰＯＫ|＃３Ｐ)/i.test(fullNameStr)) tagSet.add('3P');
+                                
+                                formTags.forEach(t => {
+                                    let upper = t.toUpperCase();
+                                    if(upper === 'AF' || upper === '3P') tagSet.add(upper);
+                                    else tagSet.add(t);
+                                });
+
+                                let symbolMatch = fullNameStr.match(/([♤♠♡♥♧♣♦♢])/);
+                                let levelVal = symbolMatch ? symbolMatch[1] : "";
+
+                                // 判斷是否為重複資料
                                 const recordIdx = this.dataStore.findIndex(r => {
                                     let dbName = r._raw[this.colMap.name] || "";
                                     let cleanDbName = dbName.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '')
@@ -1037,7 +1072,7 @@
                                     let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
                                     
                                     let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
-                                    let storeMatch = this.isSameStore(dbStore, batchStore);
+                                    let storeMatch = this.isSameStore(dbStore, finalStore);
                                     
                                     let cleanExtStats = extStats.replace(/[\s\/]/g, '');
                                     let statsMatch = cleanExtStats && dbStats && (dbStats.includes(cleanExtStats) || cleanExtStats.includes(dbStats));
@@ -1046,35 +1081,61 @@
                                 });
 
                                 if (recordIdx !== -1) {
-                                    this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
+                                    // 【更新舊資料】
+                                    if (hasSchedule) this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
                                     
                                     let originalDbAf = this.dataStore[recordIdx]._raw[this.colMap.af] || "";
-                                    let foundTags = new Set(originalDbAf.split(/[\/／]/).map(t=>t.trim()).filter(t=>t));
+                                    originalDbAf.split(/[\/／]/).map(t=>t.trim()).filter(t=>t).forEach(t => {
+                                        let upper = t.toUpperCase();
+                                        if(upper === 'AF' || upper === '3P') tagSet.add(upper);
+                                        else tagSet.add(t);
+                                    });
                                     
-                                    if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(fullNameStr)) foundTags.add('AF');
-                                    if (/(3POK|#3P|３ＰＯＫ|＃３Ｐ)/i.test(fullNameStr)) foundTags.add('3P');
-                                    
-                                    if (foundTags.size > 0) {
-                                        this.dataStore[recordIdx]._raw[this.colMap.af] = Array.from(foundTags).join(' / ');
+                                    if (tagSet.size > 0) {
+                                        this.dataStore[recordIdx]._raw[this.colMap.af] = Array.from(tagSet).join(' / ');
                                     }
 
-                                    let symbolMatch = fullNameStr.match(/([♤♠♡♥♧♣♦♢])/);
-                                    if (symbolMatch) {
-                                        this.dataStore[recordIdx]._raw[this.colMap.level] = symbolMatch[1];
+                                    if (levelVal) {
+                                        this.dataStore[recordIdx]._raw[this.colMap.level] = levelVal;
                                     }
 
                                     updateCount++;
+                                } else {
+                                    // 【建立新資料】
+                                    let newRowData = new Array(this.headerRow.length).fill("");
+                                    const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
+                                    
+                                    setV('techId', Utility.generateID());
+                                    setV('store', finalStore);
+                                    setV('name', pureName);
+                                    setV('stats', extStats);
+                                    if (hasSchedule) setV('schedule', formattedSch);
+                                    if (tagSet.size > 0) setV('af', Array.from(tagSet).join(' / '));
+                                    if (levelVal) setV('level', levelVal);
+
+                                    let mAge = block.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || block.match(/(\d+)\s*(?:歳|才|歲)/);
+                                    if (mAge) setV('age', mAge[1] + "歲");
+
+                                    let mPrice = block.match(/￥\s*([\d,]+)/);
+                                    if (mPrice) setV('price', mPrice[1].replace(/,/g, ''));
+
+                                    this.dataStore.push({
+                                        id: String(newRowData[this.colMap.techId]),
+                                        _raw: newRowData,
+                                        _rowIndex: "" 
+                                    });
+                                    createCount++;
                                 }
                             }
                         }
                     });
 
-                    if (updateCount > 0) {
+                    if (updateCount > 0 || createCount > 0) {
                         this.renderCatalog();
                         this.saveOrderToGoogleSheet(true); 
-                        Utility.showToast(`✅ 批次更新成功！已同步 ${updateCount} 位技師的班表與屬性。`);
+                        Utility.showToast(`✅ 批次完成！新增 ${createCount} 筆，更新 ${updateCount} 筆資料。`);
                     } else {
-                        Utility.showToast('⚠️ 找不到可更新的對應技師，或未偵測到有效班表。', true);
+                        Utility.showToast('⚠️ 找不到可建立或更新的技師資料。', true);
                     }
                     Utility.hideLoading();
                 }, 100); 
@@ -1142,7 +1203,6 @@
                 }
             }
 
-            // ===== 單張全域魔法貼上 (加入電腦版/手機版瀏覽切換邏輯) =====
             processMagicPaste(text, html) {
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
@@ -1206,19 +1266,19 @@
                 }
                 if (!extStore) extStore = document.getElementById('v_store').value.trim();
 
-                let extStats = "";
-                let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
-                          || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
-                if (mStats) {
-                    extStats = mStats[1].replace(/from/i, '').trim();
-                }
-
                 let pureName = "";
                 if (rawNameExt) {
                     pureName = rawNameExt.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '')
                                          .replace(/[♤♠♡♥♧♣♦♢]/g, '')
                                          .replace(/[\s\u3000|｜・_＿]+$/, '')
                                          .trim();
+                }
+
+                let extStats = "";
+                let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
+                          || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
+                if (mStats) {
+                    extStats = mStats[1].replace(/from/i, '').trim();
                 }
 
                 let isExisting = false;
@@ -2086,14 +2146,12 @@
                             this.editRecord(index); 
                         } else {
                             if (window.innerWidth <= 850) {
-                                // 手機版(瀏覽模式)：點擊直接開啟網址
                                 if (targetUrl && targetUrl.startsWith('http')) {
                                     window.open(targetUrl, '_blank');
                                 } else {
                                     Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
                                 }
                             } else {
-                                // 電腦版(瀏覽模式)：左鍵開啟完整卡牌 (載入至左側表單區)
                                 this.editRecord(index);
                             }
                         }
