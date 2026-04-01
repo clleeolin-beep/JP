@@ -225,7 +225,7 @@
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
-                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('自動儲存') || msg.includes('載入舊資料') || msg.includes('批次完成') || msg.includes('多筆資料')) {
+                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('自動儲存') || msg.includes('載入舊資料') || msg.includes('批次完成') || msg.includes('載入批次清單')) {
                     toast.style.background = 'var(--warning)';
                 } else {
                     toast.style.background = 'var(--success)';
@@ -242,18 +242,15 @@
                 let tags = new Set();
                 let level = "";
                 
-                // 1. 萃取隱藏屬性 (支援全形/半形)
                 if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(rawName)) tags.add('AF');
                 if (/(3POK|#3P|３ＰＯＫ|＃３Ｐ)/i.test(rawName)) tags.add('3P');
                 
-                // 【精準判定】只有看到 Shooting 後面跟著 ○、〇、O 才會給予「射O」標籤
+                // 精準判定：Shooting 後方有圈圈才算數
                 if (/Shooting\s*[○〇O]/i.test(rawName)) tags.add('射O');
                 
-                // 2. 萃取裝飾等級
                 let symbolMatch = rawName.match(/([♤♠♡♥♧♣♦♢])/);
                 if (symbolMatch) level = symbolMatch[1];
                 
-                // 3. 徹底淨化姓名 (包含拔除 Shooting 及其後續符號，並清除結尾雜訊)
                 let pureName = rawName.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ|Shooting\s*[○〇O◎]?)/ig, '')
                                       .replace(/[♤♠♡♥♧♣♦♢]/g, '')
                                       .replace(/[\s\u3000|｜・_＿○〇◎*＊]+$/, '')
@@ -413,20 +410,17 @@
                 return h * 60 + m;
             }
 
-            // ===== 智慧班表貼上攔截器 (升級防護網，阻斷清單底部雜訊) =====
+            // ===== 智慧班表貼上攔截器 (修復防護網，精準切除單日底部雜訊) =====
             static parseAndFormatSchedule(rawText) {
                 if (!rawText) return '';
                 
-                // 強化截斷點：加入搜尋、返回等清單頁尾關鍵字
-                let stopIndex = rawText.search(/(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記|搜尋熱門|返回商店|返回首頁|Top)/);
-                let cleanText = stopIndex !== -1 ? rawText.substring(0, stopIndex) : rawText;
-                
                 const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'};
-                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2})|$)/g;
+                // 正則：捕捉從某個日期開始，直到下一個日期出現之前的「所有文字」
+                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2}\s*(?:\(.\))?)|\s*$)/g;
                 let cleanedLines = [];
                 let match;
                 
-                while ((match = regex.exec(cleanText)) !== null) {
+                while ((match = regex.exec(rawText)) !== null) {
                     let m = parseInt(match[1], 10);
                     let d = parseInt(match[2], 10);
                     let date = `${m}/${d}`;
@@ -435,7 +429,8 @@
                     let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
                     
                     let content = match[4] || ''; 
-                    let stopMatch = content.search(/(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記|搜尋熱門|返回商店|Top)/);
+                    // 針對每天捕捉到的內容，如果碰到頁尾關鍵字，就將該內容截斷 (完美防護最後一天的底部雜訊)
+                    let stopMatch = content.search(/(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記|搜尋熱門|返回商店|返回首頁|Top|日本的風俗店)/);
                     if (stopMatch !== -1) {
                         content = content.substring(0, stopMatch);
                     }
@@ -590,11 +585,15 @@
                         let text = (e.clipboardData || e.originalEvent.clipboardData).getData('text');
                         let html = (e.clipboardData || e.originalEvent.clipboardData).getData('text/html') || '';
                         if (text) {
-                            // 單筆全域貼上時攔截
+                            // 攔截批次清單
                             if (text.split(/收藏夾/g).length > 2 || text.split(/No\./i).length > 3) {
-                                Utility.showToast('✨ 偵測到多筆資料清單！請貼在魔法框後，點選上方【⚡ 批次建立/更新】按鈕');
+                                e.preventDefault();
+                                if (!window.app.isEditMode) window.app.toggleMode();
+                                document.getElementById('v_magic_paste').value = text;
+                                Utility.showToast('✨ 已載入批次清單！請填寫下方共同設定後，點擊「⚡批次建立/更新」');
                                 return;
                             }
+                            
                             e.preventDefault();
                             if (!window.app.isEditMode) window.app.toggleMode();
                             window.app.processMagicPaste(text, html);
@@ -731,9 +730,11 @@
                         let text = (e.clipboardData || window.clipboardData).getData('text');
                         let html = (e.clipboardData || window.clipboardData).getData('text/html') || '';
                         
-                        // 攔截批次清單，僅允許貼上，不觸發單筆解析
+                        // 攔截批次清單直接進入框內
                         if (text.split(/收藏夾/g).length > 2 || text.split(/No\./i).length > 3) {
-                            Utility.showToast('✨ 偵測到批次清單！請輸入共同店名/價格/屬性後，點擊上方【⚡ 批次建立/更新】');
+                            e.preventDefault();
+                            magicInput.value = text;
+                            Utility.showToast('✨ 已載入批次清單！請填寫下方共同設定後，點擊「⚡批次建立/更新」');
                         } else {
                             e.preventDefault();
                             this.processMagicPaste(text, html);
@@ -833,12 +834,12 @@
                 }
 
                 const text = document.getElementById('v_magic_paste').value.trim();
-                if (!text || text.split(/收藏夾/g).length <= 1) {
-                    Utility.showToast('⚠️ 請先在【魔法貼上】框內貼上女優一覽的批次資料！', true);
+                if (!text || text.split(/收藏夾|No\.\d+/ig).length <= 1) {
+                    Utility.showToast('⚠️ 請在魔法貼上框內貼上女優批次清單！', true);
                     return;
                 }
 
-                // 取得左側表單的繼承資料
+                // 取得左側表單的繼承資料 (強制鎖死價金)
                 const formStoreVal = document.getElementById('v_store').value.trim();
                 const formPriceVal = document.getElementById('v_price').value.trim();
                 const formLocationVal = document.getElementById('v_location').value.trim();
@@ -846,7 +847,7 @@
                 const formTags = formAfVal.split(/[\/／]/).map(t => t.trim()).filter(t => t);
 
                 if (!formStoreVal) {
-                    Utility.showToast('⚠️ 批次處理前，請務必先在左側輸入共同的【店名】！', true);
+                    Utility.showToast('⚠️ 批次建立前，請務必先在左側輸入共同的【店名】！', true);
                     return;
                 }
 
@@ -868,7 +869,6 @@
                         
                         if (!mName) return;
                         
-                        // 1. 姓名淨化
                         let nameInfo = Utility.parseName(mName[1]);
                         let pureName = nameInfo.pureName;
 
@@ -877,12 +877,11 @@
                             finalStore += " " + formStoreVal;
                         }
 
-                        // 2. 暴力抓取三圍 (T開頭任意字元)
+                        // 暴力抓取三圍 (只要 T 加上任意三位數字開頭就抓取)
                         let extStats = "";
                         let mStats = block.match(/(T\d{3}[^\n]+)/i);
                         if (mStats) extStats = mStats[1].replace(/from.*/i, '').replace(/[\n\r]/g, '').trim();
 
-                        // 3. 抓取與淨化班表
                         let mSch = block.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
                         if (mSch) {
                             let formattedSch = Utility.parseAndFormatSchedule(mSch[0]);
@@ -891,7 +890,7 @@
                             if (hasSchedule || extStats) {
                                 
                                 let tagSet = new Set();
-                                nameInfo.tags.forEach(t => tagSet.add(t)); // 名字自帶的隱藏屬性
+                                nameInfo.tags.forEach(t => tagSet.add(t)); 
                                 
                                 formTags.forEach(t => {
                                     let upper = t.toUpperCase();
@@ -948,7 +947,7 @@
                                     setV('name', pureName);
                                     setV('stats', extStats);
                                     
-                                    // 強制繼承表單屬性
+                                    // 強制繼承表單公定價
                                     setV('price', formPriceVal);
                                     setV('location', formLocationVal);
                                     
@@ -974,7 +973,7 @@
                         this.renderCatalog();
                         this.saveOrderToGoogleSheet(true); 
                         Utility.showToast(`✅ 批次完成！新增 ${createCount} 筆，更新 ${updateCount} 筆資料。`);
-                        document.getElementById('v_magic_paste').value = ''; // 執行完畢後清空魔法框
+                        document.getElementById('v_magic_paste').value = ''; 
                     } else {
                         Utility.showToast('⚠️ 找不到可建立或更新的技師資料，請確認內容格式。', true);
                     }
