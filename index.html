@@ -10,7 +10,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     
     <style>
-        /* 魅影風格色系配置 */
         :root {
             --primary: #4527a0; --secondary: #7986cb; --bg: #f0f2f5; --text: #2c3e50;
             --accent: #e91e63; --success: #2e7d32; --card-bg: #ffffff; --warning: #ff9800;
@@ -18,20 +17,16 @@
         body { font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; display: flex; flex-direction: column; height: 100dvh; box-sizing: border-box; overflow: hidden; }
         h1, h2, h3 { color: var(--primary); margin-top: 0; }
         
-        /* 頂部控制列佈局 */
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap; }
         .header-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
         .sheet-selector-wrapper { display: flex; align-items: center; gap: 8px; background: white; padding: 5px 15px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-        /* 版面網格佈局 */
         #app-container { display: grid; grid-template-columns: 500px 1fr; gap: 15px; flex: 1; min-height: 0; transition: all 0.3s ease; }
         .panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
         
-        /* 模式切換邏輯 */
         #app-container.view-mode { grid-template-columns: 1fr; }
         #app-container.view-mode #panel-form { display: none; }
         
-        /* ================= RWD 手機版適應 ================= */
         @media (max-width: 850px) {
             body { padding: 8px; }
             .app-title { display: none; } 
@@ -61,10 +56,8 @@
             .card .badge { top: 8px; left: 8px; font-size: 10px; padding: 2px 4px; }
         }
 
-        /* 授權狀態橫幅 */
         #auth-banner { background: #ffeeba; color: #856404; padding: 10px; font-size: 14px; text-align: center; font-weight: bold; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 1px solid #ffdf7e; transition: 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 
-        /* 表單設計 */
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
         .form-group { margin-bottom: 8px; }
         .form-group.full { grid-column: span 2; }
@@ -76,23 +69,19 @@
         #v_magic_paste { background: #fff8e1; border-color: #ffb300; transition: all 0.3s; }
         #v_magic_paste:focus { box-shadow: 0 0 0 2px rgba(255, 179, 0, 0.3); }
 
-        /* 照片上傳區塊 */
         .photo-upload-area { margin: 10px 0; position: relative; }
         .img-preview-box { width: 100%; height: 350px; background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; position: relative; transition: 0.2s; }
         .img-preview-box img { width: 100%; height: 100%; object-fit: contain; }
         .img-preview-box:hover { border-color: var(--primary); background: #f3e5f5; }
         .img-preview-box span { font-size: 0.9em; color: #777; text-align: center; line-height: 1.5; padding: 10px; pointer-events: none; }
         
-        /* 照片刪除按鈕 */
         .btn-delete-img { position: absolute; top: 10px; right: 10px; background: rgba(233, 30, 99, 0.9); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: 0.2s; z-index: 10; }
         .btn-delete-img:hover { background: #c2185b; transform: scale(1.1); }
 
-        /* 裁切/批次 視窗 Modal */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .modal-wrapper { width: 95%; max-width: 600px; max-height: 85%; background: white; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; box-sizing: border-box; }
         .modal-wrapper h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
 
-        /* 按鈕樣式 */
         button { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; display: inline-flex; justify-content: center; align-items: center; gap: 5px; }
         button:hover { background: #311b92; }
         button:disabled { background: #b0bec5; cursor: not-allowed; opacity: 0.7; }
@@ -107,13 +96,11 @@
         button.mini { padding: 4px 8px; font-size: 12px; background: #e91e63; border-radius: 4px; }
         button.mini:hover { background: #c2185b; }
 
-        /* 讀取畫面與 Toast 提示 */
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 99999; justify-content: center; align-items: center; color: white; font-size: 20px; font-weight: bold; display: none; flex-direction: column; text-align: center; padding: 20px;}
         
         #toast-container { position: fixed; top: -50px; left: 50%; transform: translateX(-50%); background: var(--success); color: white; padding: 12px 24px; border-radius: 8px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 100000; opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; align-items: center; gap: 8px; }
         #toast-container.show { opacity: 1; top: 30px; }
 
-        /* ====== 卡片與排版深度優化 ====== */
         .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 15px; align-content: start;}
         .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; cursor: pointer; transition: 0.2s; background: white; display: flex; flex-direction: column; position: relative; overflow: hidden; }
         .card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(69,39,160,0.15); border-color: var(--secondary); }
@@ -122,7 +109,6 @@
         .img-container { position: relative; line-height: 0; margin-bottom: 10px; }
         .card .badge { position: absolute; top: 10px; left: 10px; background: var(--accent); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); pointer-events: none; z-index: 5; }
         
-        /* 💖 最愛按鈕 */
         .fav-btn { position: absolute; top: 10px; right: 10px; z-index: 10; font-size: 20px; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.4); transition: transform 0.2s; user-select: none; }
         .fav-btn:hover { transform: scale(1.2); }
 
@@ -133,7 +119,6 @@
             overflow: hidden; text-overflow: ellipsis; line-height: 1.3; min-height: 2.6em; 
         }
         
-        /* 姓名列與微型 SVG 佈局 */
         .name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
         .mini-svg-box { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 32px; flex-shrink: 0; }
         .name-col { display: flex; flex-direction: column; flex: 1; overflow: hidden; justify-content: center; }
@@ -163,7 +148,6 @@
         .card.dragging { opacity: 0.4; transform: scale(0.95); }
         .card.drag-over { border: 2px dashed; } 
 
-        /* 直列式微型視覺化行事曆區塊 */
         .sch-wrapper { display: flex; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e0e0; position: relative; }
         .sch-time-axis { display: flex; flex-direction: column; width: 18px; position: relative; font-size: 9px; color: #999; margin-top: 24px; font-weight: bold; }
         .sch-time-axis span { position: absolute; right: 4px; transform: translateY(-50%); }
@@ -176,7 +160,6 @@
         .sch-fill-vert { position: absolute; width: 100%; background: var(--accent); border-radius: 4px; left: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         .sch-fill-vert.off { background: #bdbdbd; height: 100%; top: 0; box-shadow: none; }
         
-        /* 篩選器與排序選單樣式 */
         .time-filter-group { display: flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #ccc; padding: 2px 6px; border-radius: 6px; }
         .time-filter-group select, .filter-tools select { border: none; outline: none; background: transparent; padding: 4px; font-size: 13px; margin: 0 !important; width: auto !important; }
         .filter-select { background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 6px; font-size: 13px; }
@@ -415,6 +398,26 @@
                 toast.classList.add('show');
                 if (this.toastTimeout) clearTimeout(this.toastTimeout);
                 this.toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+            }
+
+            // ===== 核心：通用姓名淨化漏斗 =====
+            static parseName(rawName) {
+                if (!rawName) return { pureName: "", tags: [], level: "" };
+                let tags = new Set();
+                let level = "";
+                
+                if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(rawName)) tags.add('AF');
+                if (/(3POK|#3P|３ＰＯＫ|＃３Ｐ)/i.test(rawName)) tags.add('3P');
+                if (/Shooting\s*[○〇O]/i.test(rawName)) tags.add('射O');
+                
+                let symbolMatch = rawName.match(/([♤♠♡♥♧♣♦♢])/);
+                if (symbolMatch) level = symbolMatch[1];
+                
+                let pureName = rawName.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ|Shooting\s*[○〇O◎]?)/ig, '')
+                                      .replace(/[♤♠♡♥♧♣♦♢]/g, '')
+                                      .replace(/[\s\u3000|｜・_＿○〇◎*＊]+$/, '')
+                                      .trim();
+                return { pureName, tags: Array.from(tags), level };
             }
 
             static parseStats(rawStats) {
@@ -762,7 +765,6 @@
                             Utility.showToast('⚠️ 雲端圖片無法二次裁切，請直接使用 Ctrl+V 貼上新截圖！', true);
                             return;
                         }
-                        this.imageElement.removeAttribute('crossorigin');
                         this.imageElement.src = previewImg.src;
                         this.openModal();
                     } else {
@@ -775,7 +777,6 @@
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                        this.imageElement.removeAttribute('crossorigin');
                         this.imageElement.src = event.target.result;
                         if (fromPaste) {
                             document.getElementById('preview_photo').src = event.target.result;
@@ -984,7 +985,6 @@
                 document.getElementById('batchInput').value = '';
             }
 
-            // ===== 核心：批次建立與更新引擎 =====
             executeBatchUpdate() {
                 const text = document.getElementById('batchInput').value.trim();
                 if (!text) {
@@ -992,39 +992,33 @@
                     return;
                 }
 
-                Utility.showLoading("批次解析與同步資料中...");
+                Utility.showLoading("批次比對並同步資料中...");
                 this.closeBatchModal();
 
                 setTimeout(() => {
-                    // 取得左側表單的店名字尾與屬性
+                    let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
+                    let batchStore = mStore ? mStore[1].trim() : document.getElementById('v_store').value.trim();
+
                     const formStoreVal = document.getElementById('v_store').value.trim();
                     const formAfVal = document.getElementById('v_af').value.trim();
                     const formTags = formAfVal.split(/[\/／]/).map(t => t.trim()).filter(t => t);
-
-                    // 從貼上的文字中抓取基礎店名
-                    let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
-                    let baseStore = mStore ? mStore[1].trim() : "";
 
                     const blocks = text.split(/收藏夾/g).filter(b => b.trim().length > 10);
                     let updateCount = 0;
                     let createCount = 0;
 
                     blocks.forEach(block => {
-                        let mName = block.match(/No\.\d+\s*\n\s*([^\n(]+)/i); 
+                        let mName = block.match(/No\.\d+\s*\n\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i); 
                         if (!mName) {
-                            mName = block.match(/(?:名稱|名前|Name)\s*([^\n]+)/i);
+                            mName = block.match(/(?:名稱|名前|Name)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
                         }
                         
                         if (!mName) return;
                         
-                        let fullNameStr = mName[1];
-                        let pureName = fullNameStr.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '')
-                                               .replace(/[♤♠♡♥♧♣♦♢]/g, '')
-                                               .replace(/[\s\u3000|｜・_＿]+$/, '')
-                                               .trim();
+                        let nameInfo = Utility.parseName(mName[1]);
+                        let pureName = nameInfo.pureName;
 
-                        // 組合最終店名 (基礎店名 + 表單輸入的字尾)
-                        let finalStore = baseStore;
+                        let finalStore = batchStore;
                         if (formStoreVal) {
                             if (finalStore && !finalStore.includes(formStoreVal)) {
                                 finalStore += " " + formStoreVal;
@@ -1043,30 +1037,22 @@
                             let formattedSch = Utility.parseAndFormatSchedule(mSch[0]);
                             let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
                             
-                            // 只要有班表或三圍，就視為有效區塊
                             if (hasSchedule || extStats) {
                                 
-                                // 處理標籤 (自動辨識 + 表單繼承)
                                 let tagSet = new Set();
-                                if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(fullNameStr)) tagSet.add('AF');
-                                if (/(3POK|#3P|３ＰＯＫ|＃３Ｐ)/i.test(fullNameStr)) tagSet.add('3P');
+                                nameInfo.tags.forEach(t => tagSet.add(t));
                                 
                                 formTags.forEach(t => {
                                     let upper = t.toUpperCase();
-                                    if(upper === 'AF' || upper === '3P') tagSet.add(upper);
+                                    if(upper === 'AF' || upper === '3P' || upper === '射O') tagSet.add(upper);
                                     else tagSet.add(t);
                                 });
 
-                                let symbolMatch = fullNameStr.match(/([♤♠♡♥♧♣♦♢])/);
-                                let levelVal = symbolMatch ? symbolMatch[1] : "";
+                                let levelVal = nameInfo.level;
 
-                                // 判斷是否為重複資料
                                 const recordIdx = this.dataStore.findIndex(r => {
                                     let dbName = r._raw[this.colMap.name] || "";
-                                    let cleanDbName = dbName.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '')
-                                               .replace(/[♤♠♡♥♧♣♦♢]/g, '')
-                                               .replace(/[\s\u3000|｜・_＿]+$/, '')
-                                               .trim();
+                                    let cleanDbName = Utility.parseName(dbName).pureName; 
                                     
                                     let dbStore = r._raw[this.colMap.store] || "";
                                     let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
@@ -1081,13 +1067,12 @@
                                 });
 
                                 if (recordIdx !== -1) {
-                                    // 【更新舊資料】
                                     if (hasSchedule) this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
                                     
                                     let originalDbAf = this.dataStore[recordIdx]._raw[this.colMap.af] || "";
                                     originalDbAf.split(/[\/／]/).map(t=>t.trim()).filter(t=>t).forEach(t => {
                                         let upper = t.toUpperCase();
-                                        if(upper === 'AF' || upper === '3P') tagSet.add(upper);
+                                        if(upper === 'AF' || upper === '3P' || upper === '射O') tagSet.add(upper);
                                         else tagSet.add(t);
                                     });
                                     
@@ -1101,7 +1086,6 @@
 
                                     updateCount++;
                                 } else {
-                                    // 【建立新資料】
                                     let newRowData = new Array(this.headerRow.length).fill("");
                                     const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
                                     
@@ -1243,20 +1227,20 @@
                 let lines = text.split('\n').map(l => l.trim()).filter(l => l);
 
                 if (isYoasobi) {
-                    let mName = text.match(/(?:名稱|名前|Name)\s*([^\n\s]+)/i); 
-                    if (mName) rawNameExt = mName[1].trim();
+                    let mName = text.match(/(?:名稱|名前|Name)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i); 
+                    if (mName) rawNameExt = mName[1];
                 } else {
                     for(let i=0; i < Math.min(5, lines.length); i++) {
                         let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
                         if (nameStoreMatch && !lines[i].includes('http')) {
-                            rawNameExt = nameStoreMatch[1].trim();
+                            rawNameExt = nameStoreMatch[1];
                             extStore = nameStoreMatch[2].trim();
                             break;
                         }
                     }
                     if (!rawNameExt) {
-                        let mName = text.match(/(?:Name|名前)\s*(.*?)(?=\n|年齡|年齢|Age|$)/i);
-                        if (mName) rawNameExt = mName[1].trim();
+                        let mName = text.match(/(?:Name|名前)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
+                        if (mName) rawNameExt = mName[1];
                     }
                 }
 
@@ -1266,13 +1250,8 @@
                 }
                 if (!extStore) extStore = document.getElementById('v_store').value.trim();
 
-                let pureName = "";
-                if (rawNameExt) {
-                    pureName = rawNameExt.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '')
-                                         .replace(/[♤♠♡♥♧♣♦♢]/g, '')
-                                         .replace(/[\s\u3000|｜・_＿]+$/, '')
-                                         .trim();
-                }
+                let nameInfo = Utility.parseName(rawNameExt);
+                let pureName = nameInfo.pureName;
 
                 let extStats = "";
                 let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
@@ -1284,11 +1263,13 @@
                 let isExisting = false;
                 if (recordIdx === -1 && pureName) {
                     recordIdx = this.dataStore.findIndex(r => {
-                        let dbName = (r._raw[this.colMap.name] || "").replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '').replace(/[♤♠♡♥♧♣♦♢]/g, '').replace(/[\s\u3000|｜・_＿]+$/, '').trim();
+                        let dbName = r._raw[this.colMap.name] || "";
+                        let cleanDbName = Utility.parseName(dbName).pureName; 
+                        
                         let dbStore = (r._raw[this.colMap.store] || "").trim();
                         let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
                         
-                        let nameMatch = dbName.toLowerCase() === pureName.toLowerCase();
+                        let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
                         let storeMatch = this.isSameStore(dbStore, extStore);
                         
                         let cleanExtStats = extStats.replace(/[\s\/]/g, '');
@@ -1355,14 +1336,13 @@
                 
                 if (/肛交\s*[○〇]/.test(text)) { foundTags.add('AF'); isTagUpdated = true; }
                 if (/(?:三人組|3P|３Ｐ)\s*[○〇]/i.test(text)) { foundTags.add('3P'); isTagUpdated = true; }
+                if (/Shooting\s*[○〇O]/i.test(text)) { foundTags.add('射O'); isTagUpdated = true; }
 
-                if (rawNameExt) {
-                    if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(rawNameExt)) { foundTags.add('AF'); isTagUpdated = true; }
-                    if (/(3POK|#3P|３ＰＯＫ|＃３Ｐ)/i.test(rawNameExt)) { foundTags.add('3P'); isTagUpdated = true; }
-                    let symbolMatch = rawNameExt.match(/([♤♠♡♥♧♣♦♢])/);
-                    if (symbolMatch) {
-                        document.getElementById('v_level').value = symbolMatch[1];
-                    }
+                if (nameInfo.tags.length > 0) {
+                    nameInfo.tags.forEach(t => { foundTags.add(t); isTagUpdated = true; });
+                }
+                if (nameInfo.level) {
+                    document.getElementById('v_level').value = nameInfo.level;
                 }
 
                 if (isTagUpdated && foundTags.size > 0) {
@@ -1683,137 +1663,6 @@
                     dateSelect.appendChild(opt);
                 });
                 if (dateSet.has(currentDate)) dateSelect.value = currentDate;
-            }
-
-            async saveToGoogleSheet() {
-                if (!this.accessToken) { this.triggerAuth(); return; }
-                const storeVal = document.getElementById('v_store').value.trim();
-                const nameVal = document.getElementById('v_name').value.trim();
-                
-                if (!storeVal || !nameVal) { 
-                    Utility.showToast("⚠️ 請確實填寫「店名」與「姓名」！", true); 
-                    return; 
-                }
-
-                Utility.showLoading("寫入資料與上傳照片...");
-                try {
-                    let techId = document.getElementById('v_tech_id').value.trim() || Utility.generateID();
-                    let finalUrl = document.getElementById('v_photo_url').value;
-                    let targetRowIdx = document.getElementById('v_row_index').value; 
-
-                    let sheetTechId = techId;
-                    if (/^\d+$/.test(techId)) {
-                        sheetTechId = "'" + techId;
-                    }
-
-                    if(cropperSvc.pendingBlob) {
-                        const fileName = `${storeVal}-${nameVal}.jpg`;
-                        finalUrl = await cropperSvc.uploadToDrive(cropperSvc.pendingBlob, fileName, this.accessToken);
-                    }
-
-                    const sheetName = this.currentSheet;
-                    let newRowData = new Array(this.headerRow.length).fill("");
-                    
-                    if (targetRowIdx) {
-                        const record = this.dataStore.find(r => String(r._rowIndex) === String(targetRowIdx));
-                        if (record) newRowData = [...record._raw];
-                    }
-
-                    const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
-
-                    setV('location', document.getElementById('v_location').value);
-                    setV('store', storeVal);
-                    setV('techId', sheetTechId);
-                    setV('startDate', document.getElementById('v_start_date').value);
-                    setV('name', nameVal);
-                    setV('age', document.getElementById('v_age').value);
-                    setV('stats', document.getElementById('v_stats').value);
-                    setV('price', document.getElementById('v_price').value);
-                    setV('url', document.getElementById('v_url').value);
-                    setV('af', document.getElementById('v_af').value);
-                    setV('level', document.getElementById('v_level').value);
-                    setV('schedule', document.getElementById('v_schedule').value);
-                    setV('photo', finalUrl);
-
-                    let writeRes;
-                    const writeUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/`;
-                    
-                    if (targetRowIdx) {
-                        writeRes = await fetch(`${writeUrl}${encodeURIComponent(sheetName)}!A${targetRowIdx}?valueInputOption=USER_ENTERED`, {
-                            method: 'PUT', headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ values: [newRowData] })
-                        });
-                    } else {
-                        writeRes = await fetch(`${writeUrl}${encodeURIComponent(sheetName)}!A1:append?valueInputOption=USER_ENTERED`, {
-                            method: 'POST', headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ values: [newRowData] })
-                        });
-                    }
-
-                    if (!writeRes.ok) throw new Error("寫入失敗");
-                    cropperSvc.pendingBlob = null;
-                    
-                    Utility.showToast(`✅ [${storeVal} - ${nameVal}] 儲存成功！`);
-                    
-                    await this.loadSheetData(true); 
-                    
-                    let targetTechId = sheetTechId.startsWith("'") ? sheetTechId.substring(1) : sheetTechId;
-                    const savedRecordIdx = this.dataStore.findIndex(r => {
-                        let rTechId = r._raw[this.colMap.techId] || "";
-                        if (rTechId.startsWith("'")) rTechId = rTechId.substring(1);
-                        return (rTechId === targetTechId) || (r._raw[this.colMap.name] === nameVal && r._raw[this.colMap.store] === storeVal);
-                    });
-
-                    if (savedRecordIdx !== -1) {
-                        this.editRecord(savedRecordIdx);
-                    }
-                    
-                } catch (e) {
-                    Utility.showToast(`❌ 錯誤: ${e.message}`, true);
-                } finally { 
-                    Utility.hideLoading(); 
-                }
-            }
-
-            async saveOrderToGoogleSheet(isBackground = false) {
-                if (!this.accessToken) { this.triggerAuth(); return; }
-                const sheetName = this.currentSheet;
-                const values = this.dataStore.map(record => record._raw);
-                
-                if (!isBackground) {
-                    Utility.showLoading("儲存排序與複製資料中...");
-                } else {
-                    Utility.showToast("💾 背景自動儲存中...");
-                }
-
-                try {
-                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A2?valueInputOption=USER_ENTERED`, {
-                        method: 'PUT', 
-                        headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ values: values })
-                    });
-                    
-                    if (!res.ok) throw new Error("儲存失敗");
-                    
-                    this.dataStore.forEach((item, idx) => {
-                        item._rowIndex = idx + 2; 
-                    });
-
-                    if (!isBackground) {
-                        Utility.showToast("✅ 變更與排序儲存成功！");
-                        document.getElementById('btn-save-order').style.display = 'none';
-                        this.renderCatalog();
-                    } else {
-                        Utility.showToast("✅ 背景自動儲存成功！");
-                        document.getElementById('btn-save-order').style.display = 'none';
-                    }
-                } catch (e) {
-                    Utility.showToast(`❌ 錯誤: ${e.message}`, true);
-                } finally { 
-                    if (!isBackground) {
-                        Utility.hideLoading(); 
-                    }
-                }
             }
 
             editRecord(index) {
