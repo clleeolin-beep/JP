@@ -27,7 +27,7 @@
         #app-container { display: grid; grid-template-columns: 500px 1fr; gap: 15px; flex: 1; min-height: 0; transition: all 0.3s ease; }
         .panel { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; position: relative; }
         
-        /* 模式切換邏輯 (預設為 view-mode) */
+        /* 模式切換邏輯 */
         #app-container.view-mode { grid-template-columns: 1fr; }
         #app-container.view-mode #panel-form { display: none; }
         
@@ -762,6 +762,7 @@
                             Utility.showToast('⚠️ 雲端圖片無法二次裁切，請直接使用 Ctrl+V 貼上新截圖！', true);
                             return;
                         }
+                        this.imageElement.removeAttribute('crossorigin');
                         this.imageElement.src = previewImg.src;
                         this.openModal();
                     } else {
@@ -774,6 +775,7 @@
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = (event) => {
+                        this.imageElement.removeAttribute('crossorigin');
                         this.imageElement.src = event.target.result;
                         if (fromPaste) {
                             document.getElementById('preview_photo').src = event.target.result;
@@ -1140,6 +1142,7 @@
                 }
             }
 
+            // ===== 單張全域魔法貼上 (加入電腦版/手機版瀏覽切換邏輯) =====
             processMagicPaste(text, html) {
                 if (!text) return;
                 const magicInput = document.getElementById('v_magic_paste');
@@ -1192,7 +1195,7 @@
                         }
                     }
                     if (!rawNameExt) {
-                        let mName = text.match(/(?:Name|名前)\s*([^\sAge年齢]+)/i);
+                        let mName = text.match(/(?:Name|名前)\s*(.*?)(?=\n|年齡|年齢|Age|$)/i);
                         if (mName) rawNameExt = mName[1].trim();
                     }
                 }
@@ -1203,19 +1206,19 @@
                 }
                 if (!extStore) extStore = document.getElementById('v_store').value.trim();
 
+                let extStats = "";
+                let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
+                          || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
+                if (mStats) {
+                    extStats = mStats[1].replace(/from/i, '').trim();
+                }
+
                 let pureName = "";
                 if (rawNameExt) {
                     pureName = rawNameExt.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ)/ig, '')
                                          .replace(/[♤♠♡♥♧♣♦♢]/g, '')
                                          .replace(/[\s\u3000|｜・_＿]+$/, '')
                                          .trim();
-                }
-
-                let extStats = "";
-                let mStats = text.match(/(?:BodySize|Size|スタイル|身體尺寸|３サイズ)\s*(T\d+.*?)(?=\s*\n|\s*口コミ|\s*口碑|\s*from|\s*EntryDay|\s*出勤|\s*スケジュール|\s*入店|$)/i) 
-                          || text.match(/(T\d{3}\s*B\d{2,3}.*?H\d{2,3})/i);
-                if (mStats) {
-                    extStats = mStats[1].replace(/from/i, '').trim();
                 }
 
                 let isExisting = false;
@@ -1376,10 +1379,8 @@
                 });
             }
 
-            // ===== 核心：二次授權邏輯 =====
             toggleMode() {
                 if (!this.isEditMode) {
-                    // 若尚未有寫入權限，觸發二次授權
                     if (!this.hasWriteAccess) {
                         this.tokenClient.callback = (resp) => {
                             if (resp.error) {
@@ -1429,7 +1430,6 @@
                 const storedHasWrite = sessionStorage.getItem('gapi_has_write') === 'true';
                 this.populateTimeDropdowns();
 
-                // 初始化時僅要求 readonly 權限
                 this.tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: CLIENT_ID,
                     scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
@@ -1448,13 +1448,11 @@
                 this.fetchSheetNames();
             }
 
-            // 初次登入 (僅要求唯讀)
             triggerAuth() {
                 this.tokenClient.callback = (resp) => {
                     if (resp.error) return;
                     this.accessToken = resp.access_token;
                     
-                    // 檢查是否曾經授權過寫入權限
                     this.hasWriteAccess = google.accounts.oauth2.hasGrantedAllScopes(resp, 'https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive');
                     
                     sessionStorage.setItem('gapi_access_token', resp.access_token);
@@ -1625,6 +1623,137 @@
                     dateSelect.appendChild(opt);
                 });
                 if (dateSet.has(currentDate)) dateSelect.value = currentDate;
+            }
+
+            async saveToGoogleSheet() {
+                if (!this.accessToken) { this.triggerAuth(); return; }
+                const storeVal = document.getElementById('v_store').value.trim();
+                const nameVal = document.getElementById('v_name').value.trim();
+                
+                if (!storeVal || !nameVal) { 
+                    Utility.showToast("⚠️ 請確實填寫「店名」與「姓名」！", true); 
+                    return; 
+                }
+
+                Utility.showLoading("寫入資料與上傳照片...");
+                try {
+                    let techId = document.getElementById('v_tech_id').value.trim() || Utility.generateID();
+                    let finalUrl = document.getElementById('v_photo_url').value;
+                    let targetRowIdx = document.getElementById('v_row_index').value; 
+
+                    let sheetTechId = techId;
+                    if (/^\d+$/.test(techId)) {
+                        sheetTechId = "'" + techId;
+                    }
+
+                    if(cropperSvc.pendingBlob) {
+                        const fileName = `${storeVal}-${nameVal}.jpg`;
+                        finalUrl = await cropperSvc.uploadToDrive(cropperSvc.pendingBlob, fileName, this.accessToken);
+                    }
+
+                    const sheetName = this.currentSheet;
+                    let newRowData = new Array(this.headerRow.length).fill("");
+                    
+                    if (targetRowIdx) {
+                        const record = this.dataStore.find(r => String(r._rowIndex) === String(targetRowIdx));
+                        if (record) newRowData = [...record._raw];
+                    }
+
+                    const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
+
+                    setV('location', document.getElementById('v_location').value);
+                    setV('store', storeVal);
+                    setV('techId', sheetTechId);
+                    setV('startDate', document.getElementById('v_start_date').value);
+                    setV('name', nameVal);
+                    setV('age', document.getElementById('v_age').value);
+                    setV('stats', document.getElementById('v_stats').value);
+                    setV('price', document.getElementById('v_price').value);
+                    setV('url', document.getElementById('v_url').value);
+                    setV('af', document.getElementById('v_af').value);
+                    setV('level', document.getElementById('v_level').value);
+                    setV('schedule', document.getElementById('v_schedule').value);
+                    setV('photo', finalUrl);
+
+                    let writeRes;
+                    const writeUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/`;
+                    
+                    if (targetRowIdx) {
+                        writeRes = await fetch(`${writeUrl}${encodeURIComponent(sheetName)}!A${targetRowIdx}?valueInputOption=USER_ENTERED`, {
+                            method: 'PUT', headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ values: [newRowData] })
+                        });
+                    } else {
+                        writeRes = await fetch(`${writeUrl}${encodeURIComponent(sheetName)}!A1:append?valueInputOption=USER_ENTERED`, {
+                            method: 'POST', headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ values: [newRowData] })
+                        });
+                    }
+
+                    if (!writeRes.ok) throw new Error("寫入失敗");
+                    cropperSvc.pendingBlob = null;
+                    
+                    Utility.showToast(`✅ [${storeVal} - ${nameVal}] 儲存成功！`);
+                    
+                    await this.loadSheetData(true); 
+                    
+                    let targetTechId = sheetTechId.startsWith("'") ? sheetTechId.substring(1) : sheetTechId;
+                    const savedRecordIdx = this.dataStore.findIndex(r => {
+                        let rTechId = r._raw[this.colMap.techId] || "";
+                        if (rTechId.startsWith("'")) rTechId = rTechId.substring(1);
+                        return (rTechId === targetTechId) || (r._raw[this.colMap.name] === nameVal && r._raw[this.colMap.store] === storeVal);
+                    });
+
+                    if (savedRecordIdx !== -1) {
+                        this.editRecord(savedRecordIdx);
+                    }
+                    
+                } catch (e) {
+                    Utility.showToast(`❌ 錯誤: ${e.message}`, true);
+                } finally { 
+                    Utility.hideLoading(); 
+                }
+            }
+
+            async saveOrderToGoogleSheet(isBackground = false) {
+                if (!this.accessToken) { this.triggerAuth(); return; }
+                const sheetName = this.currentSheet;
+                const values = this.dataStore.map(record => record._raw);
+                
+                if (!isBackground) {
+                    Utility.showLoading("儲存排序與複製資料中...");
+                } else {
+                    Utility.showToast("💾 背景自動儲存中...");
+                }
+
+                try {
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A2?valueInputOption=USER_ENTERED`, {
+                        method: 'PUT', 
+                        headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ values: values })
+                    });
+                    
+                    if (!res.ok) throw new Error("儲存失敗");
+                    
+                    this.dataStore.forEach((item, idx) => {
+                        item._rowIndex = idx + 2; 
+                    });
+
+                    if (!isBackground) {
+                        Utility.showToast("✅ 變更與排序儲存成功！");
+                        document.getElementById('btn-save-order').style.display = 'none';
+                        this.renderCatalog();
+                    } else {
+                        Utility.showToast("✅ 背景自動儲存成功！");
+                        document.getElementById('btn-save-order').style.display = 'none';
+                    }
+                } catch (e) {
+                    Utility.showToast(`❌ 錯誤: ${e.message}`, true);
+                } finally { 
+                    if (!isBackground) {
+                        Utility.hideLoading(); 
+                    }
+                }
             }
 
             editRecord(index) {
@@ -1942,10 +2071,11 @@
                     card.className = 'card';
                     
                     let titleStr = "";
+                    const isMobile = window.innerWidth <= 850;
                     if (this.isEditMode) {
                         titleStr = "左鍵：編輯資料\n右鍵：開啟專屬網址\n按住拖曳可改變排序\n按住 Ctrl 拖曳可複製(清空特定欄位)";
                     } else {
-                        titleStr = "點擊：開啟專屬網址\n右鍵：開啟專屬網址";
+                        titleStr = isMobile ? "點擊：開啟專屬網址" : "左鍵：檢視完整卡牌\n右鍵：開啟專屬網址";
                     }
                     card.title = titleStr;
                     
@@ -1955,10 +2085,16 @@
                         if (this.isEditMode) {
                             this.editRecord(index); 
                         } else {
-                            if (targetUrl && targetUrl.startsWith('http')) {
-                                window.open(targetUrl, '_blank');
+                            if (window.innerWidth <= 850) {
+                                // 手機版(瀏覽模式)：點擊直接開啟網址
+                                if (targetUrl && targetUrl.startsWith('http')) {
+                                    window.open(targetUrl, '_blank');
+                                } else {
+                                    Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
+                                }
                             } else {
-                                Utility.showToast('⚠️ 系統提示：此技師尚未建立網址，或網址格式不正確！', true);
+                                // 電腦版(瀏覽模式)：左鍵開啟完整卡牌 (載入至左側表單區)
+                                this.editRecord(index);
                             }
                         }
                     };
