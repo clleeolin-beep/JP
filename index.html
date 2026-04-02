@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talent DB - 技師資料彙整系統 (專業電商級版)</title>
+    <title>Talent DB - 技師資料彙整系統 (全動態演算法版)</title>
     
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -12,10 +12,6 @@
     <style>
         :root{--primary:#4527a0;--secondary:#7986cb;--bg:#f0f2f5;--text:#2c3e50;--accent:#e91e63;--success:#2e7d32;--card-bg:#ffffff;--warning:#ff9800}body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;display:flex;flex-direction:column;height:100dvh;box-sizing:border-box;overflow:hidden}h1,h2,h3{color:var(--primary);margin-top:0}.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap}.header-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sheet-selector-wrapper{display:flex;align-items:center;gap:8px;background:#fff;padding:5px 15px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.05)}#app-container{display:grid;grid-template-columns:500px 1fr;gap:15px;flex:1;min-height:0;transition:all .3s ease}.panel{background:var(--card-bg);border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:20px;display:flex;flex-direction:column;overflow-y:auto;position:relative}#app-container.view-mode{grid-template-columns:1fr}#app-container.view-mode #panel-form{display:none}@media (max-width:850px){body{padding:8px}.app-title{display:none}.top-bar{margin-bottom:8px}.header-controls{flex-direction:row;align-items:center;width:100%;gap:6px;flex-wrap:nowrap;justify-content:space-between}.sheet-selector-wrapper{padding:4px 8px;flex:1;justify-content:flex-start}.sheet-label{display:none}#v_sheet{width:100%;font-size:15px;padding:2px}.btn-text{display:none}.top-bar button{padding:6px 10px;font-size:18px}#app-container{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}.panel{flex:none;overflow-y:visible;height:auto;margin-bottom:10px}#app-container.view-mode #panel-form{display:none}.form-grid{grid-template-columns:1fr;gap:8px}.form-group.full{grid-column:span 1}.filter-tools{flex-direction:row!important;flex-wrap:wrap!important;gap:5px!important}.filter-tools input,.filter-tools select,.custom-multi-select{width:100%!important;margin-bottom:4px!important;font-size:13px}.filter-tools h3{display:none}.time-filter-group{width:100%;justify-content:space-between}.catalog-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}.card{padding:8px}.card img{height:160px;margin-bottom:6px}.card .badge{top:8px;left:8px;font-size:10px;padding:2px 4px}}#auth-banner{background:#ffeeba;color:#856404;padding:10px;font-size:14px;text-align:center;font-weight:700;border-radius:8px;margin-bottom:10px;cursor:pointer;border:1px solid #ffdf7e;transition:.3s;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.form-group{margin-bottom:8px}.form-group.full{grid-column:span 2}label{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:5px;font-size:.85em;color:#666}input,select,textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;font-size:14px;transition:.2s}input:focus,select:focus,textarea:focus{border-color:var(--primary);outline:0;box-shadow:0 0 0 2px rgba(69,39,160,.1)}input[readonly]{background:#f8f9fa;cursor:not-allowed}#v_magic_paste{background:#fff8e1;border-color:#ffb300;transition:all .3s}#v_magic_paste:focus{box-shadow:0 0 0 2px rgba(255,179,0,.3)}.photo-upload-area{margin:10px 0;position:relative}.img-preview-box{width:100%;height:350px;background:#f8f9fa;border:2px dashed #ccc;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;transition:.2s}.img-preview-box img{width:100%;height:100%;object-fit:contain}.img-preview-box:hover{border-color:var(--primary);background:#f3e5f5}.img-preview-box span{font-size:.9em;color:#777;text-align:center;line-height:1.5;padding:10px;pointer-events:none}.btn-delete-img{position:absolute;top:10px;right:10px;background:rgba(233,30,99,.9);color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:.2s;z-index:10}.btn-delete-img:hover{background:#c2185b;transform:scale(1.1)}.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:1000;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(5px)}.modal-wrapper{width:95%;max-width:600px;max-height:85%;background:#fff;padding:20px;border-radius:12px;display:flex;flex-direction:column;box-sizing:border-box}.modal-wrapper h3{margin-top:0;color:var(--primary);border-bottom:2px solid #eee;padding-bottom:10px}button{background:var(--primary);color:#fff;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;transition:.3s;display:inline-flex;justify-content:center;align-items:center;gap:5px}button:hover{background:#311b92}button:disabled{background:#b0bec5;cursor:not-allowed;opacity:.7}button.danger{background:#e53935}button.danger:hover{background:#c62828}button.success{background:#2e7d32}button.success:hover{background:#1b5e20}button.secondary{background:#7986cb}button.secondary:hover{background:#5c6bc0}button.warning{background:var(--warning);color:#fff}button.warning:hover{background:#f57c00}button.mini{padding:4px 8px;font-size:12px;border-radius:4px}#loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:99999;justify-content:center;align-items:center;color:#fff;font-size:20px;font-weight:700;display:none;flex-direction:column;text-align:center;padding:20px}#toast-container{position:fixed;top:-50px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:12px 24px;border-radius:8px;font-weight:700;font-size:15px;box-shadow:0 4px 15px rgba(0,0,0,.2);z-index:100000;opacity:0;pointer-events:none;transition:all .4s cubic-bezier(.175,.885,.32,1.275);display:flex;align-items:center;gap:8px}#toast-container.show{opacity:1;top:30px}.catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px;margin-top:15px;align-content:start}.card{border:1px solid #e0e0e0;border-radius:8px;padding:12px;cursor:pointer;transition:.2s;background:#fff;display:flex;flex-direction:column;position:relative;overflow:hidden}.card.selected{border:2px solid var(--accent);background:#fce4ec}.card:hover{transform:translateY(-4px);box-shadow:0 8px 16px rgba(69,39,160,.15);border-color:var(--secondary)}.card img{width:100%;height:240px;object-fit:contain;border-radius:6px;background:#f8f9fa;pointer-events:none}.img-container{position:relative;line-height:0;margin-bottom:10px}.card .badge{position:absolute;top:10px;left:10px;background:var(--accent);color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,.2);pointer-events:none;z-index:5}.fav-btn{position:absolute;top:10px;right:10px;z-index:10;font-size:20px;cursor:pointer;text-shadow:0 2px 4px rgba(0,0,0,.4);transition:transform .2s;user-select:none}.fav-btn:hover{transform:scale(1.2)}.store-name{font-size:.8em;color:var(--secondary);font-weight:700;margin-bottom:4px;pointer-events:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;line-height:1.3;min-height:2.6em}.name-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}.mini-svg-box{display:flex;flex-direction:column;align-items:center;justify-content:center;width:32px;flex-shrink:0}.name-col{display:flex;flex-direction:column;flex:1;overflow:hidden;justify-content:center}.tech-name{font-size:1.15em;color:var(--text);font-weight:700;margin-bottom:2px;pointer-events:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.score-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}.big-badge{font-size:.8em;font-weight:700;color:#fff;padding:2px 6px;border-radius:4px;display:inline-block;white-space:nowrap;letter-spacing:.5px}.tags-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;pointer-events:none}.tag-item{font-size:.75em;background:#f3e5f5;color:var(--primary);padding:2px 6px;border-radius:4px;font-weight:700}.stats-row{display:flex;align-items:center;gap:6px;font-size:.85em;color:#555;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#f8f9fa;padding:4px 6px;border-radius:4px;pointer-events:none}.cup-badge{font-weight:700;padding:2px 6px;border-radius:4px;color:#fff;font-size:.9em;flex-shrink:0}.price-col{font-size:.9em;font-weight:700;color:var(--accent);text-align:left;display:flex;flex-direction:column;gap:2px;margin-bottom:4px;pointer-events:none}.card[draggable="true"]{cursor:grab}.card[draggable="true"]:active{cursor:grabbing}.card.dragging{opacity:.4;transform:scale(.95)}.card.drag-over{border:2px dashed}.sch-wrapper{display:flex;margin-top:8px;padding-top:8px;border-top:1px dashed #e0e0e0;position:relative}.sch-time-axis{display:flex;flex-direction:column;width:18px;position:relative;font-size:9px;color:#999;margin-top:24px;font-weight:700}.sch-time-axis span{position:absolute;right:4px;transform:translateY(-50%)}.sch-container-vert{flex:1;display:flex;justify-content:space-between;gap:4px;height:85px;position:relative}.sch-grid-line{position:absolute;left:0;right:0;border-top:1px dashed #e0e0e0;z-index:0}.sch-col{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;z-index:1}.sch-day{font-size:10px;font-weight:700;color:#555;text-align:center;line-height:1.1;margin-bottom:4px;height:24px;display:flex;flex-direction:column;justify-content:center}.sch-track-vert{width:18px;flex:1;background:rgba(238,238,238,.7);border-radius:4px;position:relative;overflow:hidden}.sch-fill-vert{position:absolute;width:100%;background:var(--accent);border-radius:4px;left:0;box-shadow:0 1px 2px rgba(0,0,0,.2)}.sch-fill-vert.off{background:#bdbdbd;height:100%;top:0;box-shadow:none}.time-filter-group{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid #ccc;padding:2px 6px;border-radius:6px}.time-filter-group select,.filter-tools select{border:none;outline:0;background:transparent;padding:4px;font-size:13px;margin:0!important;width:auto!important}.filter-select{background:#fff;border:1px solid #ccc;border-radius:6px;padding:6px;font-size:13px}
         
-        /* 凍結篩選列與批量操作條 */
-        .filter-tools { position: sticky; top: -20px; margin-top: -20px; padding-top: 20px; padding-bottom: 10px; background: var(--card-bg); z-index: 50; border-bottom: 2px solid var(--secondary); }
-        .card-checkbox { position: absolute; top: 10px; right: 40px; z-index: 15; width: 20px; height: 20px; cursor: pointer; }
-        #batch-actions-bar { display: none; background: #fff3e0; padding: 8px 15px; border-radius: 6px; border: 1px solid #ffb300; margin-bottom: 10px; align-items: center; gap: 10px; font-size: 13px; font-weight: bold; position: sticky; top: 40px; z-index: 49; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .custom-multi-select { position: relative; min-width: 130px; flex: 1; font-size: 13px; }
         .select-box { background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 6px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; }
         .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ccc; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 100; max-height: 300px; display: flex; flex-direction: column; margin-top: 4px; }
@@ -23,6 +19,9 @@
         #af-checkboxes { overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
         #af-checkboxes label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: normal; margin: 0; justify-content: flex-start; }
         
+        .filter-tools { position: sticky; top: -20px; margin-top: -20px; padding-top: 20px; padding-bottom: 10px; background: var(--card-bg); z-index: 50; border-bottom: 2px solid var(--secondary); }
+        .card-checkbox { position: absolute; top: 10px; right: 40px; z-index: 15; width: 20px; height: 20px; cursor: pointer; }
+        #batch-actions-bar { display: none; background: #fff3e0; padding: 8px 15px; border-radius: 6px; border: 1px solid #ffb300; margin-bottom: 10px; align-items: center; gap: 10px; font-size: 13px; font-weight: bold; position: sticky; top: 40px; z-index: 49; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         @media (max-width: 850px) { .filter-tools { top: 0; margin-top: 0; padding-top: 10px; } #batch-actions-bar { top: 120px; flex-wrap: wrap; } }
     </style>
 </head>
@@ -75,7 +74,13 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label>店名 *</label>
+                    <label style="display: flex; gap: 4px; align-items: center;">
+                        店名 *
+                        <div style="display: flex; gap: 4px;">
+                            <button type="button" class="mini warning" onclick="app.cleanupDriveImages()" style="padding: 2px 6px; font-size: 11px;" title="清理 Google Drive 雲端硬碟中未使用的廢棄照片，並自動重新命名">☁️ 雲端清理</button>
+                            <button type="button" class="mini secondary" onclick="app.openRulesModal()" style="padding: 2px 6px; font-size: 11px;" title="修改動態解析引擎規則">⚙️ 規則設定</button>
+                        </div>
+                    </label>
                     <input type="text" id="v_store" placeholder="例如：台北星光 (批次建立時會作為字尾)">
                 </div>
                 <div class="form-group">
@@ -141,7 +146,7 @@
             <div class="form-grid">
                 <div class="form-group full">
                     <label>本周班表 (行事曆)</label>
-                    <textarea id="v_schedule" rows="4" placeholder="對列表卡片按右鍵開啟網頁，複製班表後在此「Ctrl+V」貼上，系統將自動洗淨排版" style="resize: vertical; font-family: monospace;"></textarea>
+                    <textarea id="v_schedule" rows="4" placeholder="對列表卡片按右鍵開啟網頁，複製班表後在此「Ctrl+V」貼上，系統將依規則引擎自動洗淨排版" style="resize: vertical; font-family: monospace;"></textarea>
                 </div>
             </div>
 
@@ -242,6 +247,22 @@
         </div>
     </div>
 
+    <div id="rulesModal" class="modal-overlay">
+        <div class="modal-wrapper">
+            <h3>⚙️ 動態規則引擎設定</h3>
+            <p>當前掃描依據標籤：<strong id="rule-current-store" style="color:var(--accent);">Common (全域)</strong></p>
+            <p style="font-size: 13px; color: #555; line-height: 1.5;">所有的抓取規則、班表清洗防護網、身形判定甚至罩杯推算演算法，皆存放於 Google 試算表的 <b>「Rules」</b> 分頁中。您可以隨時進入表單修改算法或新增網站擷取規則，修改後點擊下方按鈕即可立即生效！</p>
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; font-size: 12px; margin-bottom: 15px; max-height: 150px; overflow-y: auto;" id="rule-preview-box">
+                讀取中...
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="danger" onclick="document.getElementById('rulesModal').style.display='none'">關閉</button>
+                <button class="secondary" onclick="app.openRulesSheet()">🔗 前往表單編輯</button>
+                <button class="success" onclick="app.reloadRules(true)">🔄 重新載入規則</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const CLIENT_ID = '615427641075-2e4i1l7smqp30l8v1qrf75c924aro94i.apps.googleusercontent.com';
         const SHEET_ID = '1WpEGW6m-N-Ofdsn4LGIrT0uQvFRPkVTh9RyJkKgqlc8'; 
@@ -252,15 +273,22 @@
             static generateID() { return 'N' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'); }
             static showLoading(msg) { document.getElementById('loading-text').innerText = msg; document.getElementById('loading-overlay').style.display = 'flex'; }
             static hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
-            static cleanDriveUrl(url) {
-                if (!url) return "";
-                let parsedUrl = String(url).trim();
-                if (parsedUrl.includes('drive.google.com')) {
-                    const match = parsedUrl.match(/[-\w]{25,}/);
-                    if (match) return `https://drive.google.com/thumbnail?authuser=0&sz=w800&id=${match[0]}`;
-                }
-                return parsedUrl.startsWith('http') ? parsedUrl : "";
+            
+            static extractDriveFileId(url) {
+                if (!url) return null;
+                let match = url.match(/[?&]id=([-\w]{25,})/); 
+                if (match) return match[1];
+                match = url.match(/\/d\/([-\w]{25,})/); 
+                if (match) return match[1];
+                return null;
             }
+
+            static cleanDriveUrl(url) {
+                const id = this.extractDriveFileId(url);
+                if (id) return `https://drive.google.com/thumbnail?authuser=0&sz=w800&id=${id}`;
+                return String(url).startsWith('http') ? String(url).trim() : "";
+            }
+            
             static getCurrentTime() {
                 const tzOffset = (new Date()).getTimezoneOffset() * 60000;
                 return (new Date(Date.now() - tzOffset)).toISOString().slice(0, 19).replace('T', ' ');
@@ -271,7 +299,7 @@
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
-                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('自動儲存') || msg.includes('載入舊資料') || msg.includes('批次完成') || msg.includes('清單')) {
+                } else if (msg.includes('順序已變更') || msg.includes('複製') || msg.includes('保留') || msg.includes('最愛') || msg.includes('自動儲存') || msg.includes('載入舊資料') || msg.includes('批次完成') || msg.includes('清單') || msg.includes('載入規則')) {
                     toast.style.background = 'var(--warning)';
                 } else {
                     toast.style.background = 'var(--success)';
@@ -280,25 +308,6 @@
                 toast.classList.add('show');
                 if (this.toastTimeout) clearTimeout(this.toastTimeout);
                 this.toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000);
-            }
-
-            static parseName(rawName) {
-                if (!rawName) return { pureName: "", tags: [], level: "" };
-                let tags = new Set();
-                let level = "";
-                
-                if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(rawName)) tags.add('AF');
-                if (/(3POK|#3P|３ＰＯＫ|＃３Ｐ)/i.test(rawName)) tags.add('3P');
-                if (/Shooting\s*[○〇O]/i.test(rawName)) tags.add('射O');
-                
-                let symbolMatch = rawName.match(/([♤♠♡♥♧♣♦♢])/);
-                if (symbolMatch) level = symbolMatch[1];
-                
-                let pureName = rawName.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ|Shooting\s*[○〇O◎]?)/ig, '')
-                                      .replace(/[♤♠♡♥♧♣♦♢]/g, '')
-                                      .replace(/[\s\u3000|｜・_＿○〇◎*＊]+$/, '')
-                                      .trim();
-                return { pureName, tags: Array.from(tags), level };
             }
 
             static parseStats(rawStats) {
@@ -335,47 +344,76 @@
                 return cup.charCodeAt(0) - 64; 
             }
 
-            static getBodyScore(rawStats) {
+            static getBodyScore(rawStats, storeName, rulesData) {
                 const {h, b, w, hp} = this.parseStats(rawStats);
                 if (!h || !b || !w || !hp) return 0;
+                
+                let scoreRule = rulesData.find(r => r.field === 'v_score_body' && r.site === storeName);
+                if (!scoreRule) scoreRule = rulesData.find(r => r.field === 'v_score_body' && r.site === 'Common');
+
+                if (scoreRule) {
+                    try { 
+                        return new Function('h', 'b', 'w', 'hp', `return ${scoreRule.pattern};`)(h, b, w, hp); 
+                    } catch(e) { console.error("BodyScore Eval Error:", e); }
+                }
+                
                 let hourglass = (b - w) + (hp - w);
                 return Math.min(99, Math.max(1, 40 + hourglass)); 
             }
 
-            static getBodyShapeData(rawStats) {
+            static getBodyShapeData(rawStats, storeName, rulesData) {
                 const parsed = this.parseStats(rawStats);
                 const {h, b, w, hp, cup} = parsed;
                 if (!h || !b || !w || !hp) return null;
 
-                let s2 = h * 0.46; 
+                const evaluateCondition = (pattern) => {
+                    try { return new Function('h', 'b', 'w', 'hp', 'cup', `return ${pattern};`)(h, b, w, hp, cup); }
+                    catch(e){ return false; }
+                };
+
+                let score = this.getBodyScore(rawStats, storeName, rulesData);
+
                 let shapeType = "H型", shapeIcon = "▯";
-                let bustDiff = b - w;
-                let hipDiff = hp - w;
+                let shapeRules = rulesData.filter(r => r.field === 'v_shape' && r.ruleType === 'Condition_Shape' && r.site === storeName);
+                if (shapeRules.length === 0) shapeRules = rulesData.filter(r => r.field === 'v_shape' && r.ruleType === 'Condition_Shape' && r.site === 'Common');
                 
-                if (w >= hp) {
-                    shapeType = "蘋果型"; shapeIcon = "🍎";
-                } else if (bustDiff >= 28 && hipDiff >= 25) {
-                    shapeType = "魔鬼型(疑造假)"; shapeIcon = "🔥";
-                } else if (bustDiff >= 18 && hipDiff >= 23 && Math.abs(b - hp) <= 10) {
-                    shapeType = "沙漏型"; shapeIcon = "⏳";
-                } else if (hp - s2 > 3 || hp - b > 5) {
-                    shapeType = "梨型"; shapeIcon = "🍐";
-                } else if (s2 - hp > 3 || b - hp > 10) {
-                    shapeType = "倒三角"; shapeIcon = "🔻";
+                for (let r of shapeRules) {
+                    if (evaluateCondition(r.pattern)) {
+                        let parts = r.action.split('|');
+                        shapeType = parts[0];
+                        shapeIcon = parts[1] || '';
+                        break;
+                    }
                 }
 
-                let hourglass = (b - w) + (hp - w);
-                let score = Math.min(99, Math.max(1, 40 + hourglass));
+                let shapeColor = '#4caf50', whtrText = '標準';
+                let whtrRules = rulesData.filter(r => r.field === 'v_whtr' && r.ruleType === 'Condition_WHTR' && r.site === storeName);
+                if (whtrRules.length === 0) whtrRules = rulesData.filter(r => r.field === 'v_whtr' && r.ruleType === 'Condition_WHTR' && r.site === 'Common');
+                
+                for (let r of whtrRules) {
+                    if (evaluateCondition(r.pattern)) {
+                        let parts = r.action.split('|');
+                        whtrText = parts[0];
+                        shapeColor = parts[1] || '#4caf50';
+                        break;
+                    }
+                }
+
+                let trueCupIdx = -1;
+                let cupRule = rulesData.find(r => r.field === 'v_true_cup' && r.site === storeName);
+                if (!cupRule) cupRule = rulesData.find(r => r.field === 'v_true_cup' && r.site === 'Common');
+                
+                if (cupRule) {
+                    try { trueCupIdx = evaluateCondition(cupRule.pattern); } catch(e) {}
+                }
+
+                let cupNames = ['AA','A','B','C','D','E','F','G','H','I','J','K','L'];
+                let trueCup = trueCupIdx >= 0 ? (cupNames[Math.min(trueCupIdx, cupNames.length-1)]) : 'AA-';
+
                 let scoreColor = '#4caf50'; 
                 if (score >= 98) scoreColor = '#6200ea'; 
                 else if (score >= 95) scoreColor = '#e91e63'; 
                 else if (score >= 90) scoreColor = '#ff9800'; 
-
-                let estUB = Math.round(((w + 10) + (h * 0.43)) / 2);
-                let diff = b - estUB;
-                let cupNames = ['AA','A','B','C','D','E','F','G','H','I','J','K','L'];
-                let trueCupIdx = Math.floor((diff - 7.5) / 2.5);
-                let trueCup = trueCupIdx >= 0 ? (cupNames[Math.min(trueCupIdx, cupNames.length-1)]) : 'AA-';
 
                 let claimedCupIdx = cupNames.indexOf(cup);
                 if (claimedCupIdx === -1 && cup !== '?') {
@@ -394,12 +432,6 @@
                     cupDiffColor = '#4caf50'; 
                 }
 
-                const whtr = w / h;
-                let shapeColor = '#4caf50', whtrText = '標準';
-                if (whtr < 0.36) { shapeColor = '#2196f3'; whtrText = '瘦'; }
-                else if (whtr > 0.41) { shapeColor = '#e91e63'; whtrText = '胖'; }
-
-                const avgH = 158, avgB = 82, avgW = 61, avgH_p = 86;
                 const scaleY = 100 / 180, scaleX = 0.8; 
                 const getPoints = (height, bust, waist, hip) => {
                     const yHead = 100 - (height * scaleY);
@@ -412,7 +444,7 @@
                     return { yHead, yBust, yWaist, yHip, yFoot, wHead, wBust, wWaist, wHip, wFoot, cx };
                 };
 
-                const avg = getPoints(avgH, avgB, avgW, avgH_p);
+                const avg = getPoints(158, 82, 61, 86);
                 const tgt = getPoints(h, b, w, hp);
                 
                 const makeShape = (p, color, isDashed) => {
@@ -433,13 +465,10 @@
                     `;
                 };
 
-                const avgShape = makeShape(avg, '#ccc', true);
-                const tgtShape = makeShape(tgt, shapeColor, false);
-
                 const svgHtml = `
                     <svg width="100%" height="26px" viewBox="0 0 80 100" preserveAspectRatio="xMidYMid meet">
-                        ${avgShape}
-                        ${tgtShape}
+                        ${makeShape(avg, '#ccc', true)}
+                        ${makeShape(tgt, shapeColor, false)}
                     </svg>
                     <div style="font-size:10px; font-weight:bold; color:${shapeColor}; margin-top:2px;">${whtrText}</div>
                 `;
@@ -452,38 +481,159 @@
                 if (h < 6) h += 24; 
                 return h * 60 + m;
             }
+        }
 
-            static parseAndFormatSchedule(rawText) {
+        class RuleEngine {
+            static getActiveRules(field, type, urlContext, storeName, rulesData) {
+                let matchedRules = [];
+                let topRules = rulesData.filter(r => (urlContext && urlContext.includes(r.site)) || r.site === storeName);
+                if (topRules.length > 0) {
+                    matchedRules = topRules.filter(r => (!field || r.field === field) && (!type || r.ruleType === type));
+                    if (matchedRules.length > 0) return matchedRules;
+                }
+                return rulesData.filter(r => r.site === 'Common' && (!field || r.field === field) && (!type || r.ruleType === type));
+            }
+
+            static parse(text, html, urlContext, storeName, rulesData) {
+                let result = {
+                    store: '', name: '', stats: '', age: '', startDate: '', price: '',
+                    scheduleRaw: '', tags: new Set(), level: ''
+                };
+
+                let storeRules = this.getActiveRules('v_store', 'Set_Default', urlContext, storeName, rulesData);
+                if (storeRules.length > 0) result.store = storeRules[0].action;
+
+                const extractors = ['v_store', 'v_name', 'v_stats', 'v_age', 'v_start_date', 'v_price', 'v_schedule', 'v_level'];
+                extractors.forEach(field => {
+                    if (field === 'v_store' && result.store) return; 
+                    let rulesForField = this.getActiveRules(field, 'Regex_Extract', urlContext, storeName, rulesData);
+                    if (field === 'v_level') rulesForField = rulesForField.concat(this.getActiveRules(field, 'Regex_Level', urlContext, storeName, rulesData));
+
+                    for (let r of rulesForField) {
+                        let flags = 'g';
+                        let pat = r.pattern;
+                        if (!pat) continue;
+                        if (pat.startsWith('(?i)')) { flags = 'ig'; pat = pat.substring(4); }
+                        try {
+                            let regex = new RegExp(pat, flags);
+                            let match = regex.exec(text);
+                            if (match) {
+                                let key = field.replace('v_', '');
+                                if (key === 'start_date') key = 'startDate';
+                                
+                                if (r.action === 'Extract_Group_1' && match[1]) result[key] = match[1];
+                                else if (r.action === 'Extract_Group_1_2' && match[1]) result[key] = match[1]; 
+                                else if (r.action === 'Extract_Date' && match[3]) result.startDate = `${match[1]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}`;
+                                else if (r.action === 'Extract_Number' && match[1]) result.price = match[1].replace(/,/g, '');
+                                else if (r.action === 'Extract_Raw') result.scheduleRaw = match[0];
+                                else if (r.action === 'Extract_Level' && match[1]) result.level = match[1];
+                                else result[key] = match[0];
+                                if (result[key]) break;
+                            }
+                        } catch(e) { console.error("Regex Error in Extract:", pat, e); }
+                    }
+                });
+
+                let tagRules = this.getActiveRules('v_af', 'Regex_Tag', urlContext, storeName, rulesData);
+                for (let r of tagRules) {
+                    let flags = 'g';
+                    let pat = r.pattern;
+                    if (!pat) continue;
+                    if (pat.startsWith('(?i)')) { flags = 'ig'; pat = pat.substring(4); }
+                    try {
+                        let regex = new RegExp(pat, flags);
+                        if (regex.test(text) || regex.test(result.name)) {
+                            let tagStr = r.action.replace('Tag:', '').trim();
+                            if(tagStr) result.tags.add(tagStr);
+                        }
+                    } catch(e){}
+                }
+
+                let htmlTagRules = this.getActiveRules('v_af', 'HTML_Img_Tag', urlContext, storeName, rulesData);
+                for (let r of htmlTagRules) {
+                    if (html && r.pattern && html.includes(r.pattern)) {
+                        let tagStr = r.action.replace('Tag:', '').trim();
+                        if(tagStr) result.tags.add(tagStr);
+                    }
+                }
+
+                let cleanRules = this.getActiveRules('v_name', 'Clean_Remove', urlContext, storeName, rulesData).concat(this.getActiveRules('v_name', 'Clean_End', urlContext, storeName, rulesData));
+                for (let r of cleanRules) {
+                    let flags = 'g';
+                    let pat = r.pattern;
+                    if (!pat) continue;
+                    if (pat.startsWith('(?i)')) { flags = 'ig'; pat = pat.substring(4); }
+                    try {
+                        let regex = new RegExp(pat, flags);
+                        if (r.action === 'Remove' || r.action === 'Remove_Tail') {
+                            result.name = result.name.replace(regex, '');
+                        }
+                    } catch(e){}
+                }
+                
+                if (result.name) result.name = result.name.trim();
+                return result;
+            }
+
+            static parseAndFormatSchedule(rawText, urlContext, storeName, rulesData) {
                 if (!rawText) return '';
                 
-                const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'};
-                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2}\s*(?:\(.\))?)|\s*$)/g;
+                let stopRules = this.getActiveRules('Schedule_Stop', 'Clean_Remove', urlContext, storeName, rulesData);
+                let stopIndex = -1;
+                for (let r of stopRules) {
+                    try {
+                        let regex = new RegExp(r.pattern);
+                        let idx = rawText.search(regex);
+                        if (idx !== -1 && (stopIndex === -1 || idx < stopIndex)) { stopIndex = idx; }
+                    } catch(e) {}
+                }
+                
+                let cleanText = stopIndex !== -1 ? rawText.substring(0, stopIndex) : rawText;
+                
+                let dayMap = {};
+                let mapRules = this.getActiveRules('Schedule_Day', 'Value_Mapping', urlContext, storeName, rulesData);
+                mapRules.forEach(r => { dayMap[r.pattern] = r.action; });
+                if (Object.keys(dayMap).length === 0) dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'}; 
+
+                let statusRules = this.getActiveRules('Schedule_Status', 'Value_Mapping', urlContext, storeName, rulesData);
+                let statusRegexStr = "休|み|缺|^\\s*-\\s*$";
+                if (statusRules.length > 0) statusRegexStr = statusRules[0].pattern;
+
+                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([A-Za-z\u4e00-\u9fa5])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2}\s*(?:\(.\))?)|\s*$)/g;
                 let cleanedLines = [];
                 let match;
                 
-                while ((match = regex.exec(rawText)) !== null) {
+                while ((match = regex.exec(cleanText)) !== null) {
                     let m = parseInt(match[1], 10);
                     let d = parseInt(match[2], 10);
                     let date = `${m}/${d}`;
-                    
                     let rawDay = match[3] ? match[3].replace(/[()]/g, '') : '';
                     let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
                     
                     let content = match[4] || ''; 
-                    let stopMatch = content.search(/(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記|搜尋熱門|返回商店|返回首頁|Top|日本的風俗店|北海道・東北|上門服務)/);
-                    if (stopMatch !== -1) {
-                        content = content.substring(0, stopMatch);
+                    let innerStopIndex = -1;
+                    for (let r of stopRules) {
+                        try {
+                            let regex = new RegExp(r.pattern);
+                            let idx = content.search(regex);
+                            if (idx !== -1 && (innerStopIndex === -1 || idx < innerStopIndex)) { innerStopIndex = idx; }
+                        } catch(e) {}
                     }
+                    if (innerStopIndex !== -1) content = content.substring(0, innerStopIndex);
                     
                     let timeStr = "休息";
                     const timeMatch = content.match(/(\d{1,2}[:：]\d{2})\s*[-~〜ー]\s*(\d{1,2}[:：]\d{2})/);
-                    
                     if (timeMatch) {
                         timeStr = `${timeMatch[1].replace('：',':')}-${timeMatch[2].replace('：',':')}`;
-                    } else if (content.includes('休') || content.includes('み') || content.includes('缺') || /^\s*-\s*$/.test(content) || content.trim() === '-') {
-                        timeStr = '休息';
+                    } else {
+                        try {
+                            let sRegex = new RegExp(statusRegexStr, 'i');
+                            if (sRegex.test(content) || content.trim() === '-') {
+                                timeStr = statusRules.length > 0 ? statusRules[0].action : '休息';
+                                if (timeStr === 'OFF') timeStr = '休息';
+                            }
+                        } catch(e){}
                     }
-                    
                     cleanedLines.push(`${date} ${day} ${timeStr}`.trim());
                 }
                 
@@ -495,7 +645,6 @@
                         let d = parseInt(dateMatch[2], 10);
                         let year = new Date().getFullYear();
                         if (new Date().getMonth() === 11 && m === 1) year += 1;
-                        
                         let finalLines = [];
                         const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
                         for (let i = 0; i < 7; i++) {
@@ -503,16 +652,13 @@
                             let curM = curDate.getMonth() + 1;
                             let curD = curDate.getDate();
                             let tgtDate = `${curM}/${curD}`;
-                            
                             let existing = cleanedLines.find(l => l.startsWith(tgtDate + ' ') || l === tgtDate);
                             if (existing) {
                                 let exMatch = existing.match(/^(\d{1,2}\/\d{1,2})\s*(?:\(.\))?\s*(.+)$/);
                                 if (exMatch) {
                                     let correctDay = `(${dayNames[curDate.getDay()]})`;
                                     finalLines.push(`${exMatch[1]} ${correctDay} ${exMatch[2]}`);
-                                } else {
-                                    finalLines.push(existing);
-                                }
+                                } else finalLines.push(existing);
                             } else {
                                 let dayStr = `(${dayNames[curDate.getDay()]})`;
                                 finalLines.push(`${tgtDate} ${dayStr} 休息`);
@@ -522,74 +668,6 @@
                     }
                 }
                 return rawText.replace(/\n\s*\n/g, '\n').trim();
-            }
-
-            static generateScheduleHTML(scheduleStr) {
-                if (!scheduleStr) return '';
-                const lines = scheduleStr.split('\n').filter(l => l.trim() !== '').slice(0, 7);
-                if (lines.length === 0) return '';
-
-                let schHtml = '';
-                lines.forEach(line => {
-                    const match = line.match(/^(\d{1,2}\/\d{1,2})\s*(\(.\))?\s*(.+)$/);
-                    if (match) {
-                        const date = match[1];
-                        const dayClean = (match[2] || '').replace(/[()]/g, ''); 
-                        const timeStr = match[3];
-
-                        let trackHtml = '';
-                        if (timeStr.includes('休') || timeStr.includes('み')) {
-                            trackHtml = `<div class="sch-fill-vert off" title="${date} 休息"></div>`;
-                        } else {
-                            const tMatch = timeStr.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
-                            if (tMatch) {
-                                let startMins = this.timeToMins(tMatch[1]);
-                                let endMins = this.timeToMins(tMatch[2]);
-                                if (endMins <= startMins) endMins += 24 * 60; 
-
-                                const BASE_MINS = 540;
-                                const TOTAL_MINS = 1260;
-
-                                let renderStart = Math.max(BASE_MINS, startMins);
-                                let renderEnd = Math.min(BASE_MINS + TOTAL_MINS, endMins);
-
-                                let topPct = ((renderStart - BASE_MINS) / TOTAL_MINS) * 100;
-                                let heightPct = ((renderEnd - renderStart) / TOTAL_MINS) * 100;
-                                if(topPct < 0) topPct = 0;
-                                if(heightPct < 0) heightPct = 0;
-                                if(topPct + heightPct > 100) heightPct = 100 - topPct;
-
-                                trackHtml = `<div class="sch-fill-vert" style="top:${topPct}%; height:${heightPct}%;" title="${date} ${tMatch[1]}-${tMatch[2]}"></div>`;
-                            }
-                        }
-
-                        schHtml += `
-                            <div class="sch-col">
-                                <div class="sch-day">${date}<br>${dayClean}</div>
-                                <div class="sch-track-vert" title="${date} ${timeStr}">
-                                    ${trackHtml}
-                                </div>
-                            </div>
-                        `;
-                    }
-                });
-
-                return `
-                    <div class="sch-wrapper">
-                        <div class="sch-time-axis">
-                            <span style="top:14.3%;">12</span>
-                            <span style="top:42.9%;">18</span>
-                            <span style="top:71.4%;">24</span>
-                        </div>
-                        <div class="sch-container-vert">
-                            <div class="sch-grid-line" style="top:14.3%;"></div>
-                            <div class="sch-grid-line" style="top:42.9%;"></div>
-                            <div class="sch-grid-line" style="top:71.4%;"></div>
-                            <div class="sch-grid-line" style="top:100%;"></div>
-                            ${schHtml}
-                        </div>
-                    </div>
-                `;
             }
         }
 
@@ -632,7 +710,6 @@
                                 Utility.showToast('✨ 已載入批次清單！請選擇「僅更新」或「批次建檔」');
                                 return;
                             }
-                            
                             e.preventDefault();
                             if (!window.app.isEditMode) window.app.toggleMode();
                             document.getElementById('v_magic_paste').value = text;
@@ -755,6 +832,7 @@
                 this.headerRow = [];
                 this.accessToken = null;
                 this.tokenClient = null;
+                this.rulesData = []; 
                 
                 this.isEditMode = false; 
                 this.hasWriteAccess = false;
@@ -863,17 +941,12 @@
                 if (!dbStore || !extStore) return true;
                 let s1 = dbStore.toLowerCase().replace(/[\s　]/g, '');
                 let s2 = extStore.toLowerCase().replace(/[\s　]/g, '');
-                
                 if (s1 === s2) return true;
-                
                 if (s1.includes(s2) || s2.includes(s1)) {
                     let longer = s1.length > s2.length ? s1 : s2;
                     let shorter = s1.length > s2.length ? s2 : s1;
                     let extra = longer.replace(shorter, '');
-                    
-                    if (/(in|店|branch|浅草|asakusa|新宿|shinjuku|池袋|ikebukuro|渋谷|shibuya|五反田|gotanda|目黒|meguro|白金|shirokane|上野|ueno|秋葉原|akihabara|新橋|shinbashi|品川|shinagawa)/i.test(extra)) {
-                        return false; 
-                    }
+                    if (/(in|店|branch|浅草|asakusa|新宿|shinjuku|池袋|ikebukuro|渋谷|shibuya|五反田|gotanda|目黒|meguro|白金|shirokane|上野|ueno|秋葉原|akihabara|新橋|shinbashi|品川|shinagawa)/i.test(extra)) return false; 
                     return true; 
                 }
                 return false;
@@ -909,10 +982,7 @@
                 if (allChecked || !anyChecked) {
                     box.innerText = "🏷️ 屬性篩選 (全選)";
                     if (!anyChecked) {
-                        checkboxes.forEach(cb => {
-                            cb.checked = true;
-                            this.selectedAfs.add(cb.value);
-                        });
+                        checkboxes.forEach(cb => { cb.checked = true; this.selectedAfs.add(cb.value); });
                         box.innerText = "🏷️ 屬性篩選 (全選)";
                     }
                 } else {
@@ -1038,6 +1108,80 @@
                     Utility.showToast(`❌ 錯誤: ${e.message}`, true);
                 } finally { Utility.hideLoading(); }
             }
+            
+            // ===== 雲端硬碟自動清洗與重新命名引擎 =====
+            async fetchDriveFiles() {
+                let files = [];
+                let pageToken = null;
+                do {
+                    let query = encodeURIComponent(`'${DRIVE_FOLDER_ID}' in parents and trashed = false`);
+                    let url = `https://www.googleapis.com/drive/v3/files?q=${query}&fields=nextPageToken,files(id,name)&pageSize=1000`;
+                    if (pageToken) url += `&pageToken=${pageToken}`;
+                    let res = await fetch(url, { headers: { 'Authorization': `Bearer ${this.accessToken}` } });
+                    let data = await res.json();
+                    if (data.files) files = files.concat(data.files);
+                    pageToken = data.nextPageToken;
+                } while (pageToken);
+                return files;
+            }
+
+            async cleanupDriveImages() {
+                if (!this.accessToken || !this.hasWriteAccess) {
+                    Utility.showToast('⚠️ 請先切換至編輯模式並完成授權！', true);
+                    return;
+                }
+                if (!confirm('⚠️ 確定要執行雲端硬碟清理嗎？\n系統將會：\n1. 刪除所有未在目前表單上的「廢棄照片」\n2. 自動將現有照片重新命名為「店名-姓名.jpg」')) return;
+
+                Utility.showLoading("正在掃描雲端硬碟與資料庫...");
+
+                try {
+                    let activeFiles = new Map();
+                    this.dataStore.forEach(item => {
+                        let r = item._raw;
+                        let store = r[this.colMap.store] || '未知名稱';
+                        let name = r[this.colMap.name] || '無名';
+                        let photoUrl = r[this.colMap.photo] || '';
+                        let fileId = Utility.extractDriveFileId(photoUrl);
+                        if (fileId) {
+                            let cleanStore = store.replace(/[\\/:*?"<>|]/g, '');
+                            let cleanName = name.replace(/[\\/:*?"<>|]/g, '');
+                            activeFiles.set(fileId, `${cleanStore}-${cleanName}.jpg`);
+                        }
+                    });
+
+                    let driveFiles = await this.fetchDriveFiles();
+                    let deleteCount = 0;
+                    let renameCount = 0;
+
+                    for (let i = 0; i < driveFiles.length; i++) {
+                        let file = driveFiles[i];
+                        Utility.showLoading(`處理雲端檔案中... (${i+1}/${driveFiles.length})`);
+                        
+                        if (activeFiles.has(file.id)) {
+                            let expectedName = activeFiles.get(file.id);
+                            if (file.name !== expectedName) {
+                                await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ name: expectedName })
+                                });
+                                renameCount++;
+                            }
+                        } else {
+                            await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                            });
+                            deleteCount++;
+                        }
+                    }
+                    Utility.showToast(`✅ 雲端清理完成！刪除了 ${deleteCount} 張廢棄照片，重新命名了 ${renameCount} 張照片。`);
+                } catch (e) {
+                    Utility.showToast(`❌ 雲端清理失敗: ${e.message}`, true);
+                } finally {
+                    Utility.hideLoading();
+                }
+            }
 
             executeBatchUpdateOnly() {
                 this.processBatchData(false);
@@ -1057,6 +1201,10 @@
                     Utility.showToast("⚠️ 請先切換至編輯模式並完成 Google 授權！", true);
                     return; 
                 }
+                if (this.rulesData.length === 0) {
+                    Utility.showToast("⚠️ 動態規則尚未載入，請先前往 Google 表單建立 Rules 頁面或點擊重新載入！", true);
+                    return;
+                }
 
                 const text = document.getElementById('v_magic_paste').value.trim();
                 if (!text || text.split(/收藏夾|No\.\d+/ig).length <= 1) {
@@ -1070,118 +1218,96 @@
                 const formAfVal = document.getElementById('v_af').value.trim();
                 const formTags = formAfVal.split(/[\/／]/).map(t => t.trim()).filter(t => t);
 
-                Utility.showLoading("批次解析與同步資料庫中...");
+                Utility.showLoading("透過動態規則解析與同步中...");
 
                 setTimeout(() => {
-                    let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
-                    let baseStore = mStore ? mStore[1].trim() : formStoreVal;
+                    let globalParse = RuleEngine.parse(text, "", "", formStoreVal || "Common", this.rulesData);
+                    let baseStore = globalParse.store || formStoreVal;
 
                     const blocks = text.split(/收藏夾/g).filter(b => b.trim().length > 10);
                     let updateCount = 0;
                     let createCount = 0;
 
                     blocks.forEach(block => {
-                        let mName = block.match(/No\.\d+\s*\n\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i); 
-                        if (!mName) {
-                            mName = block.match(/(?:名稱|名前|Name)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
-                        }
+                        let parsedData = RuleEngine.parse(block, "", "", formStoreVal || "Common", this.rulesData);
                         
-                        if (!mName) return;
-                        
-                        let nameInfo = Utility.parseName(mName[1]);
-                        let pureName = nameInfo.pureName;
+                        if (!parsedData.name) return; 
 
                         let finalStore = baseStore;
                         if (formStoreVal && !finalStore.includes(formStoreVal)) {
                             finalStore += " " + formStoreVal;
                         }
 
-                        let extStats = "";
-                        let mStats = block.match(/(T\d{3}[^\n]+)/i);
-                        if (mStats) extStats = mStats[1].replace(/from.*/i, '').replace(/[\n\r]/g, '').trim();
-
-                        let mSch = block.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
-                        if (mSch) {
-                            let formattedSch = Utility.parseAndFormatSchedule(mSch[0]);
-                            let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
+                        let formattedSch = "";
+                        if (parsedData.scheduleRaw) {
+                            formattedSch = RuleEngine.parseAndFormatSchedule(parsedData.scheduleRaw, "", formStoreVal || "Common", this.rulesData);
+                        }
+                        let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
+                        
+                        if (hasSchedule || parsedData.stats) {
                             
-                            if (hasSchedule || extStats) {
+                            let tagSet = new Set(parsedData.tags);
+                            formTags.forEach(t => {
+                                let upper = t.toUpperCase();
+                                if(upper === 'AF' || upper === '3P' || upper === '射O') tagSet.add(upper);
+                                else tagSet.add(t);
+                            });
+
+                            const recordIdx = this.dataStore.findIndex(r => {
+                                let dbName = r._raw[this.colMap.name] || "";
+                                let cleanDbName = RuleEngine.parse(dbName, "", "", "Common", this.rulesData).name || dbName;
                                 
-                                let tagSet = new Set();
-                                nameInfo.tags.forEach(t => tagSet.add(t)); 
+                                let dbStore = r._raw[this.colMap.store] || "";
+                                let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
                                 
-                                formTags.forEach(t => {
+                                let nameMatch = cleanDbName.toLowerCase() === parsedData.name.toLowerCase();
+                                let storeMatch = this.isSameStore(dbStore, finalStore);
+                                
+                                let cleanExtStats = (parsedData.stats || "").replace(/[\s\/]/g, '');
+                                let statsMatch = cleanExtStats && dbStats && (dbStats.includes(cleanExtStats) || cleanExtStats.includes(dbStats));
+
+                                return nameMatch && (storeMatch || statsMatch);
+                            });
+
+                            if (recordIdx !== -1) {
+                                if (hasSchedule) this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
+                                if (parsedData.stats) this.dataStore[recordIdx]._raw[this.colMap.stats] = parsedData.stats; 
+                                
+                                let originalDbAf = this.dataStore[recordIdx]._raw[this.colMap.af] || "";
+                                originalDbAf.split(/[\/／]/).map(t=>t.trim()).filter(t=>t).forEach(t => {
                                     let upper = t.toUpperCase();
                                     if(upper === 'AF' || upper === '3P' || upper === '射O') tagSet.add(upper);
                                     else tagSet.add(t);
                                 });
+                                
+                                if (tagSet.size > 0) this.dataStore[recordIdx]._raw[this.colMap.af] = Array.from(tagSet).join(' / ');
+                                if (parsedData.level) this.dataStore[recordIdx]._raw[this.colMap.level] = parsedData.level;
+                                this.dataStore[recordIdx]._raw[this.colMap.updateTime] = Utility.getCurrentTime();
 
-                                let levelVal = nameInfo.level;
+                                updateCount++;
+                            } else if (createMissing) {
+                                let newRowData = new Array(this.headerRow.length).fill("");
+                                const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
+                                
+                                setV('techId', Utility.generateID());
+                                setV('store', finalStore);
+                                setV('name', parsedData.name);
+                                setV('stats', parsedData.stats);
+                                setV('price', formPriceVal || parsedData.price);
+                                setV('location', formLocationVal);
+                                setV('updateTime', Utility.getCurrentTime());
+                                
+                                if (hasSchedule) setV('schedule', formattedSch);
+                                if (tagSet.size > 0) setV('af', Array.from(tagSet).join(' / '));
+                                if (parsedData.level) setV('level', parsedData.level);
+                                if (parsedData.age) setV('age', parsedData.age);
 
-                                const recordIdx = this.dataStore.findIndex(r => {
-                                    let dbName = r._raw[this.colMap.name] || "";
-                                    let cleanDbName = Utility.parseName(dbName).pureName; 
-                                    
-                                    let dbStore = r._raw[this.colMap.store] || "";
-                                    let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
-                                    
-                                    let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
-                                    let storeMatch = this.isSameStore(dbStore, finalStore);
-                                    
-                                    let cleanExtStats = extStats.replace(/[\s\/]/g, '');
-                                    let statsMatch = cleanExtStats && dbStats && (dbStats.includes(cleanExtStats) || cleanExtStats.includes(dbStats));
-
-                                    return nameMatch && (storeMatch || statsMatch);
+                                this.dataStore.push({
+                                    id: String(newRowData[this.colMap.techId]),
+                                    _raw: newRowData,
+                                    _rowIndex: "" 
                                 });
-
-                                if (recordIdx !== -1) {
-                                    if (hasSchedule) this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
-                                    if (extStats) this.dataStore[recordIdx]._raw[this.colMap.stats] = extStats; 
-                                    
-                                    let originalDbAf = this.dataStore[recordIdx]._raw[this.colMap.af] || "";
-                                    originalDbAf.split(/[\/／]/).map(t=>t.trim()).filter(t=>t).forEach(t => {
-                                        let upper = t.toUpperCase();
-                                        if(upper === 'AF' || upper === '3P' || upper === '射O') tagSet.add(upper);
-                                        else tagSet.add(t);
-                                    });
-                                    
-                                    if (tagSet.size > 0) {
-                                        this.dataStore[recordIdx]._raw[this.colMap.af] = Array.from(tagSet).join(' / ');
-                                    }
-
-                                    if (levelVal) {
-                                        this.dataStore[recordIdx]._raw[this.colMap.level] = levelVal;
-                                    }
-                                    
-                                    this.dataStore[recordIdx]._raw[this.colMap.updateTime] = Utility.getCurrentTime();
-
-                                    updateCount++;
-                                } else if (createMissing) {
-                                    let newRowData = new Array(this.headerRow.length).fill("");
-                                    const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
-                                    
-                                    setV('techId', Utility.generateID());
-                                    setV('store', finalStore);
-                                    setV('name', pureName);
-                                    setV('stats', extStats);
-                                    setV('price', formPriceVal);
-                                    setV('location', formLocationVal);
-                                    setV('updateTime', Utility.getCurrentTime());
-                                    
-                                    if (hasSchedule) setV('schedule', formattedSch);
-                                    if (tagSet.size > 0) setV('af', Array.from(tagSet).join(' / '));
-                                    if (levelVal) setV('level', levelVal);
-
-                                    let mAge = block.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || block.match(/(\d+)\s*(?:歳|才|歲)/);
-                                    if (mAge) setV('age', mAge[1] + "歲");
-
-                                    this.dataStore.push({
-                                        id: String(newRowData[this.colMap.techId]),
-                                        _raw: newRowData,
-                                        _rowIndex: "" 
-                                    });
-                                    createCount++;
-                                }
+                                createCount++;
                             }
                         }
                     });
@@ -1204,13 +1330,15 @@
 
             processMagicPaste(text, html) {
                 if (!text) return;
-                const magicInput = document.getElementById('v_magic_paste');
+                if (this.rulesData.length === 0) {
+                    Utility.showToast("⚠️ 動態規則尚未載入，請確認 Google 表單是否已建立 Rules 分頁！", true);
+                    return;
+                }
 
+                const magicInput = document.getElementById('v_magic_paste');
                 let extractedUrl = "";
                 let urlMatch = text.match(/https?:\/\/[^\s]+/);
-                if (urlMatch) {
-                    extractedUrl = urlMatch[0];
-                }
+                if (urlMatch) extractedUrl = urlMatch[0];
 
                 let recordIdx = -1;
                 if (extractedUrl) {
@@ -1231,61 +1359,27 @@
                         document.getElementById('v_url').value = extractedUrl;
                         Utility.showToast('✨ 已自動辨識並填入新網址！');
                     }
+                    magicInput.value = '';
                     return;
                 }
 
-                let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
+                const formStoreVal = document.getElementById('v_store').value.trim();
+                let urlContext = extractedUrl;
 
-                let rawNameExt = "";
-                let extStore = "";
-                let lines = text.split('\n').map(l => l.trim()).filter(l => l);
-
-                if (isYoasobi) {
-                    let mName = text.match(/(?:名稱|名前|Name)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i); 
-                    if (mName) rawNameExt = mName[1];
-                } else {
-                    for(let i=0; i < Math.min(5, lines.length); i++) {
-                        let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
-                        if (nameStoreMatch && !lines[i].includes('http')) {
-                            rawNameExt = nameStoreMatch[1];
-                            extStore = nameStoreMatch[2].trim();
-                            break;
-                        }
-                    }
-                    if (!rawNameExt) {
-                        let mName = text.match(/(?:Name|名前)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
-                        if (mName) rawNameExt = mName[1];
-                    }
-                }
-
-                let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
-                if (mStore) {
-                    extStore = mStore[1].trim();
-                }
-                if (!extStore) extStore = document.getElementById('v_store').value.trim();
-
-                let nameInfo = Utility.parseName(rawNameExt);
-                let pureName = nameInfo.pureName;
-
-                let extStats = "";
-                let mStats = text.match(/(T\d{3}[^\n]+)/i);
-                if (mStats) {
-                    extStats = mStats[1].replace(/from.*/i, '').trim();
-                }
+                let parsedData = RuleEngine.parse(text, html, urlContext, formStoreVal || "Common", this.rulesData);
 
                 let isExisting = false;
-                if (recordIdx === -1 && pureName) {
+                if (recordIdx === -1 && parsedData.name) {
                     recordIdx = this.dataStore.findIndex(r => {
                         let dbName = r._raw[this.colMap.name] || "";
-                        let cleanDbName = Utility.parseName(dbName).pureName; 
-                        
+                        let cleanDbName = RuleEngine.parse(dbName, "", "", "Common", this.rulesData).name || dbName;
                         let dbStore = (r._raw[this.colMap.store] || "").trim();
                         let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
                         
-                        let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
-                        let storeMatch = this.isSameStore(dbStore, extStore);
+                        let nameMatch = cleanDbName.toLowerCase() === parsedData.name.toLowerCase();
+                        let storeMatch = this.isSameStore(dbStore, parsedData.store || formStoreVal);
                         
-                        let cleanExtStats = extStats.replace(/[\s\/]/g, '');
+                        let cleanExtStats = (parsedData.stats || "").replace(/[\s\/]/g, '');
                         let statsMatch = cleanExtStats && dbStats && (dbStats.includes(cleanExtStats) || cleanExtStats.includes(dbStats));
 
                         return nameMatch && (storeMatch || statsMatch);
@@ -1298,90 +1392,42 @@
                 }
 
                 const fieldsToClear = ['v_age', 'v_stats', 'v_start_date', 'v_schedule'];
-                fieldsToClear.forEach(id => {
-                    let el = document.getElementById(id);
-                    if (el) el.value = '';
-                });
+                fieldsToClear.forEach(id => { let el = document.getElementById(id); if(el) el.value = ''; });
 
                 if (!isExisting) {
                     document.getElementById('v_row_index').value = '';
                     document.getElementById('v_tech_id').value = '';
                 }
                 
-                if (pureName) document.getElementById('v_name').value = pureName; 
-                if (extStore) document.getElementById('v_store').value = extStore;
+                if (parsedData.name) document.getElementById('v_name').value = parsedData.name; 
+                if (parsedData.store) document.getElementById('v_store').value = parsedData.store;
                 if (extractedUrl) document.getElementById('v_url').value = extractedUrl;
-                if (extStats) document.getElementById('v_stats').value = extStats;
+                if (parsedData.stats) document.getElementById('v_stats').value = parsedData.stats;
+                if (parsedData.age) document.getElementById('v_age').value = parsedData.age;
+                if (parsedData.startDate) document.getElementById('v_start_date').value = parsedData.startDate;
+                if (parsedData.price && !document.getElementById('v_price').value) document.getElementById('v_price').value = parsedData.price;
+                if (parsedData.level) document.getElementById('v_level').value = parsedData.level;
 
-                let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
-                if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
-
-                let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
-                if (mDate) {
-                    document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
-                }
-                
-                const tagMap = {
-                    'tbc_tag': '禁菸',
-                    'ppn_tag': '白虎',
-                    'pee_tag': '潮',
-                    'mat_tag': '墊子',
-                    'denma_tag': '電マ',
-                    'tbc_iqos': '加熱菸',
-                    'tto_tag': '刺青',
-                    'dbl_tag': '3P'
-                };
-                let imgRegex = /<img[^>]+src=["'][^"']*?\/img\/([^/"']+)\.png["']/ig;
-                let imgMatch;
-                let foundTags = new Set();
-                
                 let existingTags = document.getElementById('v_af').value.split(/[\/／]/).map(t=>t.trim()).filter(t=>t);
-                existingTags.forEach(t => foundTags.add(t));
+                let foundTags = new Set(existingTags);
+                parsedData.tags.forEach(t => foundTags.add(t));
                 
-                let isTagUpdated = false;
-                while ((imgMatch = imgRegex.exec(html)) !== null) {
-                    isTagUpdated = true;
-                    let filename = imgMatch[1];
-                    if (tagMap[filename] || filename.endsWith('_tag')) {
-                        foundTags.add(tagMap[filename] || `[${filename}]`);
-                    }
-                }
-                
-                if (/肛交\s*[○〇O]/.test(text)) { foundTags.add('AF'); isTagUpdated = true; }
-                if (/(?:三人組|3P|３Ｐ)\s*[○〇O]/i.test(text)) { foundTags.add('3P'); isTagUpdated = true; }
-                if (/Shooting\s*[○〇O◎]?/i.test(text)) { foundTags.add('射O'); isTagUpdated = true; }
-
-                if (nameInfo.tags.length > 0) {
-                    nameInfo.tags.forEach(t => { foundTags.add(t); isTagUpdated = true; });
-                }
-                if (nameInfo.level) {
-                    document.getElementById('v_level').value = nameInfo.level;
-                }
-
-                if (isTagUpdated && foundTags.size > 0) {
+                if (foundTags.size > 0) {
                     document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
                 }
 
-                let scheduleText = text;
-                let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
-                if (mSch) {
-                    scheduleText = mSch[0];
-                }
-                
-                let formattedSch = Utility.parseAndFormatSchedule(scheduleText);
-                let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
-                
-                if (hasSchedule) {
-                    document.getElementById('v_schedule').value = formattedSch;
+                let hasSchedule = false;
+                if (parsedData.scheduleRaw) {
+                    let formattedSch = RuleEngine.parseAndFormatSchedule(parsedData.scheduleRaw, urlContext, formStoreVal || "Common", this.rulesData);
+                    hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
+                    if (hasSchedule) document.getElementById('v_schedule').value = formattedSch;
                 }
 
-                if (isExisting) {
-                    Utility.showToast('✨ 偵測到已有該技師，已自動載入舊資料並更新！請確認後儲存。');
-                } else if (hasSchedule) {
-                    Utility.showToast('✨ 綜合資訊已自動解析！(新建立技師資料)');
-                } else {
-                    Utility.showToast('✨ 已更新部分資訊 (未偵測到班表)');
-                }
+                if (isExisting) Utility.showToast('✨ 偵測到已有該技師，已自動載入並更新！請確認後儲存。');
+                else if (hasSchedule) Utility.showToast('✨ 綜合資訊已依據規則引擎自動解析！');
+                else Utility.showToast('✨ 已更新部分資訊 (未偵測到班表)');
+                
+                setTimeout(() => { magicInput.value = ''; }, 100);
             }
 
             setupSchedulePasting() {
@@ -1389,8 +1435,9 @@
                 scheduleInput.addEventListener('paste', (e) => {
                     e.preventDefault();
                     let pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                    scheduleInput.value = Utility.parseAndFormatSchedule(pastedText);
-                    Utility.showToast('✅ 班表已成功解析貼上');
+                    const formStoreVal = document.getElementById('v_store').value.trim();
+                    scheduleInput.value = RuleEngine.parseAndFormatSchedule(pastedText, "", formStoreVal || "Common", this.rulesData);
+                    Utility.showToast('✅ 班表已成功依據動態規則解析貼上');
                 });
             }
 
@@ -1504,6 +1551,7 @@
             onAuthSuccess() {
                 document.getElementById('auth-banner').style.display = 'none';
                 this.fetchSheetNames();
+                this.reloadRules(); 
             }
 
             triggerAuth() {
@@ -1542,17 +1590,77 @@
                         const select = document.getElementById('v_sheet');
                         select.innerHTML = ''; 
                         data.sheets.forEach(s => {
-                            const opt = document.createElement('option');
-                            opt.value = s.properties.title;
-                            opt.innerText = s.properties.title;
-                            opt.dataset.sheetId = s.properties.sheetId; 
-                            select.appendChild(opt);
+                            if (s.properties.title !== 'Rules') {
+                                const opt = document.createElement('option');
+                                opt.value = s.properties.title;
+                                opt.innerText = s.properties.title;
+                                opt.dataset.sheetId = s.properties.sheetId; 
+                                select.appendChild(opt);
+                            }
                         });
                         this.loadSheetData(); 
                     }
                 } catch (e) {
                     alert(`❌ 讀取失敗！請確認 Google 帳號授權狀態。`);
                 }
+            }
+
+            async reloadRules(showToast = false) {
+                if (!this.accessToken) return;
+                try {
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Rules!A:G`, {
+                        headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                    });
+                    const data = await res.json();
+                    if (data.values) {
+                        this.parseRulesData(data.values);
+                        if (this.rulesData.length > 0 && showToast) Utility.showToast("✅ 動態規則載入成功！");
+                        this.renderRulesPreview();
+                        this.renderCatalog(); 
+                    } else {
+                        Utility.showToast("⚠️ 未找到 Rules 資料，請確認 Google 表單設定。", true);
+                    }
+                } catch(e) { console.warn("規則表單載入失敗，可能尚未建立", e); }
+            }
+
+            parseRulesData(values) {
+                this.rulesData = [];
+                for (let i = 1; i < values.length; i++) {
+                    let row = values[i];
+                    if (row[1] && row[2]) {
+                        this.rulesData.push({
+                            priority: parseInt(row[0]) || 3,
+                            site: row[1].trim(), field: row[2].trim(), ruleType: row[3].trim(),
+                            pattern: row[4], action: row[5], note: row[6]
+                        });
+                    }
+                }
+                this.rulesData.sort((a, b) => a.priority - b.priority);
+            }
+
+            openRulesModal() {
+                document.getElementById('rulesModal').style.display = 'flex';
+                let store = document.getElementById('v_store').value.trim();
+                document.getElementById('rule-current-store').innerText = store ? store : "Common (全域)";
+                this.renderRulesPreview();
+            }
+
+            renderRulesPreview() {
+                let box = document.getElementById('rule-preview-box');
+                if (this.rulesData.length === 0) {
+                    box.innerHTML = "目前無可用規則，請確認 Google 試算表中已建立「Rules」分頁。"; return;
+                }
+                let html = "<table style='width:100%; text-align:left; border-collapse:collapse;'>";
+                html += "<tr style='border-bottom:1px solid #ccc;'><th>Priority</th><th>SiteMatch</th><th>Field</th><th>Pattern</th></tr>";
+                this.rulesData.forEach(r => {
+                    html += `<tr style='border-bottom:1px solid #eee;'><td>${r.priority}</td><td>${r.site}</td><td>${r.field}</td><td style="color:var(--primary); font-family:monospace;">${r.pattern}</td></tr>`;
+                });
+                html += "</table>";
+                box.innerHTML = html;
+            }
+
+            openRulesSheet() {
+                window.open(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`, '_blank');
             }
 
             handleTokenExpired() {
@@ -1595,6 +1703,7 @@
 
                     if (!data.values || data.values.length === 0) {
                         this.dataStore = [];
+                        this.populateFilters();
                         this.renderCatalog();
                         return;
                     }
@@ -1646,7 +1755,6 @@
                         }
                     }
 
-                    // 強制重構過濾器
                     this.populateFilters(); 
                     this.renderCatalog();
                     
@@ -1659,7 +1767,6 @@
                 }
             }
 
-            // ===== 修復：補回遺失的 populateFilters 方法 =====
             populateFilters() {
                 const storeSelect = document.getElementById('filterStore');
                 const uniqueStores = [...new Set(this.dataStore.map(r => r._raw[this.colMap.store]).filter(s => s && s.trim() !== ''))];
@@ -2137,9 +2244,8 @@
                     if (sortOpt === 'cup') {
                         res = Utility.getCupScore(a.record._raw[this.colMap.stats]) - Utility.getCupScore(b.record._raw[this.colMap.stats]);
                     } else if (sortOpt === 'body') {
-                        res = Utility.getBodyScore(a.record._raw[this.colMap.stats]) - Utility.getBodyScore(b.record._raw[this.colMap.stats]);
+                        res = Utility.getBodyScore(a.record._raw[this.colMap.stats], a.record._raw[this.colMap.store], this.rulesData) - Utility.getBodyScore(b.record._raw[this.colMap.stats], b.record._raw[this.colMap.store], this.rulesData);
                     } else if (sortOpt === 'updateTime') {
-                        // 【修復】空值防護：如果尚未建立更新時間，視為最舊資料 (給予時間戳 0)
                         let tA = a.record._raw[this.colMap.updateTime] ? new Date(a.record._raw[this.colMap.updateTime]).getTime() : 0;
                         if (isNaN(tA)) tA = 0;
                         let tB = b.record._raw[this.colMap.updateTime] ? new Date(b.record._raw[this.colMap.updateTime]).getTime() : 0;
@@ -2227,7 +2333,7 @@
                         priceHtml += '</div>';
                     }
 
-                    const shapeData = Utility.getBodyShapeData(r[this.colMap.stats]);
+                    const shapeData = Utility.getBodyShapeData(r[this.colMap.stats], storeName, this.rulesData);
                     let nameRowHtml = '';
                     if (shapeData) {
                         tagsHtml += `<span class="tag-item" style="background:#546e7a; color:white;" title="身型分類">${shapeData.shapeIcon} ${shapeData.shapeType}</span>`;
@@ -2239,7 +2345,7 @@
                                 <div class="name-col">
                                     <div class="tech-name">${r[this.colMap.name] || '未命名'} ${ageStr}</div>
                                     <div class="score-row">
-                                        <span class="big-badge" style="background:${shapeData.scoreColor};" title="沙漏比例曲線評分">👑 ${shapeData.score}分</span>
+                                        <span class="big-badge" style="background:${shapeData.scoreColor};" title="動態演算法評分">👑 ${shapeData.score}分</span>
                                         <span class="big-badge" style="background:${shapeData.cupDiffColor};" title="推算真實罩杯 (與宣稱差異越大顏色越深)">實推 ${shapeData.trueCup}杯</span>
                                     </div>
                                 </div>
@@ -2251,7 +2357,7 @@
                         nameRowHtml = `<div class="tech-name">${r[this.colMap.name] || '未命名'} ${ageStr}</div>${tagsContainer}`;
                     }
 
-                    const schHTML = Utility.generateScheduleHTML(r[this.colMap.schedule]);
+                    const schHTML = RuleEngine.parseAndFormatSchedule(r[this.colMap.schedule], "", storeName, this.rulesData);
 
                     const card = document.createElement('div');
                     card.className = 'card';
