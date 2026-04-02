@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talent DB - 技師資料彙整系統 (ID自動化版)</title>
+    <title>Talent DB - 技師資料彙整系統 (動態引擎完整版)</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
-        :root{--primary:#4527a0;--secondary:#7986cb;--bg:#f0f2f5;--text:#2c3e50;--accent:#e91e63;--success:#2e7d32;--card-bg:#ffffff;--warning:#ff9800}body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;display:flex;flex-direction:column;height:100dvh;box-sizing:border-box;overflow:hidden}h1,h2,h3{color:var(--primary);margin-top:0}.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap}.header-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sheet-selector-wrapper{display:flex;align-items:center;gap:8px;background:#fff;padding:5px 15px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.05)}#app-container{display:grid;grid-template-columns:500px 1fr;gap:15px;flex:1;min-height:0;transition:all .3s ease}.panel{background:var(--card-bg);border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:20px;display:flex;flex-direction:column;overflow-y:auto;position:relative}#app-container.view-mode{grid-template-columns:1fr}#app-container.view-mode #panel-form{display:none}@media (max-width:850px){body{padding:8px}.app-title{display:none}.top-bar{margin-bottom:8px}.header-controls{flex-direction:row;align-items:center;width:100%;gap:6px;flex-wrap:nowrap;justify-content:space-between}.sheet-selector-wrapper{padding:4px 8px;flex:1;justify-content:flex-start}.sheet-label{display:none}#v_sheet{width:100%;font-size:15px;padding:2px}.btn-text{display:none}.top-bar button{padding:6px 10px;font-size:18px}#app-container{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}.panel{flex:none;overflow-y:visible;height:auto;margin-bottom:10px}#app-container.view-mode #panel-form{display:none}.form-grid{grid-template-columns:1fr;gap:8px}.form-group.full{grid-column:span 1}.filter-tools{flex-direction:row!important;flex-wrap:wrap!important;gap:5px!important;position:sticky;top:-20px;z-index:50;background:var(--card-bg);padding:20px 0 10px;border-bottom:2px solid var(--secondary)}.filter-tools input,.filter-tools select,.custom-multi-select{width:100%!important;margin-bottom:4px!important;font-size:13px}}#auth-banner{background:#ffeeba;color:#856404;padding:10px;font-size:14px;text-align:center;font-weight:700;border-radius:8px;margin-bottom:10px;cursor:pointer;border:1px solid #ffdf7e;transition:.3s;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.form-group{margin-bottom:8px}.form-group.full{grid-column:span 2}label{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:5px;font-size:.85em;color:#666}input,select,textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;font-size:14px;transition:.2s}input:focus,select:focus,textarea:focus{border-color:var(--primary);outline:0;box-shadow:0 0 0 2px rgba(69,39,160,.1)}input[readonly]{background:#f8f9fa;cursor:not-allowed}#v_magic_paste{background:#fff8e1;border-color:#ffb300;transition:all .3s}#v_magic_paste:focus{box-shadow:0 0 0 2px rgba(255,179,0,.3)}.photo-upload-area{margin:10px 0;position:relative}.img-preview-box{width:100%;height:350px;background:#f8f9fa;border:2px dashed #ccc;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;transition:.2s}.img-preview-box img{width:100%;height:100%;object-fit:contain}.img-preview-box span{font-size:.9em;color:#777;text-align:center;line-height:1.5;padding:10px;pointer-events:none}.btn-delete-img{position:absolute;top:10px;right:10px;background:rgba(233,30,99,.9);color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:10}.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:1000;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(5px)}.modal-wrapper{width:95%;max-width:600px;max-height:85%;background:#fff;padding:20px;border-radius:12px;display:flex;flex-direction:column;box-sizing:border-box}button{background:var(--primary);color:#fff;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;transition:.3s;display:inline-flex;justify-content:center;align-items:center;gap:5px}button.danger{background:#e53935}button.success{background:#2e7d32}button.secondary{background:#7986cb}button.warning{background:var(--warning);color:#fff}#loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:99999;justify-content:center;align-items:center;color:#fff;font-size:20px;font-weight:700;display:none;flex-direction:column;text-align:center;padding:20px}#toast-container{position:fixed;top:-50px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:12px 24px;border-radius:8px;font-weight:700;font-size:15px;box-shadow:0 4px 15px rgba(0,0,0,.2);z-index:100000;opacity:0;pointer-events:none;transition:all .4s;display:flex;align-items:center;gap:8px}#toast-container.show{opacity:1;top:30px}.catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px;margin-top:15px;align-content:start}.card{border:1px solid #e0e0e0;border-radius:8px;padding:12px;cursor:pointer;transition:.2s;background:#fff;display:flex;flex-direction:column;position:relative;overflow:hidden}.card.selected{border:2px solid var(--accent);background:#fce4ec}.card img{width:100%;height:240px;object-fit:contain;border-radius:6px;background:#f8f9fa;pointer-events:none}.fav-btn{position:absolute;top:10px;right:10px;z-index:10;font-size:20px;cursor:pointer}.card-checkbox{position:absolute;top:10px;right:40px;z-index:15;width:20px;height:20px}.filter-tools{position:sticky;top:-20px;margin-top:-20px;padding-top:20px;padding-bottom:10px;background:var(--card-bg);z-index:50;border-bottom:2px solid var(--secondary);display:flex;gap:8px;flex-wrap:wrap}#batch-actions-bar{display:none;background:#fff3e0;padding:8px 15px;border-radius:6px;border:1px solid #ffb300;margin-bottom:10px;align-items:center;gap:10px;font-size:13px;font-weight:700;position:sticky;top:40px;z-index:49}.custom-multi-select{position:relative;min-width:130px;flex:1}.dropdown-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ccc;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:100;max-height:300px;display:flex;flex-direction:column;margin-top:4px}#af-checkboxes{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+        :root{--primary:#4527a0;--secondary:#7986cb;--bg:#f0f2f5;--text:#2c3e50;--accent:#e91e63;--success:#2e7d32;--card-bg:#ffffff;--warning:#ff9800}body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;display:flex;flex-direction:column;height:100dvh;box-sizing:border-box;overflow:hidden}h1,h2,h3{color:var(--primary);margin-top:0}.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap}.header-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sheet-selector-wrapper{display:flex;align-items:center;gap:8px;background:#fff;padding:5px 15px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.05)}#app-container{display:grid;grid-template-columns:500px 1fr;gap:15px;flex:1;min-height:0;transition:all .3s ease}.panel{background:var(--card-bg);border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:20px;display:flex;flex-direction:column;overflow-y:auto;position:relative}#app-container.view-mode{grid-template-columns:1fr}#app-container.view-mode #panel-form{display:none}@media (max-width:850px){body{padding:8px}.app-title{display:none}.top-bar{margin-bottom:8px}.header-controls{flex-direction:row;align-items:center;width:100%;gap:6px;flex-wrap:nowrap;justify-content:space-between}.sheet-selector-wrapper{padding:4px 8px;flex:1;justify-content:flex-start}.sheet-label{display:none}#v_sheet{width:100%;font-size:15px;padding:2px}.btn-text{display:none}.top-bar button{padding:6px 10px;font-size:18px}#app-container{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}.panel{flex:none;overflow-y:visible;height:auto;margin-bottom:10px}#app-container.view-mode #panel-form{display:none}.form-grid{grid-template-columns:1fr;gap:8px}.form-group.full{grid-column:span 1}.filter-tools{flex-direction:row!important;flex-wrap:wrap!important;gap:5px!important;position:sticky;top:-20px;z-index:50;background:var(--card-bg);padding:20px 0 10px;border-bottom:2px solid var(--secondary)}.filter-tools input,.filter-tools select,.custom-multi-select{width:100%!important;margin-bottom:4px!important;font-size:13px}}#auth-banner{background:#ffeeba;color:#856404;padding:10px;font-size:14px;text-align:center;font-weight:700;border-radius:8px;margin-bottom:10px;cursor:pointer;border:1px solid #ffdf7e;transition:.3s;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.form-group{margin-bottom:8px}.form-group.full{grid-column:span 2}label{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:5px;font-size:.85em;color:#666}input,select,textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;font-size:14px;transition:.2s}input:focus,select:focus,textarea:focus{border-color:var(--primary);outline:0;box-shadow:0 0 0 2px rgba(69,39,160,.1)}input[readonly]{background:#f8f9fa;cursor:not-allowed}#v_magic_paste{background:#fff8e1;border-color:#ffb300;transition:all .3s}#v_magic_paste:focus{box-shadow:0 0 0 2px rgba(255,179,0,.3)}.photo-upload-area{margin:10px 0;position:relative}.img-preview-box{width:100%;height:350px;background:#f8f9fa;border:2px dashed #ccc;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;transition:.2s}.img-preview-box img{width:100%;height:100%;object-fit:contain}.img-preview-box span{font-size:.9em;color:#777;text-align:center;line-height:1.5;padding:10px;pointer-events:none}.btn-delete-img{position:absolute;top:10px;right:10px;background:rgba(233,30,99,.9);color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:10}.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:1000;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(5px)}.modal-wrapper{width:95%;max-width:600px;max-height:85%;background:#fff;padding:20px;border-radius:12px;display:flex;flex-direction:column;box-sizing:border-box}button{background:var(--primary);color:#fff;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;transition:.3s;display:inline-flex;justify-content:center;align-items:center;gap:5px}button.danger{background:#e53935}button.success{background:#2e7d32}button.secondary{background:#7986cb}button.warning{background:var(--warning);color:#fff}#loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:99999;justify-content:center;align-items:center;color:#fff;font-size:20px;font-weight:700;display:none;flex-direction:column;text-align:center;padding:20px}#toast-container{position:fixed;top:-50px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:12px 24px;border-radius:8px;font-weight:700;font-size:15px;box-shadow:0 4px 15px rgba(0,0,0,.2);z-index:100000;opacity:0;pointer-events:none;transition:all .4s;display:flex;align-items:center;gap:8px}#toast-container.show{opacity:1;top:30px}.catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px;margin-top:15px;align-content:start}.card{border:1px solid #e0e0e0;border-radius:8px;padding:12px;cursor:pointer;transition:.2s;background:#fff;display:flex;flex-direction:column;position:relative;overflow:hidden}.card.selected{border:2px solid var(--accent);background:#fce4ec}.card img{width:100%;height:240px;object-fit:contain;border-radius:6px;background:#f8f9fa;pointer-events:none}.fav-btn{position:absolute;top:10px;right:10px;z-index:10;font-size:20px;cursor:pointer}.card-checkbox{position:absolute;top:10px;right:40px;z-index:15;width:20px;height:20px}.filter-tools{position:sticky;top:-20px;margin-top:-20px;padding-top:20px;padding-bottom:10px;background:var(--card-bg);z-index:50;border-bottom:2px solid var(--secondary);display:flex;gap:8px;flex-wrap:wrap}#batch-actions-bar{display:none;background:#fff3e0;padding:8px 15px;border-radius:6px;border:1px solid #ffb300;margin-bottom:10px;align-items:center;gap:10px;font-size:13px;font-weight:700;position:sticky;top:40px;z-index:49}.custom-multi-select{position:relative;min-width:130px;flex:1}.dropdown-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ccc;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:100;max-height:300px;display:flex;flex-direction:column;margin-top:4px}#af-checkboxes{overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:6px}.img-container{position:relative;line-height:0;margin-bottom:10px}.card .badge{position:absolute;top:10px;left:10px;background:var(--accent);color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,.2);pointer-events:none;z-index:5}.store-name{font-size:.8em;color:var(--secondary);font-weight:700;margin-bottom:4px;pointer-events:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;line-height:1.3;min-height:2.6em}.name-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}.mini-svg-box{display:flex;flex-direction:column;align-items:center;justify-content:center;width:32px;flex-shrink:0}.name-col{display:flex;flex-direction:column;flex:1;overflow:hidden;justify-content:center}.tech-name{font-size:1.15em;color:var(--text);font-weight:700;margin-bottom:2px;pointer-events:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.score-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}.big-badge{font-size:.8em;font-weight:700;color:#fff;padding:2px 6px;border-radius:4px;display:inline-block;white-space:nowrap;letter-spacing:.5px}.tags-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;pointer-events:none}.tag-item{font-size:.75em;background:#f3e5f5;color:var(--primary);padding:2px 6px;border-radius:4px;font-weight:700}.stats-row{display:flex;align-items:center;gap:6px;font-size:.85em;color:#555;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#f8f9fa;padding:4px 6px;border-radius:4px;pointer-events:none}.cup-badge{font-weight:700;padding:2px 6px;border-radius:4px;color:#fff;font-size:.9em;flex-shrink:0}.price-col{font-size:.9em;font-weight:700;color:var(--accent);text-align:left;display:flex;flex-direction:column;gap:2px;margin-bottom:4px;pointer-events:none}.card[draggable="true"]{cursor:grab}.card[draggable="true"]:active{cursor:grabbing}.card.dragging{opacity:.4;transform:scale(.95)}.card.drag-over{border:2px dashed}.sch-wrapper{display:flex;margin-top:8px;padding-top:8px;border-top:1px dashed #e0e0e0;position:relative}.sch-time-axis{display:flex;flex-direction:column;width:18px;position:relative;font-size:9px;color:#999;margin-top:24px;font-weight:700}.sch-time-axis span{position:absolute;right:4px;transform:translateY(-50%)}.sch-container-vert{flex:1;display:flex;justify-content:space-between;gap:4px;height:85px;position:relative}.sch-grid-line{position:absolute;left:0;right:0;border-top:1px dashed #e0e0e0;z-index:0}.sch-col{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;z-index:1}.sch-day{font-size:10px;font-weight:700;color:#555;text-align:center;line-height:1.1;margin-bottom:4px;height:24px;display:flex;flex-direction:column;justify-content:center}.sch-track-vert{width:18px;flex:1;background:rgba(238,238,238,.7);border-radius:4px;position:relative;overflow:hidden}.sch-fill-vert{position:absolute;width:100%;background:var(--accent);border-radius:4px;left:0;box-shadow:0 1px 2px rgba(0,0,0,.2)}.sch-fill-vert.off{background:#bdbdbd;height:100%;top:0;box-shadow:none}
     </style>
 </head>
 <body>
@@ -17,39 +17,39 @@
     <div id="toast-container">ℹ️ 提示訊息</div>
 
     <div class="top-bar">
-        <h2 class="app-title">🎭 Talent DB</h2>
+        <h2 class="app-title" style="margin: 0;">🎭 Talent DB</h2>
         <div class="header-controls">
             <div class="sheet-selector-wrapper">
-                <select id="v_sheet" onchange="app.loadSheetData()"><option value="">請登入...</option></select>
+                <select id="v_sheet" style="width: auto; padding: 6px; border: none; font-weight: bold; color: var(--primary);" onchange="app.loadSheetData()"><option value="">請登入...</option></select>
             </div>
             <button class="success" onclick="app.loadSheetData()">🔄 整理</button>
             <button id="btn-mode-toggle" class="primary" onclick="app.toggleMode()" style="background:#e91e63;">📝 切換編輯</button>
         </div>
     </div>
 
-    <div id="auth-banner" onclick="app.triggerAuth()">🔒 點擊登入授權</div>
+    <div id="auth-banner" onclick="app.triggerAuth()">🔒 安全鎖定中：點擊登入授權</div>
 
     <div id="app-container" class="view-mode">
         <div class="panel" id="panel-form">
             <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--primary);padding-bottom:8px;margin-bottom:15px;">
                 <h3 style="margin:0;">📝 資料編輯</h3>
                 <div style="display:flex;gap:6px;">
-                    <button class="secondary mini" onclick="app.executeBatch(false)">⚡ 更新</button>
-                    <button class="warning mini" onclick="app.executeBatch(true)">🌟 建檔</button>
+                    <button class="secondary mini" onclick="app.executeBatch(false)" title="僅更新數值與班表">⚡ 更新</button>
+                    <button class="warning mini" onclick="app.executeBatch(true)" title="依據表單建立新卡片">🌟 建檔</button>
                     <button class="success mini" onclick="app.clearForm()">➕</button>
                 </div>
             </div>
             <input type="hidden" id="v_row_index">
-            <div class="form-grid"><div class="form-group full"><label>✨ 魔法貼上</label><textarea id="v_magic_paste" rows="2"></textarea></div></div>
+            <div class="form-grid"><div class="form-group full"><label>✨ 魔法貼上</label><textarea id="v_magic_paste" rows="2" placeholder="單人自動解析 / 多人批次匯入"></textarea></div></div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>店名* <button class="mini warning" onclick="app.cleanupDriveImages()" style="font-size:10px;padding:2px 4px;">☁️ 清理</button> <button class="mini secondary" onclick="app.openRulesModal()" style="font-size:10px;padding:2px 4px;">⚙️</button></label>
+                    <label>店名* <div><button class="mini warning" onclick="app.cleanupDriveImages()" style="font-size:10px;padding:2px 4px;">☁️ 清理</button> <button class="mini secondary" onclick="app.openRulesModal()" style="font-size:10px;padding:2px 4px;">⚙️ 規則</button></div></label>
                     <input type="text" id="v_store">
                 </div>
                 <div class="form-group"><label>姓名*</label><input type="text" id="v_name"></div>
             </div>
             <div class="form-grid">
-                <div class="form-group"><label>技師編號 (自動生成)</label><input type="text" id="v_tech_id" readonly placeholder="儲存後自動派發"></div>
+                <div class="form-group"><label>技師編號</label><input type="text" id="v_tech_id" readonly placeholder="存檔自動派發"></div>
                 <div class="form-group"><label>到職日</label><input type="date" id="v_start_date"></div>
             </div>
             <div class="form-grid">
@@ -70,6 +70,7 @@
                     <button id="btn_del_photo" class="btn-delete-img" onclick="app.deleteImage(event)" style="display:none;">✖</button>
                 </div>
             </div>
+            <input type="file" id="fileInputPhoto" accept="image/*" style="display:none;">
             <input type="hidden" id="v_photo_url">
             <div style="margin-top:auto;display:flex;gap:10px;"><button id="btn-save" onclick="app.saveToGoogleSheet()" style="flex:2;">💾 儲存</button><button id="btn-delete" class="danger" onclick="app.deleteRecordForm()" style="display:none;">🗑️</button></div>
         </div>
@@ -81,15 +82,17 @@
                 <div class="custom-multi-select" id="af-filter-container">
                     <div class="select-box" onclick="app.toggleAfDropdown()">🏷️ 屬性 (全選)</div>
                     <div class="dropdown-list" id="af-dropdown" style="display:none;">
-                        <div style="padding:8px;background:#eee;"><button class="mini" onclick="app.selectAllAf(true)">全選</button> <button class="mini danger" onclick="app.selectAllAf(false)">清空</button></div>
+                        <div style="padding:8px;background:#eee;display:flex;gap:5px;"><button class="mini" onclick="app.selectAllAf(true)">全選</button> <button class="mini danger" onclick="app.selectAllAf(false)">清空</button></div>
                         <div id="af-checkboxes"></div>
                     </div>
                 </div>
-                <select id="sortOption" class="filter-select" onchange="app.renderCatalog()"><option value="">🔀 預設</option><option value="cup">👙 罩杯</option><option value="body">⏳ 曲線</option><option value="updateTime">🕒 更新</option></select>
-                <button id="btn-sort-dir" class="secondary mini" onclick="app.toggleSortDir()">⬇ 降序</button>
-                <input type="text" id="searchInput" placeholder="🔍 搜尋 B>90 + 巨乳..." oninput="app.renderCatalog()" style="flex:2;">
+                <div style="display:flex;gap:4px;">
+                    <select id="sortOption" class="filter-select" onchange="app.renderCatalog()"><option value="">🔀 預設排序</option><option value="cup">👙 罩杯</option><option value="body">⏳ 曲線</option><option value="updateTime">🕒 更新</option></select>
+                    <button id="btn-sort-dir" class="secondary mini" onclick="app.toggleSortDir()">⬇</button>
+                </div>
+                <input type="text" id="searchInput" class="filter-select" placeholder="🔍 B>90 + 巨乳 - 潮..." oninput="app.renderCatalog()" style="flex:2;">
             </div>
-            <div id="batch-actions-bar"><span id="sel-count">已選 0 張</span><button class="mini" onclick="app.selectAllCards()">全選</button><button class="secondary mini" onclick="app.moveSelected('top')">⬆ 置頂</button><button class="secondary mini" onclick="app.moveSelected('bottom')">⬇ 置底</button><button class="danger mini" onclick="app.deleteSelected()">🗑️ 批量刪除</button></div>
+            <div id="batch-actions-bar"><span id="sel-count">已選 0 張</span><button class="mini" onclick="app.selectAllCards()">全選</button><button class="secondary mini" onclick="app.moveSelected('top')">⬆ 置頂</button><button class="secondary mini" onclick="app.moveSelected('bottom')">⬇ 置底</button><button class="danger mini" onclick="app.deleteSelected()" style="margin-left:auto;">🗑️ 批量刪除</button></div>
             <div class="catalog-grid" id="catalogGrid"></div>
         </div>
     </div>
@@ -99,7 +102,7 @@
             <h3>⚙️ 規則引擎設定</h3>
             <p>當前店標：<strong id="rule-current-store" style="color:var(--accent);">Common</strong></p>
             <div id="rule-preview-box" style="background:#f8f9fa;padding:10px;font-size:12px;max-height:200px;overflow-y:auto;"></div>
-            <div style="margin-top:15px;text-align:right;">
+            <div style="margin-top:15px;text-align:right;display:flex;gap:10px;justify-content:flex-end;">
                 <button class="danger" onclick="document.getElementById('rulesModal').style.display='none'">關閉</button>
                 <button class="secondary" onclick="window.open('https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/edit','_blank')">🔗 編輯</button>
                 <button class="success" onclick="app.reloadRules(true)">🔄 重載</button>
@@ -114,314 +117,502 @@
         const SHEET_ID = '1WpEGW6m-N-Ofdsn4LGIrT0uQvFRPkVTh9RyJkKgqlc8'; 
         const DRIVE_FOLDER_ID = '1s1x7yyWUE3JB_8YnjOAoL93u7No6NP9p'; 
 
+        class Utility {
+            static generateID() { return 'N' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'); }
+            static showLoading(msg) { document.getElementById('loading-text').innerText = msg; document.getElementById('loading-overlay').style.display = 'flex'; }
+            static hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
+            static extractDriveFileId(url) { if(!url)return null; let m=url.match(/[?&]id=([-\w]{25,})/); if(m)return m[1]; m=url.match(/\/d\/([-\w]{25,})/); return m?m[1]:null; }
+            static cleanDriveUrl(url) { let id=this.extractDriveFileId(url); return id ? `https://drive.google.com/thumbnail?authuser=0&sz=w800&id=${id}` : (String(url).startsWith('http')?String(url).trim():''); }
+            static getCurrentTime() { return new Date(Date.now() - (new Date()).getTimezoneOffset()*60000).toISOString().slice(0, 19).replace('T', ' '); }
+            static showToast(msg, isError = false) {
+                const t = document.getElementById('toast-container'); t.innerText = msg;
+                t.style.background = isError ? '#e53935' : (msg.includes('載入')||msg.includes('完成')?'var(--warning)':'var(--success)');
+                t.classList.add('show'); if(this.toastTimeout) clearTimeout(this.toastTimeout);
+                this.toastTimeout = setTimeout(() => t.classList.remove('show'), 3000);
+            }
+            static parseStats(rawStats) {
+                let h=0,b=0,w=0,hp=0,cup='?'; if(!rawStats) return {h,b,w,hp,cup};
+                let m = rawStats.match(/(?:T|身高|身長)?\s*(\d{3})\s*(?:cm)?/i); if(m) h=parseInt(m[1]);
+                let mb=rawStats.match(/B\s*(\d{2,3})/i), mw=rawStats.match(/W\s*(\d{2,3})/i), mhp=rawStats.match(/H\s*(\d{2,3})/i);
+                if(mb&&mw&&mhp){ b=parseInt(mb[1]); w=parseInt(mw[1]); hp=parseInt(mhp[1]); }
+                else { let nums=rawStats.match(/\b\d{2,3}\b/g); if(nums){ let arr=nums.map(Number).filter(n=>n<140); if(arr.length>=3){b=arr[0];w=arr[1];hp=arr[2];} } }
+                let mc = rawStats.match(/\(([A-Z])\)/i) || rawStats.match(/(?:^|[\s/])([A-Z])(?:[\s/]|$|cup|罩杯)/i); if(mc) cup=mc[1].toUpperCase();
+                return {h,b,w,hp,cup};
+            }
+            static getCupScore(s) { let {cup}=this.parseStats(s); return cup==='?'?0:cup.charCodeAt(0)-64; }
+            static getBodyScore(s, store, rules) {
+                let {h,b,w,hp} = this.parseStats(s); if(!h||!b||!w||!hp) return 0;
+                let rule = rules.find(r=>r.field==='v_score_body'&&(r.site===store||r.site==='Common'));
+                if(rule){ try{ return new Function('h','b','w','hp',`return ${rule.pattern};`)(h,b,w,hp); }catch(e){} }
+                return Math.min(99, Math.max(1, 40 + ((b-w)+(hp-w))));
+            }
+            static getBodyShapeData(s, store, rules) {
+                let {h,b,w,hp,cup} = this.parseStats(s); if(!h||!b||!w||!hp) return null;
+                const evalCond = (pat) => { try{ return new Function('h','b','w','hp','cup',`return ${pat};`)(h,b,w,hp,cup); }catch(e){return false;} };
+                let score = this.getBodyScore(s, store, rules);
+                let st="H型", si="▯"; let sRs = rules.filter(r=>r.field==='v_shape'&&r.ruleType==='Condition_Shape');
+                for(let r of sRs.filter(r=>r.site===store).concat(sRs.filter(r=>r.site==='Common'))){ if(evalCond(r.pattern)){ let p=r.action.split('|'); st=p[0]; si=p[1]||''; break; } }
+                let sc='#4caf50', wt='標準'; let wRs = rules.filter(r=>r.field==='v_whtr'&&r.ruleType==='Condition_WHTR');
+                for(let r of wRs.filter(r=>r.site===store).concat(wRs.filter(r=>r.site==='Common'))){ if(evalCond(r.pattern)){ let p=r.action.split('|'); wt=p[0]; sc=p[1]||sc; break; } }
+                let tci=-1; let cR=rules.find(r=>r.field==='v_true_cup'&&(r.site===store||r.site==='Common'));
+                if(cR){ try{tci=evalCond(cR.pattern);}catch(e){} }
+                let cn = ['AA','A','B','C','D','E','F','G','H','I','J','K','L'];
+                let tc = tci>=0 ? (cn[Math.min(tci, cn.length-1)]) : 'AA-';
+                let cci = cn.indexOf(cup); if(cci===-1&&cup!=='?') cci=cup.charCodeAt(0)-64;
+                let cdc='#9e9e9e'; if(cci!==-1&&tci>=0){ let d=cci-tci; cdc=d<=0?'#4caf50':d===1?'#fbc02d':d===2?'#f57c00':d===3?'#d32f2f':'#b71c1c'; } else cdc='#4caf50';
+                
+                let sy=100/180, sx=0.8;
+                let getP = (ht,bt,wt,hpt) => { let yh=100-ht*sy, yb=yh+ht*0.28*sy, yw=yh+ht*0.40*sy, yhp=yh+ht*0.52*sy, yf=100, cx=40; return {yh,yb,yw,yhp,yf,cx,wh:10,wb:bt/2*sx,ww:wt/2*sx,whp:hpt/2*sx,wf:12}; };
+                let mkS = (p,c,d) => { let sa=d?`stroke="#ccc" stroke-dasharray="2,2" fill="none"`:`fill="${c}" opacity="0.6"`; return `<circle cx="${p.cx}" cy="${p.yh}" r="${p.wh*0.7}" ${sa}/><path d="M${p.cx-p.wh*0.4},${p.yh+5} Q${p.cx-p.wb},${p.yb-5} ${p.cx-p.wb},${p.yb} Q${p.cx-p.ww*0.8},${(p.yb+p.yw)/2} ${p.cx-p.ww},${p.yw} Q${p.cx-p.whp*1.1},${(p.yw+p.yhp)/2} ${p.cx-p.whp},${p.yhp} L${p.cx-p.wf},${p.yf} L${p.cx+p.wf},${p.yf} L${p.cx+p.whp},${p.yhp} Q${p.cx+p.whp*1.1},${(p.yw+p.yhp)/2} ${p.cx+p.ww},${p.yw} Q${p.cx+p.ww*0.8},${(p.yb+p.yw)/2} ${p.cx+p.wb},${p.yb} Q${p.cx+p.wb},${p.yb-5} ${p.cx+p.wh*0.4},${p.yh+5} Z" ${sa}/>`; };
+                return { score, scoreColor:score>=98?'#6200ea':score>=95?'#e91e63':score>=90?'#ff9800':'#4caf50', trueCup:tc, cupDiffColor:cdc, svgHtml:`<svg width="100%" height="26px" viewBox="0 0 80 100" preserveAspectRatio="xMidYMid meet">${mkS(getP(158,82,61,86),'#ccc',true)}${mkS(getP(h,b,w,hp),sc,false)}</svg><div style="font-size:10px;font-weight:bold;color:${sc};margin-top:2px;">${wt}</div>`, shapeType:st, shapeIcon:si };
+            }
+            static timeToMins(tStr) { let [h,m]=tStr.split(':').map(Number); return (h<6?h+24:h)*60+m; }
+        }
+
         class RuleEngine {
             static getActiveRules(field, type, ctx, store, rules) {
-                let matched = rules.filter(r => (ctx && ctx.includes(r.site)) || r.site === store);
-                if (matched.length > 0) {
-                    let fieldMatched = matched.filter(r => (!field || r.field === field) && (!type || r.ruleType === type));
-                    if (fieldMatched.length > 0) return fieldMatched;
-                }
-                return rules.filter(r => r.site === 'Common' && (!field || r.field === field) && (!type || r.ruleType === type));
+                let m = rules.filter(r => (ctx && ctx.includes(r.site)) || r.site === store);
+                if(m.length>0) { let fm = m.filter(r=>(!field||r.field===field)&&(!type||r.ruleType===type)); if(fm.length>0) return fm; }
+                return rules.filter(r => r.site === 'Common' && (!field||r.field===field) && (!type||r.ruleType===type));
             }
-
             static parse(text, html, ctx, store, rules) {
                 let res = { store:'', name:'', stats:'', age:'', startDate:'', price:'', scheduleRaw:'', tags:new Set(), level:'' };
-                let storeRules = this.getActiveRules('v_store', 'Set_Default', ctx, store, rules);
-                if (storeRules.length > 0) res.store = storeRules[0].action;
+                let sR = this.getActiveRules('v_store', 'Set_Default', ctx, store, rules);
+                if (sR.length > 0) res.store = sR[0].action;
 
                 ['v_store','v_name','v_stats','v_age','v_start_date','v_price','v_schedule','v_level'].forEach(f => {
-                    if (f === 'v_store' && res.store) return;
+                    if (f==='v_store'&&res.store) return;
                     let rs = this.getActiveRules(f, 'Regex_Extract', ctx, store, rules);
-                    if (f === 'v_level') rs = rs.concat(this.getActiveRules(f, 'Regex_Level', ctx, store, rules));
+                    if(f==='v_level') rs = rs.concat(this.getActiveRules(f, 'Regex_Level', ctx, store, rules));
                     for (let r of rs) {
-                        let flags = r.pattern.startsWith('(?i)') ? 'ig' : 'g';
-                        let pat = r.pattern.startsWith('(?i)') ? r.pattern.substring(4) : r.pattern;
                         try {
-                            let match = new RegExp(pat, flags).exec(text);
+                            let match = new RegExp(r.pattern.replace('(?i)',''), r.pattern.startsWith('(?i)')?'ig':'g').exec(text);
                             if (match) {
-                                let key = f.replace('v_', '').replace('start_date', 'startDate');
-                                if (r.action === 'Extract_Group_1' && match[1]) res[key] = match[1];
-                                else if (r.action === 'Extract_Group_1_2' && match[1]) res[key] = match[1];
-                                else if (r.action === 'Extract_Date' && match[3]) res.startDate = `${match[1]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}`;
-                                else if (r.action === 'Extract_Number' && match[1]) res.price = match[1].replace(/,/g, '');
-                                else if (r.action === 'Extract_Raw') res.scheduleRaw = match[0];
-                                else if (r.action === 'Extract_Level' && match[1]) res.level = match[1];
-                                else res[key] = match[0];
-                                if (res[key]) break;
+                                let key = f.replace('v_','').replace('start_date','startDate');
+                                if(r.action==='Extract_Group_1'&&match[1]) res[key]=match[1];
+                                else if(r.action==='Extract_Group_1_2'&&match[1]) res[key]=match[1];
+                                else if(r.action==='Extract_Date'&&match[3]) res.startDate=`${match[1]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}`;
+                                else if(r.action==='Extract_Number'&&match[1]) res.price=match[1].replace(/,/g,'');
+                                else if(r.action==='Extract_Raw') res.scheduleRaw=match[0];
+                                else if(r.action==='Extract_Level'&&match[1]) res.level=match[1];
+                                else res[key]=match[0];
+                                if(res[key]) break;
                             }
                         } catch(e){}
                     }
                 });
 
                 this.getActiveRules('v_af', 'Regex_Tag', ctx, store, rules).forEach(r => {
-                    let pat = r.pattern.startsWith('(?i)') ? r.pattern.substring(4) : r.pattern;
-                    let flags = r.pattern.startsWith('(?i)') ? 'ig' : 'g';
-                    if (new RegExp(pat, flags).test(text) || new RegExp(pat, flags).test(res.name)) res.tags.add(r.action.replace('Tag:','').trim());
+                    let rx = new RegExp(r.pattern.replace('(?i)',''), r.pattern.startsWith('(?i)')?'ig':'g');
+                    if(rx.test(text)||rx.test(res.name)) res.tags.add(r.action.replace('Tag:','').trim());
                 });
                 this.getActiveRules('v_af', 'HTML_Img_Tag', ctx, store, rules).forEach(r => {
-                    if (html && html.includes(r.pattern)) res.tags.add(r.action.replace('Tag:','').trim());
+                    if(html&&html.includes(r.pattern)) res.tags.add(r.action.replace('Tag:','').trim());
                 });
-                this.getActiveRules('v_name', '', ctx, store, rules).filter(r => r.ruleType.includes('Clean')).forEach(r => {
-                    res.name = res.name.replace(new RegExp(r.pattern, 'ig'), '');
+                this.getActiveRules('v_name', '', ctx, store, rules).filter(r=>r.ruleType.includes('Clean')).forEach(r => {
+                    res.name = res.name.replace(new RegExp(r.pattern.replace('(?i)',''), r.pattern.startsWith('(?i)')?'ig':'g'), '');
                 });
-                if (res.name) res.name = res.name.trim();
-                return res;
+                if(res.name) res.name = res.name.trim(); return res;
+            }
+
+            static parseAndFormatSchedule(rawText, ctx, store, rules) {
+                if(!rawText) return '';
+                let stopRules = this.getActiveRules('Schedule_Stop', 'Clean_Remove', ctx, store, rules);
+                let stopIndex = -1;
+                stopRules.forEach(r=>{try{let idx=rawText.search(new RegExp(r.pattern));if(idx!==-1&&(stopIndex===-1||idx<stopIndex))stopIndex=idx;}catch(e){}});
+                let cleanText = stopIndex!==-1?rawText.substring(0,stopIndex):rawText;
+                
+                let dayMap = {'月':'一','火':'二','水':'三','木':'四','金':'五','土':'六','日':'日'};
+                this.getActiveRules('Schedule_Day', 'Value_Mapping', ctx, store, rules).forEach(r=>{dayMap[r.pattern]=r.action;});
+                let stR = this.getActiveRules('Schedule_Status', 'Value_Mapping', ctx, store, rules);
+                let sPat = stR.length>0?stR[0].pattern:"休|み|缺|^\\s*-\\s*$";
+
+                let lines = [], match;
+                const rgx = /(\d{1,2})\/(\d{1,2})\s*(?:\(([A-Za-z\u4e00-\u9fa5])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2}\s*(?:\(.\))?)|\s*$)/g;
+                while((match=rgx.exec(cleanText))!==null){
+                    let dStr=`${parseInt(match[1])}/${parseInt(match[2])}`, rD=match[3]?match[3].replace(/[()]/g,''):'';
+                    let d = rD&&dayMap[rD]?`(${dayMap[rD]})`:(rD?`(${rD})`:'');
+                    let c=match[4]||'';
+                    let isIdx=-1; stopRules.forEach(r=>{try{let x=c.search(new RegExp(r.pattern));if(x!==-1&&(isIdx===-1||x<isIdx))isIdx=x;}catch(e){}});
+                    if(isIdx!==-1) c=c.substring(0,isIdx);
+                    
+                    let tm = c.match(/(\d{1,2}[:：]\d{2})\s*[-~〜ー]\s*(\d{1,2}[:：]\d{2})/);
+                    let tStr = "休息";
+                    if(tm) tStr=`${tm[1].replace('：',':')}-${tm[2].replace('：',':')}`;
+                    else { try{if(new RegExp(sPat,'i').test(c)||c.trim()==='-') tStr=stR.length>0?stR[0].action:'休息';}catch(e){} }
+                    if(tStr==='OFF') tStr='休息';
+                    lines.push(`${dStr} ${d} ${tStr}`.trim());
+                }
+                if(lines.length>0){
+                    let fM = lines[0].split(' ')[0].match(/(\d+)\/(\d+)/);
+                    if(fM){
+                        let y = new Date().getFullYear(); if(new Date().getMonth()===11&&parseInt(fM[1])===1) y+=1;
+                        let dN=['日','一','二','三','四','五','六'], out=[];
+                        for(let i=0;i<7;i++){
+                            let cD=new Date(y,parseInt(fM[1])-1,parseInt(fM[2])+i);
+                            let tD=`${cD.getMonth()+1}/${cD.getDate()}`, tW=`(${dN[cD.getDay()]})`;
+                            let ex=lines.find(l=>l.startsWith(tD+' ')||l===tD);
+                            if(ex){ let eM=ex.match(/^(\d{1,2}\/\d{1,2})\s*(?:\(.\))?\s*(.+)$/); out.push(eM?`${eM[1]} ${tW} ${eM[2]}`:ex); }
+                            else out.push(`${tD} ${tW} 休息`);
+                        }
+                        return out.join('\n');
+                    }
+                }
+                return rawText.replace(/\n\s*\n/g,'\n').trim();
             }
         }
 
+        const cropperSvc = {
+            modal: document.getElementById('cropperModal'), el: document.getElementById('cropperImage'), cropper: null, pendingBlob: null,
+            init() {
+                document.getElementById('fileInputPhoto').addEventListener('change', e => this.handleFile(e.target.files[0]));
+                document.querySelector('.img-preview-box').addEventListener('click', e => {
+                    if(e.target.id==='btn_del_photo') return;
+                    if(!window.app.accessToken){ window.app.triggerAuth(); return; }
+                    let img=document.getElementById('preview_photo');
+                    if(img.style.display==='block'&&img.src){
+                        if(img.src.startsWith('http')&&!img.src.startsWith('data:')){ Utility.showToast('⚠️ 雲端圖不可裁切，請重貼', true); return; }
+                        this.el.removeAttribute('crossorigin'); this.el.src=img.src; this.openModal();
+                    } else document.getElementById('fileInputPhoto').click();
+                });
+            },
+            handleFile(f, fromPaste=false) {
+                if(f){ let r=new FileReader(); r.onload=e=>{ this.el.removeAttribute('crossorigin'); this.el.src=e.target.result; if(fromPaste){document.getElementById('preview_photo').src=e.target.result;document.getElementById('preview_photo').style.display='block';document.getElementById('text_photo').style.display='none';document.getElementById('btn_del_photo').style.display='flex';this.pendingBlob=f;}else this.openModal(); }; r.readAsDataURL(f); }
+            },
+            openModal() { this.modal.style.display='flex'; if(this.cropper){this.cropper.destroy();this.cropper=null;} setTimeout(()=>this.cropper=new Cropper(this.el,{aspectRatio:3/4,viewMode:1,autoCropArea:1,checkCrossOrigin:false}),50); },
+            closeModal() { this.modal.style.display='none'; if(this.cropper)this.cropper.destroy(); document.getElementById('fileInputPhoto').value=''; },
+            cropAndPrepare() {
+                if(this.cropper){ try{ let c=this.cropper.getCroppedCanvas({width:600,height:800}); let d=c.toDataURL('image/jpeg',0.85); document.getElementById('preview_photo').src=d; document.getElementById('preview_photo').style.display='block'; document.getElementById('text_photo').style.display='none'; document.getElementById('btn_del_photo').style.display='flex'; c.toBlob(b=>this.pendingBlob=b,'image/jpeg',0.85); this.closeModal(); }catch(e){Utility.showToast('圖片錯誤',true);this.closeModal();} }
+            },
+            async uploadToDrive(blob, name, tk) {
+                const form = new FormData(); form.append('metadata', new Blob([JSON.stringify({name,parents:[DRIVE_FOLDER_ID]})], {type:'application/json'})); form.append('file', blob);
+                let res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {method:'POST',headers:{'Authorization':'Bearer '+tk},body:form});
+                let d = await res.json(); if(!res.ok) throw new Error(d.error.message); return d.webViewLink;
+            }
+        };
+
         class AppCore {
             constructor() {
-                this.dataStore = []; this.rulesData = []; this.accessToken = null; this.tokenClient = null;
-                this.isEditMode = false; this.hasWriteAccess = false; this.selectedAfs = new Set();
-                this.selectedCards = new Set(); this.sortDesc = true;
-                this.initDragScroll();
+                this.dataStore=[]; this.colMap={}; this.headerRow=[]; this.accessToken=null; this.tokenClient=null; this.rulesData=[];
+                this.isEditMode=false; this.hasWriteAccess=false; this.selectedAfs=new Set(); this.selectedCards=new Set(); this.sortDesc=true;
+                
+                cropperSvc.init();
+                this.setupDragScroll(); this.registerKeyboardShortcuts();
+                
+                let dp = document.getElementById('v_start_date'); if(dp) dp.addEventListener('paste', e=>{ e.preventDefault(); let t=(e.clipboardData||window.clipboardData).getData('text'); let m=t.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/); if(m) e.target.value=`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`; });
+                let sp = document.getElementById('v_schedule'); if(sp) sp.addEventListener('paste', e=>{ e.preventDefault(); let t=(e.clipboardData||window.clipboardData).getData('text'); e.target.value=RuleEngine.parseAndFormatSchedule(t,"",document.getElementById('v_store').value.trim()||"Common",this.rulesData); });
+
+                const mi = document.getElementById('v_magic_paste');
+                if(mi) {
+                    mi.addEventListener('paste', e => {
+                        let t = (e.clipboardData||window.clipboardData).getData('text'), h = (e.clipboardData||window.clipboardData).getData('text/html')||'';
+                        let sR = this.rulesData.find(r=>r.ruleType==='System_Anchor'&&r.pattern==='Block_Splitter'); let splitter = sR?sR.action:'收藏夾';
+                        let nR = this.rulesData.find(r=>r.ruleType==='System_Anchor'&&r.action==='Identify_Single'); let namePat = nR?nR.pattern:'(?:名稱|名前|Name)';
+                        if(t.split(new RegExp(splitter,'g')).length>2 || t.split(new RegExp(namePat,'i')).length>3) {
+                            e.preventDefault(); mi.value=t; Utility.showToast('✨ 已載入批次清單！請點擊上方更新/建檔');
+                        } else {
+                            e.preventDefault(); this.processMagicPaste(t,h);
+                        }
+                    });
+                }
+                
+                document.addEventListener('click', e => { let c=document.getElementById('af-filter-container'), d=document.getElementById('af-dropdown'); if(c&&d&&!c.contains(e.target)) d.style.display='none'; });
+                document.getElementById('catalogGrid').addEventListener('change', e => {
+                    if(e.target.classList.contains('card-checkbox')){ let idx=parseInt(e.target.value); if(e.target.checked){this.selectedCards.add(idx);e.target.closest('.card').classList.add('selected');}else{this.selectedCards.delete(idx);e.target.closest('.card').classList.remove('selected');} this.updateBatchUI(); }
+                });
             }
 
             get currentSheet() { return document.getElementById('v_sheet').value; }
+            
+            genId(code) {
+                if(!code) return 'N'+Math.floor(Math.random()*10000).toString().padStart(4,'0');
+                let nums = this.dataStore.map(i=>String(i._raw[this.colMap.techId]||'')).filter(id=>id.startsWith(code+'-')).map(id=>parseInt(id.split('-')[1])).filter(n=>!isNaN(n));
+                return `${code}-${(nums.length>0?Math.max(...nums)+1:1).toString().padStart(4,'0')}`;
+            }
+            getSiteCode(store) { let r=this.rulesData.find(x=>x.ruleType==='Set_Default'&&x.action===store); if(r)return r.site; let m=store.match(/[A-Z0-9]{4,}/i); return m?m[0]:'N'; }
 
-            // ===== 核心：ID 自動生成引擎 (SiteMatch-0001) =====
-            generateSiteBasedID(siteCode) {
-                if (!siteCode) return 'N' + Math.floor(Math.random()*10000).toString().padStart(4,'0');
-                
-                // 找出所有符合 SiteCode-XXXX 格式的 ID
-                let existingNumbers = this.dataStore
-                    .map(item => String(item._raw[this.colMap.techId] || ''))
-                    .filter(id => id.startsWith(siteCode + '-'))
-                    .map(id => parseInt(id.split('-')[1]))
-                    .filter(num => !isNaN(num));
+            setupDragScroll() {
+                let sI=null; document.addEventListener('dragover', e=>{
+                    if(!this.isEditMode) return; let y=0, th=80; if(e.clientY<th) y=-20; else if(window.innerHeight-e.clientY<th) y=20;
+                    if(y!==0&&!sI) sI=setInterval(()=>{ if(window.innerWidth<=850){document.getElementById('app-container').scrollBy(0,y);window.scrollBy(0,y);}else document.getElementById('panel-catalog').scrollBy(0,y); },20);
+                    else if(y===0&&sI){ clearInterval(sI);sI=null; }
+                });
+                const stop=()=>{if(sI){clearInterval(sI);sI=null;}}; document.addEventListener('dragend',stop); document.addEventListener('drop',stop);
+            }
 
-                let nextNum = existingNumbers.length > 0 ? Math.max(...existingNumbers) + 1 : 1;
-                return `${siteCode}-${nextNum.toString().padStart(4, '0')}`;
+            registerKeyboardShortcuts() { document.addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault(); if(this.accessToken&&this.hasWriteAccess)this.saveToGoogleSheet(); else Utility.showToast('請先切換至編輯模式');} }); }
+            toggleMode() { if(!this.isEditMode&&!this.hasWriteAccess){ this.tokenClient.requestAccessToken({prompt:'',scope:'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive'}); return; } this.isEditMode=!this.isEditMode; document.getElementById('app-container').className=this.isEditMode?'edit-mode':'view-mode'; document.getElementById('btn-mode-toggle').innerHTML=this.isEditMode?'👁️ 瀏覽':'📝 編輯'; this.selectedCards.clear(); this.updateBatchUI(); this.renderCatalog(); }
+            initGoogleAuth() { this.tokenClient = google.accounts.oauth2.initTokenClient({client_id: CLIENT_ID, scope: 'https://www.googleapis.com/auth/spreadsheets.readonly', callback: ''}); let tk=sessionStorage.getItem('gapi_access_token'); if(tk){this.accessToken=tk;this.hasWriteAccess=(sessionStorage.getItem('gapi_has_write')==='true');this.onAuthSuccess();} }
+            triggerAuth() { this.tokenClient.callback = r => { if(r.error)return; this.accessToken=r.access_token; this.hasWriteAccess=google.accounts.oauth2.hasGrantedAllScopes(r,'https://www.googleapis.com/auth/spreadsheets','https://www.googleapis.com/auth/drive'); sessionStorage.setItem('gapi_access_token',r.access_token); sessionStorage.setItem('gapi_has_write',this.hasWriteAccess); this.onAuthSuccess(); }; this.tokenClient.requestAccessToken({prompt:'consent'}); }
+            onAuthSuccess() { document.getElementById('auth-banner').style.display='none'; this.fetchSheetNames(); this.reloadRules(); }
+            
+            async fetchSheetNames() {
+                try { let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets.properties(title)`,{headers:{'Authorization':'Bearer '+this.accessToken}}); let d=await res.json(); if(d.sheets) { let sel=document.getElementById('v_sheet'); sel.innerHTML=''; d.sheets.forEach(s=>{if(s.properties.title!=='Rules')sel.innerHTML+=`<option value="${s.properties.title}">${s.properties.title}</option>`;}); this.loadSheetData(); } }catch(e){}
+            }
+
+            async reloadRules(show=false) {
+                if(!this.accessToken) return;
+                try {
+                    let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Rules!A:G`,{headers:{'Authorization':'Bearer '+this.accessToken}});
+                    let d=await res.json();
+                    if(d.values) {
+                        this.rulesData = d.values.slice(1).map(r=>({priority:parseInt(r[0])||3,site:(r[1]||'').trim(),field:(r[2]||'').trim(),ruleType:(r[3]||'').trim(),pattern:r[4],action:r[5]})).sort((a,b)=>a.priority-b.priority);
+                        if(show) Utility.showToast("✅ 動態規則載入成功！"); this.renderRulesPreview(); this.renderCatalog();
+                    }
+                } catch(e) { console.warn("Rules load failed", e); }
+            }
+
+            openRulesModal() { document.getElementById('rulesModal').style.display='flex'; document.getElementById('rule-current-store').innerText = document.getElementById('v_store').value.trim()||"Common"; this.renderRulesPreview(); }
+            renderRulesPreview() { let b=document.getElementById('rule-preview-box'); if(this.rulesData.length===0){b.innerHTML="無可用規則";return;} let h="<table style='width:100%;text-align:left;border-collapse:collapse;'><tr style='border-bottom:1px solid #ccc'><th>Pri</th><th>Site</th><th>Field</th><th>Pattern</th></tr>"; this.rulesData.forEach(r=>h+=`<tr><td>${r.priority}</td><td>${r.site}</td><td>${r.field}</td><td style='color:var(--primary)'>${r.pattern}</td></tr>`); b.innerHTML=h+"</table>"; }
+
+            async loadSheetData(keep=false) {
+                if(!this.accessToken||!this.currentSheet) return; Utility.showLoading("讀取中..."); document.getElementById('btn-save-order').style.display='none';
+                try {
+                    let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(this.currentSheet)}!A:Z`,{headers:{'Authorization':'Bearer '+this.accessToken}}); let d=await res.json();
+                    if(d.values&&d.values.length>0) {
+                        this.headerRow = d.values[0]; const g = n=>this.headerRow.findIndex(x=>x.trim()===n);
+                        this.colMap = {location:g('位置'),store:g('店名'),techId:g('技師編號'),startDate:g('到職日'),name:g('姓名'),age:g('年齡'),stats:g('數值'),photo:g('技師照片'),price:g('價金'),url:g('網址'),af:g('屬性'),level:g('等級'),schedule:g('行事曆'),favorite:g('最愛'),updateTime:g('更新時間')};
+                        if(this.colMap.schedule===-1){this.colMap.schedule=this.headerRow.length;this.headerRow.push('行事曆');}
+                        if(this.colMap.favorite===-1){this.colMap.favorite=this.headerRow.length;this.headerRow.push('最愛');}
+                        if(this.colMap.updateTime===-1){this.colMap.updateTime=this.headerRow.length;this.headerRow.push('更新時間');}
+                        this.dataStore = d.values.slice(1).map((v,i)=>({id:v[this.colMap.techId],_raw:v,_rowIndex:i+2}));
+                    } else this.dataStore=[];
+                    this.populateFilters(); this.renderCatalog(); if(!keep) this.clearForm();
+                } catch(e){} Utility.hideLoading();
+            }
+
+            populateFilters() {
+                const sS=document.getElementById('filterStore'), cS=sS.value; sS.innerHTML='<option value="">🏪 所有店鋪</option>'; [...new Set(this.dataStore.map(r=>r._raw[this.colMap.store]).filter(x=>x))].sort().forEach(s=>sS.innerHTML+=`<option value="${s}">${s}</option>`); sS.value=cS;
+                const lS=document.getElementById('filterLocation'), cL=lS.value; lS.innerHTML='<option value="">🗺️ 所有位置</option>'; [...new Set(this.dataStore.map(r=>r._raw[this.colMap.location]).filter(x=>x))].sort().forEach(s=>lS.innerHTML+=`<option value="${s}">${s}</option>`); lS.value=cL;
+                let afs=new Set(); this.dataStore.forEach(r=>{ (r._raw[this.colMap.af]||'').split(/[\/／]/).forEach(a=>{if(a.trim())afs.add(a.trim());}); });
+                let b=document.getElementById('af-checkboxes'); b.innerHTML='<label><input type="checkbox" value="(無屬性)" checked onchange="app.updateAfSelection()"> <i>(無屬性)</i></label>';
+                [...afs].sort().forEach(a=>b.innerHTML+=`<label><input type="checkbox" value="${a}" checked onchange="app.updateAfSelection()"> ${a}</label>`); this.selectAllAf(true);
+                let dS=document.getElementById('filterDate'), dt=new Set(); this.dataStore.forEach(r=>{let m=(r._raw[this.colMap.schedule]||'').match(/\d{1,2}\/\d{1,2}/g);if(m)m.forEach(x=>dt.add(x));});
+                let cD=dS.value; dS.innerHTML='<option value="">📅 所有日期</option>'; [...dt].sort().forEach(x=>dS.innerHTML+=`<option value="${x}">${x}</option>`); if(dt.has(cD))dS.value=cD;
             }
 
             async saveToGoogleSheet() {
-                if (!this.accessToken) { this.triggerAuth(); return; }
-                const storeVal = document.getElementById('v_store').value.trim();
-                const nameVal = document.getElementById('v_name').value.trim();
-                if (!storeVal || !nameVal) { Utility.showToast("⚠️ 店名與姓名必填", true); return; }
-
-                Utility.showLoading("存檔中...");
+                if(!this.accessToken){this.triggerAuth();return;} let sv=document.getElementById('v_store').value.trim(), nv=document.getElementById('v_name').value.trim(); if(!sv||!nv){Utility.showToast("⚠️ 店名/姓名必填",true);return;}
+                Utility.showLoading("寫入中...");
                 try {
-                    let targetRowIdx = document.getElementById('v_row_index').value;
-                    let techId = document.getElementById('v_tech_id').value.trim();
-                    
-                    // 如果是新資料且沒有編號，自動生成
-                    if (!targetRowIdx && !techId) {
-                        let siteCode = this.getSiteCodeFromRules(storeVal);
-                        techId = this.generateSiteBasedID(siteCode);
-                        document.getElementById('v_tech_id').value = techId;
-                    }
-
-                    let finalUrl = document.getElementById('v_photo_url').value;
-                    if(cropperSvc.pendingBlob) {
-                        finalUrl = await cropperSvc.uploadToDrive(cropperSvc.pendingBlob, `${storeVal}-${nameVal}.jpg`, this.accessToken);
-                    }
-
-                    let newRow = new Array(this.headerRow.length).fill("");
-                    const setV = (f, v) => { if(this.colMap[f]!==-1) newRow[this.colMap[f]] = v; };
-                    setV('location', document.getElementById('v_location').value);
-                    setV('store', storeVal); setV('techId', techId);
-                    setV('startDate', document.getElementById('v_start_date').value);
-                    setV('name', nameVal); setV('age', document.getElementById('v_age').value);
-                    setV('stats', document.getElementById('v_stats').value);
-                    setV('price', document.getElementById('v_price').value);
-                    setV('url', document.getElementById('v_url').value);
-                    setV('af', document.getElementById('v_af').value);
-                    setV('level', document.getElementById('v_level').value);
-                    setV('schedule', document.getElementById('v_schedule').value);
-                    setV('photo', finalUrl); setV('updateTime', Utility.getCurrentTime());
-
-                    let url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(this.currentSheet)}`;
-                    let method = 'POST';
-                    if (targetRowIdx) { url += `!A${targetRowIdx}?valueInputOption=USER_ENTERED`; method = 'PUT'; }
-                    else { url += `!A1:append?valueInputOption=USER_ENTERED`; }
-
-                    await fetch(url, { method, headers: { 'Authorization': `Bearer ${this.accessToken}` }, body: JSON.stringify({ values: [newRow] }) });
-                    Utility.showToast("✅ 儲存成功");
-                    this.loadSheetData(true);
-                } catch(e) { Utility.showToast("❌ 存檔失敗", true); }
-                Utility.hideLoading();
+                    let tid=document.getElementById('v_tech_id').value.trim(), rIdx=document.getElementById('v_row_index').value;
+                    if(!rIdx&&!tid) { tid = this.genId(this.getSiteCode(sv)); document.getElementById('v_tech_id').value=tid; }
+                    let sTid = /^\d+$/.test(tid)?"'"+tid:tid, pUrl=document.getElementById('v_photo_url').value;
+                    if(cropperSvc.pendingBlob) pUrl = await cropperSvc.uploadToDrive(cropperSvc.pendingBlob, `${sv}-${nv}.jpg`.replace(/[\\/:*?"<>|]/g,''), this.accessToken);
+                    let row = new Array(this.headerRow.length).fill(""); if(rIdx){let e=this.dataStore.find(x=>String(x._rowIndex)===String(rIdx)); if(e)row=[...e._raw];}
+                    const s = (k,v)=>{if(this.colMap[k]!==-1)row[this.colMap[k]]=v;};
+                    s('location',document.getElementById('v_location').value); s('store',sv); s('techId',sTid); s('startDate',document.getElementById('v_start_date').value); s('name',nv); s('age',document.getElementById('v_age').value); s('stats',document.getElementById('v_stats').value); s('price',document.getElementById('v_price').value); s('url',document.getElementById('v_url').value); s('af',document.getElementById('v_af').value); s('level',document.getElementById('v_level').value); s('schedule',document.getElementById('v_schedule').value); s('photo',pUrl); s('updateTime',Utility.getCurrentTime());
+                    let url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(this.currentSheet)}`;
+                    let res=await fetch(rIdx?`${url}!A${rIdx}?valueInputOption=USER_ENTERED`:`${url}!A1:append?valueInputOption=USER_ENTERED`,{method:rIdx?'PUT':'POST',headers:{'Authorization':'Bearer '+this.accessToken},body:JSON.stringify({values:[row]})});
+                    if(!res.ok)throw new Error(); cropperSvc.pendingBlob=null; Utility.showToast("✅ 儲存成功"); this.loadSheetData(true);
+                }catch(e){Utility.showToast("❌ 錯誤",true);} Utility.hideLoading();
             }
 
-            getSiteCodeFromRules(storeName) {
-                let rule = this.rulesData.find(r => r.ruleType === 'Set_Default' && r.action === storeName);
-                if (rule) return rule.site;
-                let codeMatch = storeName.match(/[A-Z0-9]{4,}/i);
-                return codeMatch ? codeMatch[0] : 'N';
+            async saveOrderToGoogleSheet(bg=false) {
+                if(!this.accessToken)return; if(!bg)Utility.showLoading("排序中...");
+                try {
+                    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(this.currentSheet)}!A2?valueInputOption=USER_ENTERED`,{method:'PUT',headers:{'Authorization':'Bearer '+this.accessToken},body:JSON.stringify({values:this.dataStore.map(x=>x._raw)})});
+                    this.dataStore.forEach((x,i)=>x._rowIndex=i+2); if(!bg){Utility.showToast("✅ 儲存成功"); document.getElementById('btn-save-order').style.display='none'; this.renderCatalog();}
+                }catch(e){if(!bg)Utility.showToast("❌ 錯誤",true);} if(!bg)Utility.hideLoading();
             }
 
             async cleanupDriveImages() {
-                if (!this.accessToken || !this.hasWriteAccess) return;
-                if (!confirm('☁️ 確定要刪除雲端廢棄照片並自動命名嗎？')) return;
-                Utility.showLoading("雲端點名中...");
+                if(!this.accessToken||!this.hasWriteAccess)return; if(!confirm('☁️ 確定執行清理與重新命名？'))return; Utility.showLoading("清理中...");
                 try {
-                    let active = new Map();
-                    this.dataStore.forEach(item => {
-                        let r = item._raw;
-                        let id = Utility.extractDriveFileId(r[this.colMap.photo]);
-                        if (id) active.set(id, `${r[this.colMap.store]}-${r[this.colMap.name]}.jpg`.replace(/[\\/:*?"<>|]/g, ''));
-                    });
-                    let files = []; let pt = null;
-                    do {
-                        let q = encodeURIComponent(`'${DRIVE_FOLDER_ID}' in parents and trashed = false`);
-                        let res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=nextPageToken,files(id,name)&pageSize=1000${pt?`&pageToken=${pt}`:''}`, {headers:{'Authorization':`Bearer ${this.accessToken}`}});
-                        let data = await res.json(); files = files.concat(data.files || []); pt = data.nextPageToken;
-                    } while (pt);
-
-                    for (let f of files) {
-                        if (active.has(f.id)) {
-                            if (f.name !== active.get(f.id)) {
-                                await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`, { method:'PATCH', headers:{'Authorization':`Bearer ${this.accessToken}`,'Content-Type':'application/json'}, body:JSON.stringify({name:active.get(f.id)}) });
-                            }
-                        } else {
-                            await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`, { method:'DELETE', headers:{'Authorization':`Bearer ${this.accessToken}`} });
-                        }
-                    }
-                    Utility.showToast("✅ 雲端清理完成！");
-                } catch(e){ Utility.showToast("❌ 清理失敗", true); }
-                Utility.hideLoading();
+                    let active=new Map(); this.dataStore.forEach(i=>{let id=Utility.extractDriveFileId(i._raw[this.colMap.photo]); if(id) active.set(id,`${i._raw[this.colMap.store]}-${i._raw[this.colMap.name]}.jpg`.replace(/[\\/:*?"<>|]/g,''));});
+                    let files=[], pt=null; do{ let res=await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${DRIVE_FOLDER_ID}' in parents and trashed=false`)}&fields=nextPageToken,files(id,name)&pageSize=1000${pt?`&pageToken=${pt}`:''}`,{headers:{'Authorization':'Bearer '+this.accessToken}}); let d=await res.json(); files=files.concat(d.files||[]); pt=d.nextPageToken; }while(pt);
+                    let dc=0,rc=0; for(let f of files){ if(active.has(f.id)){ if(f.name!==active.get(f.id)){ await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`,{method:'PATCH',headers:{'Authorization':'Bearer '+this.accessToken,'Content-Type':'application/json'},body:JSON.stringify({name:active.get(f.id)})}); rc++;} }else{ await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+this.accessToken}}); dc++; } }
+                    Utility.showToast(`✅ 刪除 ${dc} 張，改名 ${rc} 張`);
+                }catch(e){Utility.showToast("❌ 錯誤",true);} Utility.hideLoading();
             }
 
-            // ===== 批次邏輯：支援 Rules 錨點分割 =====
             executeBatch(isCreate) {
-                const text = document.getElementById('v_magic_paste').value.trim();
-                const splitterRule = this.rulesData.find(r => r.ruleType === 'System_Anchor' && r.pattern === 'Block_Splitter');
-                const splitter = splitterRule ? splitterRule.action : '收藏夾';
-                const blocks = text.split(new RegExp(splitter, 'g')).filter(b => b.length > 20);
-                if (blocks.length <= 1) { Utility.showToast("⚠️ 未偵測到清單資料", true); return; }
-
+                const txt=document.getElementById('v_magic_paste').value.trim();
+                let sr=this.rulesData.find(r=>r.ruleType==='System_Anchor'&&r.pattern==='Block_Splitter'); let splitter=sr?sr.action:'收藏夾';
+                const blocks=txt.split(new RegExp(splitter,'g')).filter(b=>b.length>10);
+                if(blocks.length<=1){Utility.showToast("⚠️ 未偵測到清單",true);return;}
+                let fS=document.getElementById('v_store').value.trim(), fP=document.getElementById('v_price').value.trim(), fL=document.getElementById('v_location').value.trim();
+                let fT=document.getElementById('v_af').value.trim().split(/[\/／]/).map(t=>t.trim()).filter(x=>x);
                 Utility.showLoading("批次執行中...");
-                const storeVal = document.getElementById('v_store').value.trim();
-                const priceVal = document.getElementById('v_price').value.trim();
-                const locVal = document.getElementById('v_location').value.trim();
-
-                setTimeout(() => {
-                    blocks.forEach(block => {
-                        let p = RuleEngine.parse(block, "", "", storeVal || "Common", this.rulesData);
-                        if (!p.name) return;
-                        let rIdx = this.dataStore.findIndex(r => r._raw[this.colMap.name] === p.name);
-                        if (rIdx !== -1) {
-                            let r = this.dataStore[rIdx]._raw;
-                            if (p.scheduleRaw) r[this.colMap.schedule] = RuleEngine.parseAndFormatSchedule(p.scheduleRaw, "", storeVal, this.rulesData);
-                            if (p.stats) r[this.colMap.stats] = p.stats;
-                            r[this.colMap.updateTime] = Utility.getCurrentTime();
-                        } else if (isCreate) {
-                            let siteCode = this.getSiteCodeFromRules(storeVal);
-                            let newRow = new Array(this.headerRow.length).fill("");
-                            const setV = (f, v) => { if(this.colMap[f]!==-1) newRow[this.colMap[f]] = v; };
-                            setV('techId', this.generateSiteBasedID(siteCode));
-                            setV('store', storeVal); setV('name', p.name); setV('stats', p.stats);
-                            setV('price', priceVal); setV('location', locVal);
-                            setV('updateTime', Utility.getCurrentTime());
-                            if (p.scheduleRaw) setV('schedule', RuleEngine.parseAndFormatSchedule(p.scheduleRaw, "", storeVal, this.rulesData));
-                            this.dataStore.push({ id: newRow[this.colMap.techId], _raw: newRow, _rowIndex: "" });
+                setTimeout(()=>{
+                    let gP=RuleEngine.parse(txt,"","",fS||"Common",this.rulesData), bS=gP.store||fS, uc=0, cc=0;
+                    blocks.forEach(b=>{
+                        let p=RuleEngine.parse(b,"","",fS||"Common",this.rulesData); if(!p.name)return;
+                        let fs2=bS; if(fS&&!fs2.includes(fS)) fs2+=" "+fS;
+                        let mSch=b.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
+                        let scStr=mSch?RuleEngine.parseAndFormatSchedule(mSch[0],"",fS||"Common",this.rulesData):"";
+                        let hasS=/\d{1,2}\/\d{1,2}/.test(scStr)&&(scStr.includes('休息')||scStr.includes(':'));
+                        if(hasS||p.stats){
+                            let ts=new Set(p.tags); fT.forEach(t=>{let u=t.toUpperCase(); if(['AF','3P','射O'].includes(u))ts.add(u);else ts.add(t);});
+                            let idx=this.dataStore.findIndex(r=>{
+                                let dbN=(RuleEngine.parse(r._raw[this.colMap.name]||"","","","Common",this.rulesData).name||r._raw[this.colMap.name]).toLowerCase();
+                                let dbS=(r._raw[this.colMap.stats]||"").replace(/[\s\/]/g,''), cS=(p.stats||"").replace(/[\s\/]/g,'');
+                                return dbN===p.name.toLowerCase()&&(this.isSameStore(r._raw[this.colMap.store]||"",fs2)||(cS&&dbS&&(dbS.includes(cS)||cS.includes(dbS))));
+                            });
+                            if(idx!==-1){
+                                let r=this.dataStore[idx]._raw; if(hasS)r[this.colMap.schedule]=scStr; if(p.stats)r[this.colMap.stats]=p.stats;
+                                (r[this.colMap.af]||"").split(/[\/／]/).map(x=>x.trim()).filter(x=>x).forEach(x=>ts.add(['AF','3P','射O'].includes(x.toUpperCase())?x.toUpperCase():x));
+                                if(ts.size>0)r[this.colMap.af]=Array.from(ts).join(' / '); if(p.level)r[this.colMap.level]=p.level; r[this.colMap.updateTime]=Utility.getCurrentTime(); uc++;
+                            }else if(isCreate){
+                                let nR=new Array(this.headerRow.length).fill(""); const set=(k,v)=>{if(this.colMap[k]!==-1)nR[this.colMap[k]]=v;};
+                                set('techId',this.genId(this.getSiteCode(fs2))); set('store',fs2); set('name',p.name); set('stats',p.stats); set('price',fP||p.price); set('location',fL); set('updateTime',Utility.getCurrentTime());
+                                if(hasS)set('schedule',scStr); if(ts.size>0)set('af',Array.from(ts).join(' / ')); if(p.level)set('level',p.level); if(p.age)set('age',p.age);
+                                this.dataStore.push({id:nR[this.colMap.techId],_raw:nR,_rowIndex:""}); cc++;
+                            }
                         }
                     });
-                    this.renderCatalog(); this.saveOrderToGoogleSheet(true);
-                    Utility.showToast("✅ 批次完成"); Utility.hideLoading();
+                    if(uc>0||cc>0){this.renderCatalog();this.saveOrderToGoogleSheet(true);Utility.showToast(`✅ 新增 ${cc}，更新 ${uc}`);document.getElementById('v_magic_paste').value='';}else Utility.showToast("⚠️ 無對應資料",true);
+                    Utility.hideLoading();
                 }, 100);
             }
 
             processMagicPaste(text, html) {
-                const singleRule = this.rulesData.find(r => r.ruleType === 'System_Anchor' && r.action === 'Identify_Single');
-                if (singleRule && !new RegExp(singleRule.pattern).test(text)) {
-                    Utility.showToast("✨ 已載入批次清單！請點擊上方更新/建檔"); return;
+                if(!text||this.rulesData.length===0)return; let mi=document.getElementById('v_magic_paste');
+                let mU=text.match(/https?:\/\/[^\s]+/); let exU=mU?mU[0]:"";
+                if(/^https?:\/\/[^\s]+$/.test(text.trim())){
+                    let idx=this.dataStore.findIndex(r=>(r._raw[this.colMap.url]||"").split('?')[0].replace(/\/$/,"")===exU.split('?')[0].replace(/\/$/,""));
+                    if(idx!==-1){this.editRecord(idx);Utility.showToast('✨ 自動載入');}else{document.getElementById('v_url').value=exU;Utility.showToast('✨ 填入新網址');}
+                    mi.value=''; return;
                 }
-                const p = RuleEngine.parse(text, html, "", document.getElementById('v_store').value, this.rulesData);
-                if (p.name) document.getElementById('v_name').value = p.name;
-                if (p.stats) document.getElementById('v_stats').value = p.stats;
-                if (p.scheduleRaw) document.getElementById('v_schedule').value = RuleEngine.parseAndFormatSchedule(p.scheduleRaw, "", p.store, this.rulesData);
-                // 其他欄位繼承邏輯...
+                let fS=document.getElementById('v_store').value.trim();
+                let p=RuleEngine.parse(text, html, exU, fS||"Common", this.rulesData);
+                let idx=-1; if(p.name){ idx=this.dataStore.findIndex(r=>{
+                    let dbN=(RuleEngine.parse(r._raw[this.colMap.name]||"","","","Common",this.rulesData).name||r._raw[this.colMap.name]).toLowerCase();
+                    let dbS=(r._raw[this.colMap.stats]||"").replace(/[\s\/]/g,''), cS=(p.stats||"").replace(/[\s\/]/g,'');
+                    return dbN===p.name.toLowerCase()&&(this.isSameStore(r._raw[this.colMap.store]||"",p.store||fS)||(cS&&dbS&&(dbS.includes(cS)||cS.includes(dbS))));
+                });}
+                if(idx!==-1)this.editRecord(idx); else{ ['v_age','v_stats','v_start_date','v_schedule','v_row_index','v_tech_id'].forEach(i=>{let e=document.getElementById(i);if(e)e.value='';}); }
+                if(p.name)document.getElementById('v_name').value=p.name; if(p.store)document.getElementById('v_store').value=p.store; if(exU)document.getElementById('v_url').value=exU;
+                if(p.stats)document.getElementById('v_stats').value=p.stats; if(p.age)document.getElementById('v_age').value=p.age; if(p.startDate)document.getElementById('v_start_date').value=p.startDate;
+                if(p.price&&!document.getElementById('v_price').value)document.getElementById('v_price').value=p.price; if(p.level)document.getElementById('v_level').value=p.level;
+                let ts=new Set(document.getElementById('v_af').value.split(/[\/／]/).map(t=>t.trim()).filter(x=>x)); p.tags.forEach(t=>ts.add(t)); if(ts.size>0)document.getElementById('v_af').value=Array.from(ts).join(' / ');
+                let hasS=false; if(p.scheduleRaw){let scStr=RuleEngine.parseAndFormatSchedule(p.scheduleRaw,exU,fS||"Common",this.rulesData); hasS=/\d{1,2}\/\d{1,2}/.test(scStr)&&(scStr.includes('休息')||scStr.includes(':')); if(hasS)document.getElementById('v_schedule').value=scStr;}
+                if(idx!==-1)Utility.showToast('✨ 載入並更新'); else if(hasS)Utility.showToast('✨ 自動解析'); else Utility.showToast('✨ 更新部分資訊');
+                setTimeout(()=>mi.value='', 100);
             }
 
-            loadSheetData(keepForm) {
-                if (!this.accessToken) return;
-                Utility.showLoading("讀取中...");
-                fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(this.currentSheet)}!A:Z`, {headers:{'Authorization':`Bearer ${this.accessToken}`}})
-                .then(r=>r.json()).then(data => {
-                    if (!data.values) return;
-                    this.headerRow = data.values[0];
-                    const getIdx = (n) => this.headerRow.findIndex(h => h.trim() === n);
-                    this.colMap = { location:getIdx('位置'), store:getIdx('店名'), techId:getIdx('技師編號'), startDate:getIdx('到職日'), name:getIdx('姓名'), age:getIdx('年齡'), stats:getIdx('數值'), photo:getIdx('技師照片'), price:getIdx('價金'), url:getIdx('網址'), af:getIdx('屬性'), level:getIdx('等級'), schedule:getIdx('行事曆'), favorite:getIdx('最愛'), updateTime:getIdx('更新時間') };
-                    this.dataStore = data.values.slice(1).map((v, i) => ({ id:v[this.colMap.techId], _raw:v, _rowIndex:i+2 }));
-                    this.populateFilters(); this.renderCatalog();
-                    if(!keepForm) this.clearForm();
-                    Utility.hideLoading();
-                });
+            async deleteSelected() {
+                if(!this.accessToken||this.selectedCards.size===0)return; if(!confirm(`⚠️ 刪除這 ${this.selectedCards.size} 筆資料？`))return; Utility.showLoading("批量刪除...");
+                try {
+                    let rs=[...this.selectedCards].map(i=>this.dataStore[i]._rowIndex-1).sort((a,b)=>b-a);
+                    let reqs=rs.map(r=>({deleteDimension:{range:{sheetId:parseInt(document.getElementById('v_sheet').options[document.getElementById('v_sheet').selectedIndex].dataset.sheetId),dimension:"ROWS",startIndex:r,endIndex:r+1}}}));
+                    let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,{method:'POST',headers:{'Authorization':'Bearer '+this.accessToken},body:JSON.stringify({requests:reqs})});
+                    if(!res.ok)throw new Error(); Utility.showToast("✅ 批量刪除成功"); this.selectedCards.clear(); this.updateBatchUI(); this.loadSheetData();
+                }catch(e){Utility.showToast("❌ 錯誤",true);} Utility.hideLoading();
             }
 
-            reloadRules(show) {
-                fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Rules!A:G`, {headers:{'Authorization':`Bearer ${this.accessToken}`}})
-                .then(r=>r.json()).then(data => {
-                    if(data.values) {
-                        this.rulesData = data.values.slice(1).map(row => ({
-                            priority:parseInt(row[0]), site:row[1], field:row[2], ruleType:row[3], pattern:row[4], action:row[5]
-                        })).sort((a,b)=>a.priority-b.priority);
-                        if(show) { Utility.showToast("✅ 規則已更新"); this.renderRulesPreview(); }
-                    }
-                });
+            editRecord(i) {
+                if(!this.isEditMode)this.toggleMode(); let r=this.dataStore[i]._raw;
+                const sv=(id,k)=>{document.getElementById(id).value=r[this.colMap[k]]||'';};
+                document.getElementById('v_row_index').value=this.dataStore[i]._rowIndex||'';
+                sv('v_location','location');sv('v_store','store');sv('v_name','name');sv('v_age','age');sv('v_stats','stats');sv('v_price','price');sv('v_url','url');sv('v_af','af');sv('v_level','level');sv('v_schedule','schedule');
+                let tid=r[this.colMap.techId]||""; document.getElementById('v_tech_id').value=tid.startsWith("'")?tid.substring(1):tid;
+                let d=r[this.colMap.startDate]||"", m=d.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/); document.getElementById('v_start_date').value=m?`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`:'';
+                let u=r[this.colMap.photo]||""; document.getElementById('v_photo_url').value=u; let cu=Utility.cleanDriveUrl(u);
+                let img=document.getElementById('preview_photo'), txt=document.getElementById('text_photo'), btn=document.getElementById('btn_del_photo');
+                if(cu&&cu.startsWith('http')){img.src=cu;img.style.display='block';txt.style.display='none';btn.style.display='flex';}else{img.style.display='none';txt.style.display='block';btn.style.display='none';}
+                document.getElementById('btn-delete').style.display='inline-flex'; if(window.innerWidth<=850)document.getElementById('panel-form').scrollIntoView();
             }
+
+            clearForm() {
+                ['v_row_index','v_location','v_store','v_tech_id','v_start_date','v_name','v_age','v_stats','v_price','v_url','v_af','v_level','v_schedule','v_photo_url'].forEach(i=>document.getElementById(i).value='');
+                document.getElementById('preview_photo').style.display='none'; document.getElementById('text_photo').style.display='block'; document.getElementById('btn_del_photo').style.display='none'; document.getElementById('btn-delete').style.display='none'; cropperSvc.pendingBlob=null; if(!this.isEditMode)this.toggleMode();
+            }
+
+            toggleFavorite(e, idx) { e.stopPropagation(); let r=this.dataStore[idx]._raw; r[this.colMap.favorite]=r[this.colMap.favorite]==='Y'?'':'Y'; this.renderCatalog(); this.saveOrderToGoogleSheet(true); }
+            copyItem(o, n) { let c=[...this.dataStore[o]._raw]; ['photo','techId','url','age','stats','startDate','schedule','favorite','updateTime'].forEach(k=>{if(this.colMap[k]!==-1)c[this.colMap[k]]="";}); this.dataStore.splice(n,0,{id:`N${Date.now()}`,_raw:c,_rowIndex:""}); this.renderCatalog(); this.saveOrderToGoogleSheet(true); }
+            reorderItems(o, n) { if(o===n)return; this.dataStore.splice(n,0,this.dataStore.splice(o,1)[0]); this.renderCatalog(); this.saveOrderToGoogleSheet(true); }
+            deleteImage(e) { e.stopPropagation(); document.getElementById('v_photo_url').value=''; document.getElementById('preview_photo').style.display='none'; document.getElementById('text_photo').style.display='block'; document.getElementById('btn_del_photo').style.display='none'; cropperSvc.pendingBlob=null; }
+            async deleteRecordForm() { if(!confirm(`⚠️ 確定刪除？`))return; Utility.showLoading("刪除中..."); try{let reqs=[{deleteDimension:{range:{sheetId:parseInt(document.getElementById('v_sheet').options[document.getElementById('v_sheet').selectedIndex].dataset.sheetId),dimension:"ROWS",startIndex:parseInt(document.getElementById('v_row_index').value)-1,endIndex:parseInt(document.getElementById('v_row_index').value)}}}]]; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,{method:'POST',headers:{'Authorization':'Bearer '+this.accessToken},body:JSON.stringify({requests:reqs})}); Utility.showToast("✅ 刪除成功"); this.clearForm(); this.loadSheetData(); }catch(e){} Utility.hideLoading(); }
 
             renderCatalog() {
-                const grid = document.getElementById('catalogGrid'); grid.innerHTML = '';
-                const kw = document.getElementById('searchInput').value.toLowerCase();
+                const kw=document.getElementById('searchInput').value.trim(), fS=document.getElementById('filterStore').value, fL=document.getElementById('filterLocation').value, fD=document.getElementById('filterDate').value, fT1=document.getElementById('filterTimeStart').value, fT2=document.getElementById('filterTimeEnd').value, fSt=document.getElementById('filterStatus').value, sO=document.getElementById('sortOption').value, qS=fT1?parseInt(fT1):null, qE=fT2?parseInt(fT2):null;
+                const grid=document.getElementById('catalogGrid'); grid.innerHTML=''; let list=[];
                 this.dataStore.forEach((item, index) => {
-                    const r = item._raw;
-                    if (kw && !r[this.colMap.name].toLowerCase().includes(kw)) return;
-                    const card = document.createElement('div'); card.className = 'card';
-                    card.onclick = () => this.editRecord(index);
-                    const shape = Utility.getBodyShapeData(r[this.colMap.stats], r[this.colMap.store], this.rulesData);
-                    card.innerHTML = `
-                        <div class="img-container"><img src="${Utility.cleanDriveUrl(r[this.colMap.photo]) || PLACEHOLDER_URL}"></div>
-                        <div class="store-name">${r[this.colMap.store]}</div>
-                        <div class="tech-name">${r[this.colMap.name]}</div>
-                        <div class="stats-row">${r[this.colMap.stats]}</div>
-                        ${shape ? `<div style="font-size:10px;">${shape.shapeIcon} ${shape.shapeType} | 👑 ${shape.score}分</div>` : ''}
-                    `;
-                    grid.appendChild(card);
+                    let r=item._raw, loc=r[this.colMap.location]||'', sto=r[this.colMap.store]||'';
+                    if(fS&&sto!==fS)return; if(fL&&loc!==fL)return;
+                    let afs=(r[this.colMap.af]||'').split(/[\/／]/).map(a=>a.trim()).filter(x=>x), mAf=false;
+                    if(afs.length===0){if(this.selectedAfs.has('(無屬性)'))mAf=true;}else{for(let a of afs)if(this.selectedAfs.has(a)){mAf=true;break;}}
+                    if(!mAf&&this.selectedAfs.size>0)return;
+                    
+                    if(kw){
+                        let p=true, sts=Utility.parseStats(r[this.colMap.stats]), age=parseInt(r[this.colMap.age])||0, tStr=`${r[this.colMap.name]} ${sto} ${r[this.colMap.techId]} ${loc} ${r[this.colMap.af]} ${r[this.colMap.level]}`.toLowerCase();
+                        for(let c of kw.split('+').map(x=>x.trim()).filter(x=>x)){
+                            let not=c.startsWith('-'), t=not?c.substring(1).trim():c; if(!t)continue;
+                            let opM=t.match(/^([a-z\u4e00-\u9fa5]+)\s*([><=])\s*(\d+|[a-z])$/i);
+                            if(opM){
+                                let f=opM[1].toUpperCase(), op=opM[2], val=opM[3], rV=null, cM=false;
+                                if(f==='B'||f==='胸圍')rV=sts.b; else if(f==='W'||f==='腰圍')rV=sts.w; else if(f==='H'||f==='臀圍')rV=sts.hp; else if(f==='T'||f==='身高')rV=sts.h; else if(f==='AGE'||f==='年齡'||f==='年')rV=age; else if(f==='CUP'||f==='罩杯')rV=sts.cup;
+                                if(rV!==null&&rV!==0&&rV!=='?'){ if(f==='CUP'||f==='罩杯'){let s1=rV.charCodeAt(0), s2=val.toUpperCase().charCodeAt(0); if(op==='>')cM=s1>s2;else if(op==='<')cM=s1<s2;else if(op==='=')cM=s1===s2;}else{let n=parseInt(val); if(op==='>')cM=rV>n;else if(op==='<')cM=rV<n;else if(op==='=')cM=rV===n;} }
+                                if(not?cM:!cM){p=false;break;}
+                            } else { let m=tStr.includes(t.toLowerCase()); if(not?m:!m){p=false;break;} }
+                        }
+                        if(!p)return;
+                    }
+                    
+                    let hW=false, tM=false, dE=false, sr=r[this.colMap.schedule]||'';
+                    if(sr){
+                        for(let l of sr.split('\n')){
+                            let m=l.match(/^(\d{1,2}\/\d{1,2})\s*(\(.\))?\s*(.+)$/);
+                            if(m){
+                                if(fD&&m[1]!==fD)continue; dE=true; let isO=m[3].includes('休')||m[3].includes('み');
+                                if(!isO){
+                                    hW=true; if(qS===null&&qE===null)tM=true;
+                                    else{ let tm=m[3].match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/); if(tm){let ts=Utility.timeToMins(tm[1]), te=Utility.timeToMins(tm[2]); if(te<=ts)te+=1440; if(Math.max(ts,qS||0)<Math.min(te,qE||9999))tM=true;} }
+                                }
+                            }
+                        }
+                    }
+                    if((fD||qS!==null||qE!==null)&&!tM)return; if(fSt==='working'&&!hW)return; if(fSt==='off'&&(hW||!dE))return;
+                    list.push({r,i:index});
                 });
-            }
-            // 其餘輔助方法 (toggleMode, clearForm, editRecord, initGoogleAuth...) 需完整保留
-            toggleMode() { this.isEditMode=!this.isEditMode; document.getElementById('app-container').className = this.isEditMode ? 'edit-mode' : 'view-mode'; this.renderCatalog(); }
-            triggerAuth() { this.tokenClient.requestAccessToken({prompt:'consent'}); }
-            initGoogleAuth() {
-                this.tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: CLIENT_ID, scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
-                    callback: (resp) => { this.accessToken=resp.access_token; document.getElementById('auth-banner').style.display='none'; this.reloadRules(); this.fetchSheetNames(); }
+                
+                list.sort((a,b)=>{
+                    let fa=a.r._raw[this.colMap.favorite]==='Y'?1:0, fb=b.r._raw[this.colMap.favorite]==='Y'?1:0; if(fa!==fb)return fb-fa;
+                    let res=0;
+                    if(sO==='cup') res=Utility.getCupScore(a.r._raw[this.colMap.stats])-Utility.getCupScore(b.r._raw[this.colMap.stats]);
+                    else if(sO==='body') res=Utility.getBodyScore(a.r._raw[this.colMap.stats],a.r._raw[this.colMap.store],this.rulesData)-Utility.getBodyScore(b.r._raw[this.colMap.stats],b.r._raw[this.colMap.store],this.rulesData);
+                    else if(sO==='updateTime'){ let ta=a.r._raw[this.colMap.updateTime]?new Date(a.r._raw[this.colMap.updateTime]).getTime():0, tb=b.r._raw[this.colMap.updateTime]?new Date(b.r._raw[this.colMap.updateTime]).getTime():0; res=(isNaN(ta)?0:ta)-(isNaN(tb)?0:tb); }
+                    else res=a.i-b.i; return this.sortDesc?-res:res;
+                }).forEach(item=>{
+                    const r=item.r._raw, i=item.i, sd=Utility.getBodyShapeData(r[this.colMap.stats],r[this.colMap.store],this.rulesData);
+                    let th='', c=(r[this.colMap.af]||'').split(/[/／]/).filter(x=>x.trim()).forEach(t=>th+=`<span class="tag-item">${t.trim()}</span>`);
+                    if(r[this.colMap.level])th+=`<span class="tag-item">等級: ${r[this.colMap.level]}</span>`;
+                    if(sd)th+=`<span class="tag-item" style="background:#546e7a;color:white;">${sd.shapeIcon} ${sd.shapeType}</span>`;
+                    
+                    let cs=r[this.colMap.stats]||'', cup='?'; let m=cs.match(/\(([A-Z])\)/i)||cs.match(/(?:^|[\s/])([A-Z])(?:[\s/]|$|cup|罩杯)/i); if(m)cup=m[1].toUpperCase();
+                    let cls=cs.replace(/\([A-Z]\)/ig,'').replace(new RegExp(`[/\\s]?${cup}(?:cup|罩杯)?$`,'i'),'').replace(/[/]+/g,' ').trim();
+                    if(!/[BWH]\d{2}/i.test(cls)){let hw=cls.match(/^(\d{3})\s+(\d{2})$/);if(hw)cls=`${hw[1]}cm ${hw[2]}kg`;}
+                    let cc=['A','B','C'].includes(cup)?'#4caf50':['D','E','F'].includes(cup)?'#ff9800':cup!=='?'?'#e91e63':'#9e9e9e';
+                    
+                    let ph='', pl=(r[this.colMap.price]||'').split(/[\n\r;]+/).filter(x=>x.trim());
+                    if(pl.length>0){ph='<div class="price-col">';pl.forEach(l=>{let pm=l.match(/(\d{4,6})\s*\/\s*(\d{2,3})(.*)/);if(pm)ph+=`<div>JPY ¥${parseInt(pm[1]).toLocaleString()} / ${pm[2]}分 ${pm[3]||''}</div>`;else{let nm=l.match(/(\d{4,6})/);ph+=`<div>${nm?l.replace(nm[1],parseInt(nm[1]).toLocaleString()):l}</div>`;}});ph+='</div>';}
+                    
+                    let tu=r[this.colMap.url]||'', cb=this.isEditMode?`<input type="checkbox" class="card-checkbox" value="${i}" ${this.selectedCards.has(i)?'checked':''}>`:'';
+                    let cEl=document.createElement('div'); cEl.className='card'; if(this.selectedCards.has(i))cEl.classList.add('selected');
+                    cEl.title=this.isEditMode?"左鍵:編輯\n右鍵:開啟網址\n拖曳可排序/複製":"左鍵:檢視\n右鍵:開啟網址";
+                    cEl.onclick=e=>{if(e.target.closest('.sch-wrapper')||e.target.closest('.fav-btn')||e.target.classList.contains('card-checkbox'))return;if(this.isEditMode||window.innerWidth>850)this.editRecord(i);else if(tu)window.open(tu,'_blank');};
+                    cEl.oncontextmenu=e=>{e.preventDefault();if(tu)window.open(tu,'_blank');};
+                    
+                    if(this.isEditMode&&this.hasWriteAccess){
+                        cEl.draggable=true; cEl.ondragstart=e=>{e.dataTransfer.effectAllowed='copyMove';e.dataTransfer.setData('text/plain',i);setTimeout(()=>cEl.classList.add('dragging'),0);};
+                        cEl.ondragend=()=>cEl.classList.remove('dragging');
+                        cEl.ondragover=e=>{e.preventDefault();let t=e.target.closest('.card');if(t){t.classList.add('drag-over');t.style.borderColor=e.ctrlKey||e.metaKey?'var(--warning)':'var(--primary)';}};
+                        cEl.ondragleave=e=>{let t=e.target.closest('.card');if(t){t.classList.remove('drag-over');t.style.borderColor='';}};
+                        cEl.ondrop=e=>{e.preventDefault();let t=e.target.closest('.card');if(t){t.classList.remove('drag-over');t.style.borderColor='';}let o=parseInt(e.dataTransfer.getData('text'));if(!isNaN(o)){if(e.ctrlKey||e.metaKey)this.copyItem(o,i);else this.reorderItems(o,i);}};
+                    }
+                    
+                    cEl.innerHTML=`${cb}<div class="img-container"><span class="badge">${r[this.colMap.location]||'未知區'}</span><div class="fav-btn" onclick="app.toggleFavorite(event,${i})">${r[this.colMap.favorite]==='Y'?'❤️':'🤍'}</div><img src="${Utility.cleanDriveUrl(r[this.colMap.photo])||PLACEHOLDER_URL}"></div>
+                    <div class="store-name">${r[this.colMap.store]||''}</div>
+                    <div class="name-row">${sd?`<div class="mini-svg-box">${sd.svgHtml}</div>`:''}<div class="name-col"><div class="tech-name">${r[this.colMap.name]} ${r[this.colMap.age]?`(${r[this.colMap.age]})`:''}</div>
+                    ${sd?`<div class="score-row"><span class="big-badge" style="background:${sd.scoreColor}">👑 ${sd.score}分</span><span class="big-badge" style="background:${sd.cupDiffColor}">實推 ${sd.trueCup}杯</span></div>`:''}</div></div>
+                    <div class="tags-row">${th}</div><div class="stats-row"><span class="cup-badge" style="background:${cc}">${cup!=='?'?cup+'杯':'?杯'}</span><span>${cls}</span></div>
+                    ${ph}${RuleEngine.parseAndFormatSchedule(r[this.colMap.schedule],"",r[this.colMap.store],this.rulesData)}`;
+                    grid.appendChild(cEl);
                 });
-            }
-            fetchSheetNames() {
-                fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets.properties(title)`, {headers:{'Authorization':`Bearer ${this.accessToken}`}})
-                .then(r=>r.json()).then(data => {
-                    const sel = document.getElementById('v_sheet'); sel.innerHTML = '';
-                    data.sheets.forEach(s => { if(s.properties.title!=='Rules') sel.innerHTML += `<option value="${s.properties.title}">${s.properties.title}</option>`; });
-                    this.loadSheetData();
-                });
-            }
-            populateFilters() {
-                const storeSel = document.getElementById('filterStore');
-                const stores = [...new Set(this.dataStore.map(i=>i._raw[this.colMap.store]))].sort();
-                storeSel.innerHTML = '<option value="">🏪 所有店鋪</option>';
-                stores.forEach(s => storeSel.innerHTML += `<option value="${s}">${s}</option>`);
             }
         }
-
-        window.app = new AppCore();
-        window.onload = () => app.initGoogleAuth();
-        const cropperSvc = {
-            closeModal() { document.getElementById('cropperModal').style.display='none'; },
-            async uploadToDrive(blob, name, token) {
-                const metadata = { name, parents: [DRIVE_FOLDER_ID] };
-                const form = new FormData();
-                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-                form.append('file', blob);
-                const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-                    method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: form
-                });
-                const data = await res.json();
-                return `https://drive.google.com/file/d/${data.id}/view?usp=drivesdk`;
-            }
-        };
+        window.app = new AppCore(); window.onload = () => app.initGoogleAuth();
     </script>
 </body>
 </html>
