@@ -455,7 +455,6 @@
         const DRIVE_FOLDER_ID = '1s1x7yyWUE3JB_8YnjOAoL93u7No6NP9p'; 
         const PLACEHOLDER_URL = 'https://placehold.co/300x400/eeeeee/999999?text=No+Photo';
 
-        // 動態規則引擎 (Metadata Driven)
         class RuleEngine {
             constructor() {
                 this.rules = [];
@@ -491,7 +490,6 @@
                 }
             }
             
-            // 核心修復：自動清洗 Google 表單傳來的不合法 Regex 前綴
             getSafePattern(pattern) {
                 return pattern ? pattern.replace(/^\(\?[a-z]+\)/i, '') : '';
             }
@@ -542,7 +540,6 @@
             static showLoading(msg) { document.getElementById('loading-text').innerText = msg; document.getElementById('loading-overlay').style.display = 'flex'; }
             static hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
             
-            // 核心修復：防護全域 Utilities 呼叫正規表達式崩潰
             static getSafePattern(pattern) {
                 return pattern ? pattern.replace(/^\(\?[a-z]+\)/i, '') : '';
             }
@@ -825,7 +822,7 @@
                     }
                     
                     let timeStr = "休息";
-                    const timeMatch = content.match(/(\d{1,2}[:：]\d{2})\s*[-~〜ー]\s*(\d{1,2}[:：]\d{2})/);
+                    const timeMatch = content.match(/(\d{1,2}[:：]\d{2})\s*[-~\n〜ー]\s*(\d{1,2}[:：]\d{2})/);
                     
                     if (timeMatch) {
                         timeStr = `${timeMatch[1].replace('：',':')}-${timeMatch[2].replace('：',':')}`;
@@ -1419,6 +1416,7 @@
                 this.processBatchData(true);
             }
 
+            // 【重點修復】：確保批次處理也動態進行網站辨識，不會寫死 ['Common']
             processBatchData(createMissing) {
                 if (!this.accessToken || !this.hasWriteAccess) { 
                     Utility.showToast("⚠️ 請先切換至編輯模式並完成 Google 授權！", true);
@@ -1442,6 +1440,16 @@
                     return;
                 }
 
+                // 核心補丁：動態建構 siteMatches，讓針對特定網站的 Rule 生效
+                let siteMatches = ['Common'];
+                let lowerText = text.toLowerCase();
+                if(lowerText.includes('yoasobi-heaven.com') || lowerText.includes('yoasobi') || lowerText.includes('出勤表')) {
+                    siteMatches.push('yoasobi-heaven.com');
+                }
+                if(lowerText.includes('yoshiwara-soap.jp') || lowerText.includes('yoshiwara')) {
+                    siteMatches.push('yoshiwara-soap.jp');
+                }
+
                 const formStoreVal = document.getElementById('v_store')?.value.trim() || "";
                 const formPriceVal = document.getElementById('v_price')?.value.trim() || "";
                 const formLocationVal = document.getElementById('v_location')?.value.trim() || "";
@@ -1451,7 +1459,7 @@
                 Utility.showLoading("動態規則解析與同步資料庫中...");
 
                 setTimeout(() => {
-                    let mStore = window.ruleEngine.extractByRules(text, "", "v_store", ['Common']);
+                    let mStore = window.ruleEngine.extractByRules(text, "", "v_store", siteMatches);
                     let baseStore = mStore.value ? mStore.value : formStoreVal;
 
                     const blocks = text.split(new RegExp(safeSplit, 'g')).filter(b => b.trim().length > 10);
@@ -1459,8 +1467,10 @@
                     let createCount = 0;
 
                     blocks.forEach(block => {
-                        let extractedName = window.ruleEngine.extractByRules(block, "", "v_name", ['Common']);
-                        if (!extractedName.value) return;
+                        let extractedName = window.ruleEngine.extractByRules(block, "", "v_name", siteMatches);
+                        
+                        // 若無姓名則跳過，依賴表單內需有針對此一覽表的 Regex
+                        if (!extractedName.value) return; 
                         
                         let nameInfo = Utility.parseName(extractedName.value, window.ruleEngine);
                         let pureName = nameInfo.pureName;
@@ -1470,10 +1480,10 @@
                             finalStore += " " + formStoreVal;
                         }
 
-                        let extStatsObj = window.ruleEngine.extractByRules(block, "", "v_stats", ['Common']);
+                        let extStatsObj = window.ruleEngine.extractByRules(block, "", "v_stats", siteMatches);
                         let extStats = extStatsObj.value;
 
-                        let mSchObj = window.ruleEngine.extractByRules(block, "", "v_schedule", ['Common']);
+                        let mSchObj = window.ruleEngine.extractByRules(block, "", "v_schedule", siteMatches);
                         let mSch = mSchObj.value;
                         
                         if (mSch) {
@@ -1546,7 +1556,7 @@
                                     if (tagSet.size > 0) setV('af', Array.from(tagSet).join(' / '));
                                     if (levelVal) setV('level', levelVal);
 
-                                    let mAgeObj = window.ruleEngine.extractByRules(block, "", "v_age", ['Common']);
+                                    let mAgeObj = window.ruleEngine.extractByRules(block, "", "v_age", siteMatches);
                                     if (mAgeObj.value) setV('age', mAgeObj.value + "歲");
 
                                     this.dataStore.push({
