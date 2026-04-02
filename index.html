@@ -786,6 +786,7 @@
                 return h * 60 + m;
             }
 
+            // 【核心修復】：將換行符號拔除，讓多行時間能夠正確匹配
             static parseAndFormatSchedule(rawText, engine = window.ruleEngine) {
                 if (!rawText || !engine) return '';
                 
@@ -803,11 +804,14 @@
                 if(cutRules.length > 0) stopRegexStr = cutRules[0].pattern;
                 let safeStop = this.getSafePattern(stopRegexStr);
 
+                // 將內容中的換行與連續空白壓縮為單一空白，確保 `14:00 \n - \n 1:00` 變成 `14:00 - 1:00`
+                let cleanText = rawText.replace(/\n\s*-\s*\n/g, ' - ').replace(/\n\s*~\s*\n/g, ' ~ ');
+
                 const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\((.)\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2}\s*(?:\(.\))?)|\s*$)/g;
                 let cleanedLines = [];
                 let match;
                 
-                while ((match = regex.exec(rawText)) !== null) {
+                while ((match = regex.exec(cleanText)) !== null) {
                     let m = parseInt(match[1], 10);
                     let d = parseInt(match[2], 10);
                     let date = `${m}/${d}`;
@@ -821,12 +825,15 @@
                         content = content.substring(0, stopMatch);
                     }
                     
+                    // 去除被錯誤換行切斷的問題，將該區塊內的多重換行壓平
+                    let compressedContent = content.replace(/\s+/g, ' '); 
                     let timeStr = "休息";
-                    const timeMatch = content.match(/(\d{1,2}[:：]\d{2})\s*[-~\n〜ー]\s*(\d{1,2}[:：]\d{2})/);
+                    
+                    const timeMatch = compressedContent.match(/(\d{1,2}[:：]\d{2})\s*[-~〜ー]\s*(\d{1,2}[:：]\d{2})/);
                     
                     if (timeMatch) {
                         timeStr = `${timeMatch[1].replace('：',':')}-${timeMatch[2].replace('：',':')}`;
-                    } else if (new RegExp(safeRest).test(content) || content.trim() === '-') {
+                    } else if (new RegExp(safeRest).test(compressedContent) || compressedContent.trim() === '-') {
                         timeStr = '休息';
                     }
                     
@@ -1416,7 +1423,6 @@
                 this.processBatchData(true);
             }
 
-            // 【重點修復】：確保批次處理也動態進行網站辨識，不會寫死 ['Common']
             processBatchData(createMissing) {
                 if (!this.accessToken || !this.hasWriteAccess) { 
                     Utility.showToast("⚠️ 請先切換至編輯模式並完成 Google 授權！", true);
@@ -1440,7 +1446,6 @@
                     return;
                 }
 
-                // 核心補丁：動態建構 siteMatches，讓針對特定網站的 Rule 生效
                 let siteMatches = ['Common'];
                 let lowerText = text.toLowerCase();
                 if(lowerText.includes('yoasobi-heaven.com') || lowerText.includes('yoasobi') || lowerText.includes('出勤表')) {
@@ -1469,7 +1474,6 @@
                     blocks.forEach(block => {
                         let extractedName = window.ruleEngine.extractByRules(block, "", "v_name", siteMatches);
                         
-                        // 若無姓名則跳過，依賴表單內需有針對此一覽表的 Regex
                         if (!extractedName.value) return; 
                         
                         let nameInfo = Utility.parseName(extractedName.value, window.ruleEngine);
