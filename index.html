@@ -472,7 +472,7 @@
                     action: r[5] || '',
                     note: r[6] || ''
                 }));
-                this.rules.sort((a, b) => a.priority - b.priority); // 優先級排序 (數值越小越先執行)
+                this.rules.sort((a, b) => a.priority - b.priority); 
             }
             
             getRulesForField(field, siteMatches = ['Common']) {
@@ -491,14 +491,21 @@
                 }
             }
             
+            // 核心修復：自動清洗 Google 表單傳來的不合法 Regex 前綴
+            getSafePattern(pattern) {
+                return pattern ? pattern.replace(/^\(\?[a-z]+\)/i, '') : '';
+            }
+
             extractByRules(text, html, field, siteMatches) {
                 let rules = this.getRulesForField(field, siteMatches);
                 let result = { value: '', secondaryValue: '', tags: new Set(), level: '' };
                 let valueFound = false;
 
                 for (let rule of rules) {
+                    let safePattern = this.getSafePattern(rule.pattern);
+                    
                     if (rule.ruleType === 'Regex_Extract' && !valueFound) {
-                        let match = text.match(new RegExp(rule.pattern, 'im'));
+                        let match = text.match(new RegExp(safePattern, 'im'));
                         if (match) {
                             if (rule.action === 'Extract_Group_1' && match[1]) { result.value = match[1].trim(); valueFound = true; }
                             else if (rule.action === 'Extract_Group_1_2' && match[1] && match[2]) { result.value = match[1].trim(); result.secondaryValue = match[2].trim(); valueFound = true; }
@@ -507,7 +514,7 @@
                             else if (rule.action === 'Extract_Raw') { result.value = match[0].trim(); valueFound = true; }
                         }
                     } else if (rule.ruleType === 'Regex_Tag') {
-                        if (new RegExp(rule.pattern, 'i').test(text) || new RegExp(rule.pattern, 'i').test(result.value)) {
+                        if (new RegExp(safePattern, 'i').test(text) || new RegExp(safePattern, 'i').test(result.value)) {
                             result.tags.add(rule.action.replace('Tag: ', '').trim());
                         }
                     } else if (rule.ruleType === 'HTML_Img_Tag') {
@@ -515,10 +522,10 @@
                             result.tags.add(rule.action.replace('Tag: ', '').trim());
                         }
                     } else if (rule.ruleType === 'Regex_Level') {
-                        let match = text.match(new RegExp(rule.pattern, 'i'));
+                        let match = text.match(new RegExp(safePattern, 'i'));
                         if (match && match[1]) result.level = match[1];
                     } else if (rule.ruleType === 'Set_Default' && !valueFound) {
-                        let patternRegex = new RegExp(rule.pattern, 'i');
+                        let patternRegex = new RegExp(safePattern, 'i');
                         if (patternRegex.test(text) || siteMatches.some(s => patternRegex.test(s))) {
                             result.value = rule.action;
                             valueFound = true;
@@ -534,6 +541,12 @@
             static generateID() { return 'N' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'); }
             static showLoading(msg) { document.getElementById('loading-text').innerText = msg; document.getElementById('loading-overlay').style.display = 'flex'; }
             static hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
+            
+            // 核心修復：防護全域 Utilities 呼叫正規表達式崩潰
+            static getSafePattern(pattern) {
+                return pattern ? pattern.replace(/^\(\?[a-z]+\)/i, '') : '';
+            }
+
             static cleanDriveUrl(url) {
                 if (!url) return "";
                 let parsedUrl = String(url).trim();
@@ -565,7 +578,6 @@
                 this.toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000);
             }
 
-            // 動態 Metadata 驅動：姓名與標籤淨化
             static parseName(rawName, engine = window.ruleEngine) {
                 if (!rawName) return { pureName: "", tags: [], level: "" };
                 let tags = new Set();
@@ -573,15 +585,17 @@
 
                 let afTagRules = engine.getRulesForField('v_af');
                 afTagRules.forEach(r => {
-                    if(r.ruleType === 'Regex_Tag' && new RegExp(r.pattern, 'i').test(rawName)) {
+                    let safePattern = this.getSafePattern(r.pattern);
+                    if(r.ruleType === 'Regex_Tag' && new RegExp(safePattern, 'i').test(rawName)) {
                         tags.add(r.action.replace('Tag: ', '').trim());
                     }
                 });
 
                 let levelRules = engine.getRulesForField('v_level');
                 levelRules.forEach(r => {
+                    let safePattern = this.getSafePattern(r.pattern);
                     if(r.ruleType === 'Regex_Level') {
-                        let m = rawName.match(new RegExp(r.pattern));
+                        let m = rawName.match(new RegExp(safePattern));
                         if(m && m[1]) level = m[1];
                     }
                 });
@@ -589,10 +603,11 @@
                 let pureName = rawName;
                 let cleanRules = engine.getRulesForField('v_name');
                 cleanRules.forEach(r => {
+                    let safePattern = this.getSafePattern(r.pattern);
                     if(r.ruleType === 'Clean_Remove') {
-                        pureName = pureName.replace(new RegExp(r.pattern, 'ig'), '');
+                        pureName = pureName.replace(new RegExp(safePattern, 'ig'), '');
                     } else if(r.ruleType === 'Clean_End') {
-                        pureName = pureName.replace(new RegExp(r.pattern, 'g'), '');
+                        pureName = pureName.replace(new RegExp(safePattern, 'g'), '');
                     }
                 });
 
@@ -627,14 +642,12 @@
                 return {h, b, w, hp, cup};
             }
 
-            // 動態 Metadata 驅動：罩杯分數
             static getCupScore(rawStats, engine = window.ruleEngine) {
                 const {cup} = this.parseStats(rawStats);
                 if (cup === '?') return 0;
                 return cup.charCodeAt(0) - 64; 
             }
 
-            // 動態 Metadata 驅動：身材分數
             static getBodyScore(rawStats, engine = window.ruleEngine) {
                 const {h, b, w, hp, cup} = this.parseStats(rawStats);
                 if (!h || !b || !w || !hp) return 0;
@@ -645,7 +658,6 @@
                 return Math.min(99, Math.max(1, 40 + ((b - w) + (hp - w)))); 
             }
 
-            // 動態 Metadata 驅動：身形判定
             static getBodyShapeData(rawStats, engine = window.ruleEngine) {
                 if(!engine) engine = window.ruleEngine;
                 const parsed = this.parseStats(rawStats);
@@ -777,7 +789,6 @@
                 return h * 60 + m;
             }
 
-            // 動態 Metadata 驅動：班表轉換與清洗
             static parseAndFormatSchedule(rawText, engine = window.ruleEngine) {
                 if (!rawText || !engine) return '';
                 
@@ -788,10 +799,12 @@
                 const statusMapRules = engine.getRulesForField('Schedule_Status');
                 let restRegexStr = '休|み|缺|^\\s*-\\s*$'; 
                 if(statusMapRules.length > 0) restRegexStr = statusMapRules[0].pattern;
+                let safeRest = this.getSafePattern(restRegexStr);
 
                 const cutRules = engine.getRulesForField('Schedule_Stop');
                 let stopRegexStr = '(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記|搜尋熱門|返回商店|返回首頁|Top|日本的風俗店|北海道・東北|上門服務)';
                 if(cutRules.length > 0) stopRegexStr = cutRules[0].pattern;
+                let safeStop = this.getSafePattern(stopRegexStr);
 
                 const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\((.)\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2}\s*(?:\(.\))?)|\s*$)/g;
                 let cleanedLines = [];
@@ -806,7 +819,7 @@
                     let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
                     
                     let content = match[4] || ''; 
-                    let stopMatch = content.search(new RegExp(stopRegexStr));
+                    let stopMatch = content.search(new RegExp(safeStop));
                     if (stopMatch !== -1) {
                         content = content.substring(0, stopMatch);
                     }
@@ -816,7 +829,7 @@
                     
                     if (timeMatch) {
                         timeStr = `${timeMatch[1].replace('：',':')}-${timeMatch[2].replace('：',':')}`;
-                    } else if (new RegExp(restRegexStr).test(content) || content.trim() === '-') {
+                    } else if (new RegExp(safeRest).test(content) || content.trim() === '-') {
                         timeStr = '休息';
                     }
                     
@@ -964,8 +977,9 @@
                             let splitterRules = window.ruleEngine.getRulesForField('System_Anchor');
                             let splitPattern = '收藏夾';
                             splitterRules.forEach(r => { if(r.ruleType === 'Block_Splitter') splitPattern = r.pattern; });
+                            let safeSplit = Utility.getSafePattern(splitPattern);
 
-                            if (text.split(new RegExp(splitPattern, 'g')).length > 2 || text.split(/No\./i).length > 3) {
+                            if (text.split(new RegExp(safeSplit, 'g')).length > 2 || text.split(/No\./i).length > 3) {
                                 e.preventDefault();
                                 if (!window.app.isEditMode) window.app.toggleMode();
                                 document.getElementById('v_magic_paste').value = text;
@@ -1118,8 +1132,9 @@
                         let splitterRules = window.ruleEngine.getRulesForField('System_Anchor');
                         let splitPattern = '收藏夾';
                         splitterRules.forEach(r => { if(r.ruleType === 'Block_Splitter') splitPattern = r.pattern; });
+                        let safeSplit = Utility.getSafePattern(splitPattern);
 
-                        if (text.split(new RegExp(splitPattern, 'g')).length > 2 || text.split(/No\./i).length > 3) {
+                        if (text.split(new RegExp(safeSplit, 'g')).length > 2 || text.split(/No\./i).length > 3) {
                             e.preventDefault();
                             magicInput.value = text;
                             Utility.showToast('✨ 已載入批次清單！請填寫下方共同設定後，點擊上方按鈕');
@@ -1404,7 +1419,6 @@
                 this.processBatchData(true);
             }
 
-            // 動態 Metadata 驅動：批次處理引擎
             processBatchData(createMissing) {
                 if (!this.accessToken || !this.hasWriteAccess) { 
                     Utility.showToast("⚠️ 請先切換至編輯模式並完成 Google 授權！", true);
@@ -1420,8 +1434,10 @@
                     if(r.ruleType === 'Block_Splitter') splitPattern = r.pattern;
                     if(r.ruleType === 'Single_Detector') singlePattern = r.pattern;
                 });
+                
+                let safeSplit = Utility.getSafePattern(splitPattern);
 
-                if (!text || text.split(new RegExp(splitPattern, 'g')).length <= 1) {
+                if (!text || text.split(new RegExp(safeSplit, 'g')).length <= 1) {
                     Utility.showToast('⚠️ 請在【魔法貼上】框內貼上女優一覽的批次資料！', true);
                     return;
                 }
@@ -1438,7 +1454,7 @@
                     let mStore = window.ruleEngine.extractByRules(text, "", "v_store", ['Common']);
                     let baseStore = mStore.value ? mStore.value : formStoreVal;
 
-                    const blocks = text.split(new RegExp(splitPattern, 'g')).filter(b => b.trim().length > 10);
+                    const blocks = text.split(new RegExp(safeSplit, 'g')).filter(b => b.trim().length > 10);
                     let updateCount = 0;
                     let createCount = 0;
 
@@ -1561,7 +1577,6 @@
                 }, 100); 
             }
 
-            // 動態 Metadata 驅動：單人魔法解析
             processMagicPaste(text, html) {
                 if (!text) return;
                 
@@ -1675,7 +1690,6 @@
                 
                 let isTagUpdated = false;
                 
-                // 動態取得 HTML 與 Text 中的標籤
                 let afRuleTags = window.ruleEngine.extractByRules(text, html, 'v_af', siteMatches);
                 if (afRuleTags.tags.size > 0) {
                     afRuleTags.tags.forEach(t => foundTags.add(t));
@@ -1867,7 +1881,6 @@
                 });
             }
 
-            // 動態取得分頁與規則設定表
             async fetchSheetNames() {
                 if (!this.accessToken) return;
                 try {
@@ -1897,7 +1910,6 @@
                             });
                         }
                         
-                        // 動態讀取 RuleEngine 設定
                         await this.fetchRulesSheet();
                         this.loadSheetData(); 
                     }
