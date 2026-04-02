@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talent DB - 技師資料彙整系統 (動態引擎完整版)</title>
+    <title>Talent DB - 技師資料彙整系統 (全動態演算法版)</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -31,19 +31,19 @@
 
     <div id="app-container" class="view-mode">
         <div class="panel" id="panel-form">
-            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--primary);padding-bottom:8px;margin-bottom:15px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--primary);padding-bottom:8px;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
                 <h3 style="margin:0;">📝 資料編輯</h3>
-                <div style="display:flex;gap:6px;">
-                    <button class="secondary mini" onclick="app.executeBatch(false)" title="僅更新數值與班表">⚡ 更新</button>
-                    <button class="warning mini" onclick="app.executeBatch(true)" title="依據表單建立新卡片">🌟 建檔</button>
-                    <button class="success mini" onclick="app.clearForm()">➕</button>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="secondary mini" onclick="app.executeBatch(false)" title="僅更新已有技師的班表與數值，不建立新卡片">⚡ 僅批次更新</button>
+                    <button class="warning mini" onclick="app.executeBatch(true)" title="更新既有，若無重複則自動建立新卡片(繼承下方設定)">🌟 批次建檔+更新</button>
+                    <button class="success mini" onclick="app.clearForm()">➕ 新增</button>
                 </div>
             </div>
             <input type="hidden" id="v_row_index">
-            <div class="form-grid"><div class="form-group full"><label>✨ 魔法貼上</label><textarea id="v_magic_paste" rows="2" placeholder="單人自動解析 / 多人批次匯入"></textarea></div></div>
+            <div class="form-grid"><div class="form-group full"><label>✨ 魔法貼上 (單人自動解析 / 多人批次匯入)</label><textarea id="v_magic_paste" rows="2" placeholder="在此貼上「單人網址、文字」可自動分配。&#10;若貼上「多人一覽清單」，請選擇上方按鈕執行批次！"></textarea></div></div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>店名* <div><button class="mini warning" onclick="app.cleanupDriveImages()" style="font-size:10px;padding:2px 4px;">☁️ 清理</button> <button class="mini secondary" onclick="app.openRulesModal()" style="font-size:10px;padding:2px 4px;">⚙️ 規則</button></div></label>
+                    <label>店名* <div><button class="mini warning" onclick="app.cleanupDriveImages()" style="font-size:10px;padding:2px 4px;" title="清理 Google Drive 雲端未使用的照片並自動改名">☁️ 清理</button> <button class="mini secondary" onclick="app.openRulesModal()" style="font-size:10px;padding:2px 4px;">⚙️ 規則</button></div></label>
                     <input type="text" id="v_store">
                 </div>
                 <div class="form-group"><label>姓名*</label><input type="text" id="v_name"></div>
@@ -56,23 +56,26 @@
                 <div class="form-group"><label>位置</label><input type="text" id="v_location"></div>
                 <div class="form-group"><label>年齡</label><input type="text" id="v_age"></div>
             </div>
-            <div class="form-grid"><div class="form-group full"><label>數值</label><input type="text" id="v_stats"></div></div>
+            <div class="form-grid"><div class="form-group full"><label>數值 (身高/體重/罩杯)</label><input type="text" id="v_stats"></div></div>
             <div class="form-grid"><div class="form-group full"><label>價金</label><textarea id="v_price" rows="2"></textarea></div></div>
             <div class="form-grid">
                 <div class="form-group"><label>屬性</label><input type="text" id="v_af"></div>
                 <div class="form-group"><label>等級</label><input type="text" id="v_level"></div>
             </div>
             <div class="form-grid"><div class="form-group full"><label>網址</label><input type="text" id="v_url"></div></div>
-            <div class="form-grid"><div class="form-group full"><label>行事曆</label><textarea id="v_schedule" rows="4"></textarea></div></div>
+            <div class="form-grid"><div class="form-group full"><label>本周班表 (行事曆)</label><textarea id="v_schedule" rows="4"></textarea></div></div>
             <div class="photo-upload-area">
                 <div class="img-preview-box">
-                    <img id="preview_photo" style="display:none;"><span id="text_photo">Ctrl+V 貼圖</span>
+                    <img id="preview_photo" style="display:none;"><span id="text_photo">點擊上傳或 <b>Ctrl+V</b> 貼上截圖</span>
                     <button id="btn_del_photo" class="btn-delete-img" onclick="app.deleteImage(event)" style="display:none;">✖</button>
                 </div>
             </div>
             <input type="file" id="fileInputPhoto" accept="image/*" style="display:none;">
             <input type="hidden" id="v_photo_url">
-            <div style="margin-top:auto;display:flex;gap:10px;"><button id="btn-save" onclick="app.saveToGoogleSheet()" style="flex:2;">💾 儲存</button><button id="btn-delete" class="danger" onclick="app.deleteRecordForm()" style="display:none;">🗑️</button></div>
+            <div style="margin-top:auto;display:flex;gap:10px;">
+                <button id="btn-save" onclick="app.saveToGoogleSheet()" style="flex:2;">💾 儲存</button>
+                <button id="btn-delete" class="danger" onclick="app.deleteRecordForm()" style="display:none;">🗑️ 刪除</button>
+            </div>
         </div>
 
         <div class="panel" id="panel-catalog">
@@ -92,7 +95,13 @@
                 </div>
                 <input type="text" id="searchInput" class="filter-select" placeholder="🔍 B>90 + 巨乳 - 潮..." oninput="app.renderCatalog()" style="flex:2;">
             </div>
-            <div id="batch-actions-bar"><span id="sel-count">已選 0 張</span><button class="mini" onclick="app.selectAllCards()">全選</button><button class="secondary mini" onclick="app.moveSelected('top')">⬆ 置頂</button><button class="secondary mini" onclick="app.moveSelected('bottom')">⬇ 置底</button><button class="danger mini" onclick="app.deleteSelected()" style="margin-left:auto;">🗑️ 批量刪除</button></div>
+            <div id="batch-actions-bar">
+                <span id="sel-count">已選 0 張</span>
+                <button class="mini" onclick="app.selectAllCards()">全選</button>
+                <button class="secondary mini" onclick="app.moveSelected('top')">⬆ 置頂</button>
+                <button class="secondary mini" onclick="app.moveSelected('bottom')">⬇ 置底</button>
+                <button class="danger mini" onclick="app.deleteSelected()" style="margin-left:auto;">🗑️ 批量刪除</button>
+            </div>
             <div class="catalog-grid" id="catalogGrid"></div>
         </div>
     </div>
@@ -268,7 +277,7 @@
                 document.getElementById('fileInputPhoto').addEventListener('change', e => this.handleFile(e.target.files[0]));
                 document.querySelector('.img-preview-box').addEventListener('click', e => {
                     if(e.target.id==='btn_del_photo') return;
-                    if(!window.app.accessToken){ window.app.triggerAuth(); return; }
+                    if(!window.app || !window.app.accessToken){ window.app.triggerAuth(); return; }
                     let img=document.getElementById('preview_photo');
                     if(img.style.display==='block'&&img.src){
                         if(img.src.startsWith('http')&&!img.src.startsWith('data:')){ Utility.showToast('⚠️ 雲端圖不可裁切，請重貼', true); return; }
@@ -329,7 +338,13 @@
                 let nums = this.dataStore.map(i=>String(i._raw[this.colMap.techId]||'')).filter(id=>id.startsWith(code+'-')).map(id=>parseInt(id.split('-')[1])).filter(n=>!isNaN(n));
                 return `${code}-${(nums.length>0?Math.max(...nums)+1:1).toString().padStart(4,'0')}`;
             }
-            getSiteCode(store) { let r=this.rulesData.find(x=>x.ruleType==='Set_Default'&&x.action===store); if(r)return r.site; let m=store.match(/[A-Z0-9]{4,}/i); return m?m[0]:'N'; }
+            
+            getSiteCode(store) { 
+                let r=this.rulesData.find(x=>x.ruleType==='Set_Default'&&x.action===store); 
+                if(r) return r.site; 
+                let m=store.match(/[A-Z0-9]{4,}/i); 
+                return m?m[0]:'N'; 
+            }
 
             setupDragScroll() {
                 let sI=null; document.addEventListener('dragover', e=>{
@@ -341,9 +356,44 @@
             }
 
             registerKeyboardShortcuts() { document.addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault(); if(this.accessToken&&this.hasWriteAccess)this.saveToGoogleSheet(); else Utility.showToast('請先切換至編輯模式');} }); }
-            toggleMode() { if(!this.isEditMode&&!this.hasWriteAccess){ this.tokenClient.requestAccessToken({prompt:'',scope:'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive'}); return; } this.isEditMode=!this.isEditMode; document.getElementById('app-container').className=this.isEditMode?'edit-mode':'view-mode'; document.getElementById('btn-mode-toggle').innerHTML=this.isEditMode?'👁️ 瀏覽':'📝 編輯'; this.selectedCards.clear(); this.updateBatchUI(); this.renderCatalog(); }
-            initGoogleAuth() { this.tokenClient = google.accounts.oauth2.initTokenClient({client_id: CLIENT_ID, scope: 'https://www.googleapis.com/auth/spreadsheets.readonly', callback: ''}); let tk=sessionStorage.getItem('gapi_access_token'); if(tk){this.accessToken=tk;this.hasWriteAccess=(sessionStorage.getItem('gapi_has_write')==='true');this.onAuthSuccess();} }
-            triggerAuth() { this.tokenClient.callback = r => { if(r.error)return; this.accessToken=r.access_token; this.hasWriteAccess=google.accounts.oauth2.hasGrantedAllScopes(r,'https://www.googleapis.com/auth/spreadsheets','https://www.googleapis.com/auth/drive'); sessionStorage.setItem('gapi_access_token',r.access_token); sessionStorage.setItem('gapi_has_write',this.hasWriteAccess); this.onAuthSuccess(); }; this.tokenClient.requestAccessToken({prompt:'consent'}); }
+            
+            toggleMode() { 
+                if(!this.isEditMode && !this.hasWriteAccess){ 
+                    if(!this.tokenClient){ alert("⚠️ Google 授權模組異常。\n請確保透過 https:// 網域開啟！"); return; }
+                    this.tokenClient.requestAccessToken({prompt:'',scope:'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive'}); 
+                    return; 
+                } 
+                this.isEditMode=!this.isEditMode; 
+                document.getElementById('app-container').className=this.isEditMode?'edit-mode':'view-mode'; 
+                document.getElementById('btn-mode-toggle').innerHTML=this.isEditMode?'👁️ 瀏覽':'📝 編輯'; 
+                this.selectedCards.clear(); this.updateBatchUI(); this.renderCatalog(); 
+            }
+            
+            initGoogleAuth() { 
+                if(typeof google === 'undefined' || !google.accounts) return;
+                try {
+                    this.tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: CLIENT_ID, 
+                        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive', 
+                        callback: (resp) => { 
+                            if(resp.error) return;
+                            this.accessToken=resp.access_token; 
+                            this.hasWriteAccess=google.accounts.oauth2.hasGrantedAllScopes(resp,'https://www.googleapis.com/auth/spreadsheets','https://www.googleapis.com/auth/drive'); 
+                            sessionStorage.setItem('gapi_access_token',resp.access_token); 
+                            sessionStorage.setItem('gapi_has_write',this.hasWriteAccess); 
+                            this.onAuthSuccess(); 
+                        }
+                    }); 
+                    let tk=sessionStorage.getItem('gapi_access_token'); 
+                    if(tk){ this.accessToken=tk; this.hasWriteAccess=(sessionStorage.getItem('gapi_has_write')==='true'); this.onAuthSuccess(); } 
+                } catch(e) {}
+            }
+
+            triggerAuth() { 
+                if(!this.tokenClient) { alert("⚠️ 授權模組未載入。請稍後或確認是否阻擋腳本。"); return; }
+                this.tokenClient.requestAccessToken({prompt:'consent'}); 
+            }
+            
             onAuthSuccess() { document.getElementById('auth-banner').style.display='none'; this.fetchSheetNames(); this.reloadRules(); }
             
             async fetchSheetNames() {
@@ -359,7 +409,7 @@
                         this.rulesData = d.values.slice(1).map(r=>({priority:parseInt(r[0])||3,site:(r[1]||'').trim(),field:(r[2]||'').trim(),ruleType:(r[3]||'').trim(),pattern:r[4],action:r[5]})).sort((a,b)=>a.priority-b.priority);
                         if(show) Utility.showToast("✅ 動態規則載入成功！"); this.renderRulesPreview(); this.renderCatalog();
                     }
-                } catch(e) { console.warn("Rules load failed", e); }
+                } catch(e) { console.warn("Rules fail", e); }
             }
 
             openRulesModal() { document.getElementById('rulesModal').style.display='flex'; document.getElementById('rule-current-store').innerText = document.getElementById('v_store').value.trim()||"Common"; this.renderRulesPreview(); }
@@ -417,13 +467,13 @@
             }
 
             async cleanupDriveImages() {
-                if(!this.accessToken||!this.hasWriteAccess)return; if(!confirm('☁️ 確定執行清理與重新命名？'))return; Utility.showLoading("清理中...");
+                if(!this.accessToken||!this.hasWriteAccess)return; if(!confirm('☁️ 確定執行清理與重新命名？\n注意：這會永久刪除沒在表單上的照片！'))return; Utility.showLoading("雲端清理中...");
                 try {
                     let active=new Map(); this.dataStore.forEach(i=>{let id=Utility.extractDriveFileId(i._raw[this.colMap.photo]); if(id) active.set(id,`${i._raw[this.colMap.store]}-${i._raw[this.colMap.name]}.jpg`.replace(/[\\/:*?"<>|]/g,''));});
-                    let files=[], pt=null; do{ let res=await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${DRIVE_FOLDER_ID}' in parents and trashed=false`)}&fields=nextPageToken,files(id,name)&pageSize=1000${pt?`&pageToken=${pt}`:''}`,{headers:{'Authorization':'Bearer '+this.accessToken}}); let d=await res.json(); files=files.concat(d.files||[]); pt=d.nextPageToken; }while(pt);
+                    let files=[], pt=null; do{ let q=encodeURIComponent(`'${DRIVE_FOLDER_ID}' in parents and trashed=false`); let res=await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=nextPageToken,files(id,name)&pageSize=1000${pt?`&pageToken=${pt}`:''}`,{headers:{'Authorization':'Bearer '+this.accessToken}}); let d=await res.json(); files=files.concat(d.files||[]); pt=d.nextPageToken; }while(pt);
                     let dc=0,rc=0; for(let f of files){ if(active.has(f.id)){ if(f.name!==active.get(f.id)){ await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`,{method:'PATCH',headers:{'Authorization':'Bearer '+this.accessToken,'Content-Type':'application/json'},body:JSON.stringify({name:active.get(f.id)})}); rc++;} }else{ await fetch(`https://www.googleapis.com/drive/v3/files/${f.id}`,{method:'DELETE',headers:{'Authorization':'Bearer '+this.accessToken}}); dc++; } }
-                    Utility.showToast(`✅ 刪除 ${dc} 張，改名 ${rc} 張`);
-                }catch(e){Utility.showToast("❌ 錯誤",true);} Utility.hideLoading();
+                    Utility.showToast(`✅ 雲端清理完成！刪除 ${dc} 張，改名 ${rc} 張`);
+                }catch(e){Utility.showToast("❌ 清理失敗",true);} Utility.hideLoading();
             }
 
             executeBatch(isCreate) {
@@ -494,8 +544,9 @@
             async deleteSelected() {
                 if(!this.accessToken||this.selectedCards.size===0)return; if(!confirm(`⚠️ 刪除這 ${this.selectedCards.size} 筆資料？`))return; Utility.showLoading("批量刪除...");
                 try {
+                    let sId = parseInt(document.getElementById('v_sheet').options[document.getElementById('v_sheet').selectedIndex].dataset.sheetId);
                     let rs=[...this.selectedCards].map(i=>this.dataStore[i]._rowIndex-1).sort((a,b)=>b-a);
-                    let reqs=rs.map(r=>({deleteDimension:{range:{sheetId:parseInt(document.getElementById('v_sheet').options[document.getElementById('v_sheet').selectedIndex].dataset.sheetId),dimension:"ROWS",startIndex:r,endIndex:r+1}}}));
+                    let reqs=rs.map(r=>({deleteDimension:{range:{sheetId:sId,dimension:"ROWS",startIndex:r,endIndex:r+1}}}));
                     let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,{method:'POST',headers:{'Authorization':'Bearer '+this.accessToken},body:JSON.stringify({requests:reqs})});
                     if(!res.ok)throw new Error(); Utility.showToast("✅ 批量刪除成功"); this.selectedCards.clear(); this.updateBatchUI(); this.loadSheetData();
                 }catch(e){Utility.showToast("❌ 錯誤",true);} Utility.hideLoading();
@@ -523,7 +574,16 @@
             copyItem(o, n) { let c=[...this.dataStore[o]._raw]; ['photo','techId','url','age','stats','startDate','schedule','favorite','updateTime'].forEach(k=>{if(this.colMap[k]!==-1)c[this.colMap[k]]="";}); this.dataStore.splice(n,0,{id:`N${Date.now()}`,_raw:c,_rowIndex:""}); this.renderCatalog(); this.saveOrderToGoogleSheet(true); }
             reorderItems(o, n) { if(o===n)return; this.dataStore.splice(n,0,this.dataStore.splice(o,1)[0]); this.renderCatalog(); this.saveOrderToGoogleSheet(true); }
             deleteImage(e) { e.stopPropagation(); document.getElementById('v_photo_url').value=''; document.getElementById('preview_photo').style.display='none'; document.getElementById('text_photo').style.display='block'; document.getElementById('btn_del_photo').style.display='none'; cropperSvc.pendingBlob=null; }
-            async deleteRecordForm() { if(!confirm(`⚠️ 確定刪除？`))return; Utility.showLoading("刪除中..."); try{let reqs=[{deleteDimension:{range:{sheetId:parseInt(document.getElementById('v_sheet').options[document.getElementById('v_sheet').selectedIndex].dataset.sheetId),dimension:"ROWS",startIndex:parseInt(document.getElementById('v_row_index').value)-1,endIndex:parseInt(document.getElementById('v_row_index').value)}}}]]; await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,{method:'POST',headers:{'Authorization':'Bearer '+this.accessToken},body:JSON.stringify({requests:reqs})}); Utility.showToast("✅ 刪除成功"); this.clearForm(); this.loadSheetData(); }catch(e){} Utility.hideLoading(); }
+            
+            async deleteRecordForm() { 
+                if(!confirm(`⚠️ 確定刪除？`))return; Utility.showLoading("刪除中..."); 
+                try{
+                    let sId = parseInt(document.getElementById('v_sheet').options[document.getElementById('v_sheet').selectedIndex].dataset.sheetId);
+                    let rIdx = parseInt(document.getElementById('v_row_index').value);
+                    let reqs=[{deleteDimension:{range:{sheetId:sId,dimension:"ROWS",startIndex:rIdx-1,endIndex:rIdx}}}]; 
+                    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,{method:'POST',headers:{'Authorization':'Bearer '+this.accessToken},body:JSON.stringify({requests:reqs})}); Utility.showToast("✅ 刪除成功"); this.clearForm(); this.loadSheetData(); 
+                }catch(e){Utility.showToast("❌ 錯誤",true);} Utility.hideLoading(); 
+            }
 
             renderCatalog() {
                 const kw=document.getElementById('searchInput').value.trim(), fS=document.getElementById('filterStore').value, fL=document.getElementById('filterLocation').value, fD=document.getElementById('filterDate').value, fT1=document.getElementById('filterTimeStart').value, fT2=document.getElementById('filterTimeEnd').value, fSt=document.getElementById('filterStatus').value, sO=document.getElementById('sortOption').value, qS=fT1?parseInt(fT1):null, qE=fT2?parseInt(fT2):null;
@@ -591,7 +651,7 @@
                     let tu=r[this.colMap.url]||'', cb=this.isEditMode?`<input type="checkbox" class="card-checkbox" value="${i}" ${this.selectedCards.has(i)?'checked':''}>`:'';
                     let cEl=document.createElement('div'); cEl.className='card'; if(this.selectedCards.has(i))cEl.classList.add('selected');
                     cEl.title=this.isEditMode?"左鍵:編輯\n右鍵:開啟網址\n拖曳可排序/複製":"左鍵:檢視\n右鍵:開啟網址";
-                    cEl.onclick=e=>{if(e.target.closest('.sch-wrapper')||e.target.closest('.fav-btn')||e.target.classList.contains('card-checkbox'))return;if(this.isEditMode||window.innerWidth>850)this.editRecord(i);else if(tu)window.open(tu,'_blank');};
+                    cEl.onclick=e=>{if(e.target.closest('.sch-container-vert')||e.target.closest('.sch-wrapper')||e.target.closest('.fav-btn')||e.target.classList.contains('card-checkbox'))return;if(this.isEditMode||window.innerWidth>850)this.editRecord(i);else if(tu)window.open(tu,'_blank');};
                     cEl.oncontextmenu=e=>{e.preventDefault();if(tu)window.open(tu,'_blank');};
                     
                     if(this.isEditMode&&this.hasWriteAccess){
@@ -600,19 +660,20 @@
                         cEl.ondragover=e=>{e.preventDefault();let t=e.target.closest('.card');if(t){t.classList.add('drag-over');t.style.borderColor=e.ctrlKey||e.metaKey?'var(--warning)':'var(--primary)';}};
                         cEl.ondragleave=e=>{let t=e.target.closest('.card');if(t){t.classList.remove('drag-over');t.style.borderColor='';}};
                         cEl.ondrop=e=>{e.preventDefault();let t=e.target.closest('.card');if(t){t.classList.remove('drag-over');t.style.borderColor='';}let o=parseInt(e.dataTransfer.getData('text'));if(!isNaN(o)){if(e.ctrlKey||e.metaKey)this.copyItem(o,i);else this.reorderItems(o,i);}};
-                    }
+                    } else { cEl.draggable=false; cEl.ondragstart=e=>{e.preventDefault();}; }
                     
                     cEl.innerHTML=`${cb}<div class="img-container"><span class="badge">${r[this.colMap.location]||'未知區'}</span><div class="fav-btn" onclick="app.toggleFavorite(event,${i})">${r[this.colMap.favorite]==='Y'?'❤️':'🤍'}</div><img src="${Utility.cleanDriveUrl(r[this.colMap.photo])||PLACEHOLDER_URL}"></div>
                     <div class="store-name">${r[this.colMap.store]||''}</div>
                     <div class="name-row">${sd?`<div class="mini-svg-box">${sd.svgHtml}</div>`:''}<div class="name-col"><div class="tech-name">${r[this.colMap.name]} ${r[this.colMap.age]?`(${r[this.colMap.age]})`:''}</div>
                     ${sd?`<div class="score-row"><span class="big-badge" style="background:${sd.scoreColor}">👑 ${sd.score}分</span><span class="big-badge" style="background:${sd.cupDiffColor}">實推 ${sd.trueCup}杯</span></div>`:''}</div></div>
                     <div class="tags-row">${th}</div><div class="stats-row"><span class="cup-badge" style="background:${cc}">${cup!=='?'?cup+'杯':'?杯'}</span><span>${cls}</span></div>
-                    ${ph}${RuleEngine.parseAndFormatSchedule(r[this.colMap.schedule],"",r[this.colMap.store],this.rulesData)}`;
+                    ${ph}${RuleEngine.parseAndFormatSchedule(r[this.colMap.schedule],tu,r[this.colMap.store],this.rulesData)}`;
                     grid.appendChild(cEl);
                 });
             }
         }
-        window.app = new AppCore(); window.onload = () => app.initGoogleAuth();
+        window.app = new AppCore();
     </script>
+    <script src="https://accounts.google.com/gsi/client" async defer onload="if(window.app) window.app.initGoogleAuth()"></script>
 </body>
 </html>
