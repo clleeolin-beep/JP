@@ -501,33 +501,38 @@
 
                 for (let rule of rules) {
                     let safePattern = this.getSafePattern(rule.pattern);
+                    if (!safePattern) continue;
                     
-                    if (rule.ruleType === 'Regex_Extract' && !valueFound) {
-                        let match = text.match(new RegExp(safePattern, 'im'));
-                        if (match) {
-                            if (rule.action === 'Extract_Group_1' && match[1]) { result.value = match[1].trim(); valueFound = true; }
-                            else if (rule.action === 'Extract_Group_1_2' && match[1] && match[2]) { result.value = match[1].trim(); result.secondaryValue = match[2].trim(); valueFound = true; }
-                            else if (rule.action === 'Extract_Number' && match[1]) { result.value = match[1].replace(/,/g, '').trim(); valueFound = true; }
-                            else if (rule.action === 'Extract_Date' && match[1] && match[2] && match[3]) { result.value = `${match[1]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}`; valueFound = true; }
-                            else if (rule.action === 'Extract_Raw') { result.value = match[0].trim(); valueFound = true; }
+                    try {
+                        if (rule.ruleType === 'Regex_Extract' && !valueFound) {
+                            let match = text.match(new RegExp(safePattern, 'im'));
+                            if (match) {
+                                if (rule.action === 'Extract_Group_1' && match[1]) { result.value = match[1].trim(); valueFound = true; }
+                                else if (rule.action === 'Extract_Group_1_2' && match[1] && match[2]) { result.value = match[1].trim(); result.secondaryValue = match[2].trim(); valueFound = true; }
+                                else if (rule.action === 'Extract_Number' && match[1]) { result.value = match[1].replace(/,/g, '').trim(); valueFound = true; }
+                                else if (rule.action === 'Extract_Date' && match[1] && match[2] && match[3]) { result.value = `${match[1]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}`; valueFound = true; }
+                                else if (rule.action === 'Extract_Raw') { result.value = match[0].trim(); valueFound = true; }
+                            }
+                        } else if (rule.ruleType === 'Regex_Tag') {
+                            if (new RegExp(safePattern, 'i').test(text) || new RegExp(safePattern, 'i').test(result.value)) {
+                                result.tags.add(rule.action.replace('Tag: ', '').trim());
+                            }
+                        } else if (rule.ruleType === 'HTML_Img_Tag') {
+                            if (html && html.includes(rule.pattern)) {
+                                result.tags.add(rule.action.replace('Tag: ', '').trim());
+                            }
+                        } else if (rule.ruleType === 'Regex_Level') {
+                            let match = text.match(new RegExp(safePattern, 'i'));
+                            if (match && match[1]) result.level = match[1];
+                        } else if (rule.ruleType === 'Set_Default' && !valueFound) {
+                            let patternRegex = new RegExp(safePattern, 'i');
+                            if (patternRegex.test(text) || siteMatches.some(s => patternRegex.test(s))) {
+                                result.value = rule.action;
+                                valueFound = true;
+                            }
                         }
-                    } else if (rule.ruleType === 'Regex_Tag') {
-                        if (new RegExp(safePattern, 'i').test(text) || new RegExp(safePattern, 'i').test(result.value)) {
-                            result.tags.add(rule.action.replace('Tag: ', '').trim());
-                        }
-                    } else if (rule.ruleType === 'HTML_Img_Tag') {
-                        if (html && html.includes(rule.pattern)) {
-                            result.tags.add(rule.action.replace('Tag: ', '').trim());
-                        }
-                    } else if (rule.ruleType === 'Regex_Level') {
-                        let match = text.match(new RegExp(safePattern, 'i'));
-                        if (match && match[1]) result.level = match[1];
-                    } else if (rule.ruleType === 'Set_Default' && !valueFound) {
-                        let patternRegex = new RegExp(safePattern, 'i');
-                        if (patternRegex.test(text) || siteMatches.some(s => patternRegex.test(s))) {
-                            result.value = rule.action;
-                            valueFound = true;
-                        }
+                    } catch (e) {
+                        console.warn(`[RuleEngine] 略過無效正則 (${field}):`, safePattern);
                     }
                 }
                 return result;
@@ -583,29 +588,35 @@
                 let afTagRules = engine.getRulesForField('v_af');
                 afTagRules.forEach(r => {
                     let safePattern = this.getSafePattern(r.pattern);
-                    if(r.ruleType === 'Regex_Tag' && new RegExp(safePattern, 'i').test(rawName)) {
-                        tags.add(r.action.replace('Tag: ', '').trim());
-                    }
+                    try {
+                        if(r.ruleType === 'Regex_Tag' && new RegExp(safePattern, 'i').test(rawName)) {
+                            tags.add(r.action.replace('Tag: ', '').trim());
+                        }
+                    } catch(e) {}
                 });
 
                 let levelRules = engine.getRulesForField('v_level');
                 levelRules.forEach(r => {
                     let safePattern = this.getSafePattern(r.pattern);
-                    if(r.ruleType === 'Regex_Level') {
-                        let m = rawName.match(new RegExp(safePattern));
-                        if(m && m[1]) level = m[1];
-                    }
+                    try {
+                        if(r.ruleType === 'Regex_Level') {
+                            let m = rawName.match(new RegExp(safePattern));
+                            if(m && m[1]) level = m[1];
+                        }
+                    } catch(e) {}
                 });
 
                 let pureName = rawName;
                 let cleanRules = engine.getRulesForField('v_name');
                 cleanRules.forEach(r => {
                     let safePattern = this.getSafePattern(r.pattern);
-                    if(r.ruleType === 'Clean_Remove') {
-                        pureName = pureName.replace(new RegExp(safePattern, 'ig'), '');
-                    } else if(r.ruleType === 'Clean_End') {
-                        pureName = pureName.replace(new RegExp(safePattern, 'g'), '');
-                    }
+                    try {
+                        if(r.ruleType === 'Clean_Remove') {
+                            pureName = pureName.replace(new RegExp(safePattern, 'ig'), '');
+                        } else if(r.ruleType === 'Clean_End') {
+                            pureName = pureName.replace(new RegExp(safePattern, 'g'), '');
+                        }
+                    } catch(e) {}
                 });
 
                 return { pureName: pureName.trim(), tags: Array.from(tags), level };
@@ -786,7 +797,7 @@
                 return h * 60 + m;
             }
 
-            // 【核心修復】：將換行符號拔除，讓多行時間能夠正確匹配
+            // 核心修復：精準合併被錯誤換行切斷的班表時間，並加上 RegExp 空值/錯誤防護
             static parseAndFormatSchedule(rawText, engine = window.ruleEngine) {
                 if (!rawText || !engine) return '';
                 
@@ -798,13 +809,17 @@
                 let restRegexStr = '休|み|缺|^\\s*-\\s*$'; 
                 if(statusMapRules.length > 0) restRegexStr = statusMapRules[0].pattern;
                 let safeRest = this.getSafePattern(restRegexStr);
+                let restRegex;
+                try { restRegex = new RegExp(safeRest || '休|み|缺|^\\s*-\\s*$'); } catch(e) { restRegex = /休|み|缺|^\s*-\s*$/; }
 
                 const cutRules = engine.getRulesForField('Schedule_Stop');
                 let stopRegexStr = '(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記|搜尋熱門|返回商店|返回首頁|Top|日本的風俗店|北海道・東北|上門服務)';
                 if(cutRules.length > 0) stopRegexStr = cutRules[0].pattern;
                 let safeStop = this.getSafePattern(stopRegexStr);
+                let stopRegex;
+                try { stopRegex = new RegExp(safeStop || stopRegexStr); } catch(e) { stopRegex = /(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記|搜尋熱門|返回商店|返回首頁|Top|日本的風俗店|北海道・東北|上門服務)/; }
 
-                // 將內容中的換行與連續空白壓縮為單一空白，確保 `14:00 \n - \n 1:00` 變成 `14:00 - 1:00`
+                // 強制壓縮換行符號，完美解決 14:00 \n - \n 1:00 這種格式
                 let cleanText = rawText.replace(/\n\s*-\s*\n/g, ' - ').replace(/\n\s*~\s*\n/g, ' ~ ');
 
                 const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\((.)\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2}\s*(?:\(.\))?)|\s*$)/g;
@@ -820,12 +835,12 @@
                     let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
                     
                     let content = match[4] || ''; 
-                    let stopMatch = content.search(new RegExp(safeStop));
+                    let stopMatch = content.search(stopRegex);
                     if (stopMatch !== -1) {
                         content = content.substring(0, stopMatch);
                     }
                     
-                    // 去除被錯誤換行切斷的問題，將該區塊內的多重換行壓平
+                    // 去除區塊內的多重空白與換行，確保正則不漏判
                     let compressedContent = content.replace(/\s+/g, ' '); 
                     let timeStr = "休息";
                     
@@ -833,7 +848,7 @@
                     
                     if (timeMatch) {
                         timeStr = `${timeMatch[1].replace('：',':')}-${timeMatch[2].replace('：',':')}`;
-                    } else if (new RegExp(safeRest).test(compressedContent) || compressedContent.trim() === '-') {
+                    } else if (restRegex.test(compressedContent) || compressedContent.trim() === '-') {
                         timeStr = '休息';
                     }
                     
@@ -982,8 +997,11 @@
                             let splitPattern = '收藏夾';
                             splitterRules.forEach(r => { if(r.ruleType === 'Block_Splitter') splitPattern = r.pattern; });
                             let safeSplit = Utility.getSafePattern(splitPattern);
+                            
+                            let splitRegex;
+                            try { splitRegex = new RegExp(safeSplit, 'g'); } catch(err) { splitRegex = /收藏夾/g; }
 
-                            if (text.split(new RegExp(safeSplit, 'g')).length > 2 || text.split(/No\./i).length > 3) {
+                            if (text.split(splitRegex).length > 2 || text.split(/No\./i).length > 3) {
                                 e.preventDefault();
                                 if (!window.app.isEditMode) window.app.toggleMode();
                                 document.getElementById('v_magic_paste').value = text;
@@ -1137,8 +1155,11 @@
                         let splitPattern = '收藏夾';
                         splitterRules.forEach(r => { if(r.ruleType === 'Block_Splitter') splitPattern = r.pattern; });
                         let safeSplit = Utility.getSafePattern(splitPattern);
+                        
+                        let splitRegex;
+                        try { splitRegex = new RegExp(safeSplit, 'g'); } catch(err) { splitRegex = /收藏夾/g; }
 
-                        if (text.split(new RegExp(safeSplit, 'g')).length > 2 || text.split(/No\./i).length > 3) {
+                        if (text.split(splitRegex).length > 2 || text.split(/No\./i).length > 3) {
                             e.preventDefault();
                             magicInput.value = text;
                             Utility.showToast('✨ 已載入批次清單！請填寫下方共同設定後，點擊上方按鈕');
@@ -1440,8 +1461,10 @@
                 });
                 
                 let safeSplit = Utility.getSafePattern(splitPattern);
+                let splitRegex;
+                try { splitRegex = new RegExp(safeSplit, 'g'); } catch(err) { splitRegex = /收藏夾/g; }
 
-                if (!text || text.split(new RegExp(safeSplit, 'g')).length <= 1) {
+                if (!text || text.split(splitRegex).length <= 1) {
                     Utility.showToast('⚠️ 請在【魔法貼上】框內貼上女優一覽的批次資料！', true);
                     return;
                 }
@@ -1464,130 +1487,161 @@
                 Utility.showLoading("動態規則解析與同步資料庫中...");
 
                 setTimeout(() => {
-                    let mStore = window.ruleEngine.extractByRules(text, "", "v_store", siteMatches);
-                    let baseStore = mStore.value ? mStore.value : formStoreVal;
+                    try {
+                        let mStore = window.ruleEngine.extractByRules(text, "", "v_store", siteMatches);
+                        let baseStore = mStore.value ? mStore.value : formStoreVal;
 
-                    const blocks = text.split(new RegExp(safeSplit, 'g')).filter(b => b.trim().length > 10);
-                    let updateCount = 0;
-                    let createCount = 0;
+                        const blocks = text.split(splitRegex).filter(b => b.trim().length > 10);
+                        let updateCount = 0;
+                        let createCount = 0;
 
-                    blocks.forEach(block => {
-                        let extractedName = window.ruleEngine.extractByRules(block, "", "v_name", siteMatches);
-                        
-                        if (!extractedName.value) return; 
-                        
-                        let nameInfo = Utility.parseName(extractedName.value, window.ruleEngine);
-                        let pureName = nameInfo.pureName;
-
-                        let finalStore = baseStore;
-                        if (formStoreVal && !finalStore.includes(formStoreVal)) {
-                            finalStore += " " + formStoreVal;
-                        }
-
-                        let extStatsObj = window.ruleEngine.extractByRules(block, "", "v_stats", siteMatches);
-                        let extStats = extStatsObj.value;
-
-                        let mSchObj = window.ruleEngine.extractByRules(block, "", "v_schedule", siteMatches);
-                        let mSch = mSchObj.value;
-                        
-                        if (mSch) {
-                            let formattedSch = Utility.parseAndFormatSchedule(mSch, window.ruleEngine);
-                            let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
+                        blocks.forEach(block => {
+                            let extractedName = window.ruleEngine.extractByRules(block, "", "v_name", siteMatches);
                             
-                            if (hasSchedule || extStats) {
-                                let tagSet = new Set();
-                                nameInfo.tags.forEach(t => tagSet.add(t)); 
+                            // 核心修復：如果 Google Sheet 規則沒有正確設置，強勢啟動備用提取方案 (Fallback)！
+                            if (!extractedName.value) {
+                                let fallbackMatch = block.match(/No\.\d+\s*\n\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
+                                if (fallbackMatch && fallbackMatch[1]) {
+                                    extractedName.value = fallbackMatch[1].trim();
+                                } else {
+                                    let altMatch = block.match(/(?:名稱|名前|Name)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
+                                    if (altMatch && altMatch[1]) extractedName.value = altMatch[1].trim();
+                                }
+                            }
+                            
+                            if (!extractedName.value) return; 
+                            
+                            let nameInfo = Utility.parseName(extractedName.value, window.ruleEngine);
+                            let pureName = nameInfo.pureName;
+
+                            let finalStore = baseStore;
+                            if (formStoreVal && !finalStore.includes(formStoreVal)) {
+                                finalStore += " " + formStoreVal;
+                            }
+
+                            let extStatsObj = window.ruleEngine.extractByRules(block, "", "v_stats", siteMatches);
+                            let extStats = extStatsObj.value;
+                            if (!extStats) {
+                                let mStats = block.match(/(T\d{3}[^\n]+)/i);
+                                if (mStats) extStats = mStats[1].replace(/from.*/i, '').trim();
+                            }
+
+                            let mSchObj = window.ruleEngine.extractByRules(block, "", "v_schedule", siteMatches);
+                            let mSch = mSchObj.value;
+                            if (!mSch) {
+                                let mSchFallback = block.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
+                                if (mSchFallback) mSch = mSchFallback[0];
+                            }
+                            
+                            if (mSch) {
+                                let formattedSch = Utility.parseAndFormatSchedule(mSch, window.ruleEngine);
+                                let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
                                 
-                                formTags.forEach(t => {
-                                    let upper = t.toUpperCase();
-                                    if(upper === 'AF' || upper === '3P' || upper === '射O') tagSet.add(upper);
-                                    else tagSet.add(t);
-                                });
-
-                                let levelVal = nameInfo.level;
-
-                                const recordIdx = this.dataStore.findIndex(r => {
-                                    let dbName = r._raw[this.colMap.name] || "";
-                                    let cleanDbName = Utility.parseName(dbName, window.ruleEngine).pureName; 
+                                if (hasSchedule || extStats) {
+                                    let tagSet = new Set();
+                                    nameInfo.tags.forEach(t => tagSet.add(t)); 
                                     
-                                    let dbStore = r._raw[this.colMap.store] || "";
-                                    let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
-                                    
-                                    let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
-                                    let storeMatch = this.isSameStore(dbStore, finalStore);
-                                    
-                                    let cleanExtStats = extStats.replace(/[\s\/]/g, '');
-                                    let statsMatch = cleanExtStats && dbStats && (dbStats.includes(cleanExtStats) || cleanExtStats.includes(dbStats));
-
-                                    return nameMatch && (storeMatch || statsMatch);
-                                });
-
-                                if (recordIdx !== -1 && this.dataStore[recordIdx]) {
-                                    if (hasSchedule) this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
-                                    if (extStats) this.dataStore[recordIdx]._raw[this.colMap.stats] = extStats; 
-                                    
-                                    let originalDbAf = this.dataStore[recordIdx]._raw[this.colMap.af] || "";
-                                    originalDbAf.split(/[\/／]/).map(t=>t.trim()).filter(t=>t).forEach(t => {
+                                    formTags.forEach(t => {
                                         let upper = t.toUpperCase();
                                         if(upper === 'AF' || upper === '3P' || upper === '射O') tagSet.add(upper);
                                         else tagSet.add(t);
                                     });
-                                    
-                                    if (tagSet.size > 0) {
-                                        this.dataStore[recordIdx]._raw[this.colMap.af] = Array.from(tagSet).join(' / ');
-                                    }
 
-                                    if (levelVal) {
-                                        this.dataStore[recordIdx]._raw[this.colMap.level] = levelVal;
-                                    }
-                                    
-                                    this.dataStore[recordIdx]._raw[this.colMap.updateTime] = Utility.getCurrentTime();
+                                    let levelVal = nameInfo.level;
 
-                                    updateCount++;
-                                } else if (createMissing) {
-                                    let newRowData = new Array(this.headerRow.length).fill("");
-                                    const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
-                                    
-                                    setV('techId', Utility.generateID());
-                                    setV('store', finalStore);
-                                    setV('name', pureName);
-                                    setV('stats', extStats);
-                                    setV('price', formPriceVal);
-                                    setV('location', formLocationVal);
-                                    setV('updateTime', Utility.getCurrentTime());
-                                    
-                                    if (hasSchedule) setV('schedule', formattedSch);
-                                    if (tagSet.size > 0) setV('af', Array.from(tagSet).join(' / '));
-                                    if (levelVal) setV('level', levelVal);
+                                    const recordIdx = this.dataStore.findIndex(r => {
+                                        let dbName = r._raw[this.colMap.name] || "";
+                                        let cleanDbName = Utility.parseName(dbName, window.ruleEngine).pureName; 
+                                        
+                                        let dbStore = r._raw[this.colMap.store] || "";
+                                        let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
+                                        
+                                        let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
+                                        let storeMatch = this.isSameStore(dbStore, finalStore);
+                                        
+                                        let cleanExtStats = extStats.replace(/[\s\/]/g, '');
+                                        let statsMatch = cleanExtStats && dbStats && (dbStats.includes(cleanExtStats) || cleanExtStats.includes(dbStats));
 
-                                    let mAgeObj = window.ruleEngine.extractByRules(block, "", "v_age", siteMatches);
-                                    if (mAgeObj.value) setV('age', mAgeObj.value + "歲");
-
-                                    this.dataStore.push({
-                                        id: String(newRowData[this.colMap.techId]),
-                                        _raw: newRowData,
-                                        _rowIndex: "" 
+                                        return nameMatch && (storeMatch || statsMatch);
                                     });
-                                    createCount++;
+
+                                    if (recordIdx !== -1 && this.dataStore[recordIdx]) {
+                                        if (hasSchedule) this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
+                                        if (extStats) this.dataStore[recordIdx]._raw[this.colMap.stats] = extStats; 
+                                        
+                                        let originalDbAf = this.dataStore[recordIdx]._raw[this.colMap.af] || "";
+                                        originalDbAf.split(/[\/／]/).map(t=>t.trim()).filter(t=>t).forEach(t => {
+                                            let upper = t.toUpperCase();
+                                            if(upper === 'AF' || upper === '3P' || upper === '射O') tagSet.add(upper);
+                                            else tagSet.add(t);
+                                        });
+                                        
+                                        if (tagSet.size > 0) {
+                                            this.dataStore[recordIdx]._raw[this.colMap.af] = Array.from(tagSet).join(' / ');
+                                        }
+
+                                        if (levelVal) {
+                                            this.dataStore[recordIdx]._raw[this.colMap.level] = levelVal;
+                                        }
+                                        
+                                        this.dataStore[recordIdx]._raw[this.colMap.updateTime] = Utility.getCurrentTime();
+
+                                        updateCount++;
+                                    } else if (createMissing) {
+                                        let newRowData = new Array(this.headerRow.length).fill("");
+                                        const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
+                                        
+                                        setV('techId', Utility.generateID());
+                                        setV('store', finalStore);
+                                        setV('name', pureName);
+                                        setV('stats', extStats);
+                                        setV('price', formPriceVal);
+                                        setV('location', formLocationVal);
+                                        setV('updateTime', Utility.getCurrentTime());
+                                        
+                                        if (hasSchedule) setV('schedule', formattedSch);
+                                        if (tagSet.size > 0) setV('af', Array.from(tagSet).join(' / '));
+                                        if (levelVal) setV('level', levelVal);
+
+                                        let mAgeObj = window.ruleEngine.extractByRules(block, "", "v_age", siteMatches);
+                                        let finalAge = mAgeObj.value;
+                                        if(!finalAge) {
+                                            let fallbackAge = block.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || block.match(/(\d+)\s*(?:歳|才|歲)/);
+                                            if(fallbackAge) finalAge = fallbackAge[1];
+                                        }
+                                        if (finalAge) setV('age', finalAge + "歲");
+
+                                        this.dataStore.push({
+                                            id: String(newRowData[this.colMap.techId]),
+                                            _raw: newRowData,
+                                            _rowIndex: "" 
+                                        });
+                                        createCount++;
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
 
-                    if (updateCount > 0 || createCount > 0) {
-                        this.renderCatalog();
-                        this.saveOrderToGoogleSheet(true); 
-                        if (createMissing) {
-                            Utility.showToast(`✅ 建檔批次完成！新增 ${createCount} 筆，更新 ${updateCount} 筆。`);
+                        if (updateCount > 0 || createCount > 0) {
+                            this.renderCatalog();
+                            this.saveOrderToGoogleSheet(true); 
+                            if (createMissing) {
+                                Utility.showToast(`✅ 建檔批次完成！新增 ${createCount} 筆，更新 ${updateCount} 筆。`);
+                            } else {
+                                Utility.showToast(`✅ 更新批次完成！成功更新了 ${updateCount} 筆資料。`);
+                            }
+                            const mPaste = document.getElementById('v_magic_paste');
+                            if(mPaste) mPaste.value = ''; 
                         } else {
-                            Utility.showToast(`✅ 更新批次完成！成功更新了 ${updateCount} 筆資料。`);
+                            Utility.showToast('⚠️ 找不到可建立或更新的技師資料，請確認內容格式。', true);
                         }
-                        const mPaste = document.getElementById('v_magic_paste');
-                        if(mPaste) mPaste.value = ''; 
-                    } else {
-                        Utility.showToast('⚠️ 找不到可建立或更新的技師資料，請確認內容格式。', true);
+                    } catch (err) {
+                        console.error(err);
+                        Utility.showToast('⚠️ 解析過程發生系統錯誤：' + err.message, true);
+                    } finally {
+                        // 無論成功失敗，確保遮罩解除！
+                        Utility.hideLoading();
                     }
-                    Utility.hideLoading();
                 }, 100); 
             }
 
@@ -1638,11 +1692,22 @@
                 let extractedStoreObj = window.ruleEngine.extractByRules(text, html, 'v_store', siteMatches);
 
                 let rawNameExt = extractedNameObj.value || "";
+                if (!rawNameExt) {
+                    let altMatch = text.match(/No\.\d+\s*\n\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i) || 
+                                   text.match(/(?:名稱|名前|Name)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
+                    if (altMatch) rawNameExt = altMatch[1].trim();
+                }
+
                 let extStore = extractedNameObj.secondaryValue || extractedStoreObj.value || document.getElementById('v_store')?.value.trim() || "";
 
                 let nameInfo = Utility.parseName(rawNameExt, window.ruleEngine);
                 let pureName = nameInfo.pureName || rawNameExt;
+                
                 let extStats = extractedStatsObj.value;
+                if (!extStats) {
+                    let mStats = text.match(/(T\d{3}[^\n]+)/i);
+                    if (mStats) extStats = mStats[1].replace(/from.*/i, '').trim();
+                }
 
                 let isExisting = false;
                 if (recordIdx === -1 && pureName) {
@@ -1695,7 +1760,14 @@
                 if (extStore && elStore) elStore.value = extStore;
                 if (extractedUrl && elUrl) elUrl.value = extractedUrl;
                 if (extStats && elStats) elStats.value = extStats;
-                if (extractedAgeObj.value && elAge) elAge.value = extractedAgeObj.value + "歲";
+                
+                let finalAge = extractedAgeObj.value;
+                if(!finalAge) {
+                    let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
+                    if (mAge) finalAge = mAge[1];
+                }
+                if (finalAge && elAge) elAge.value = finalAge + "歲";
+                
                 if (extractedDateObj.value && elStartDate) elStartDate.value = extractedDateObj.value;
                 
                 let foundTags = new Set();
@@ -1724,9 +1796,10 @@
                     elAf.value = Array.from(foundTags).join(' / ');
                 }
 
-                let scheduleText = text;
-                if (extractedScheduleObj.value) {
-                    scheduleText = extractedScheduleObj.value;
+                let scheduleText = extractedScheduleObj.value;
+                if (!scheduleText) {
+                    let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
+                    if (mSch) scheduleText = mSch[0];
                 }
                 
                 let formattedSch = Utility.parseAndFormatSchedule(scheduleText, window.ruleEngine);
