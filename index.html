@@ -10,9 +10,216 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     
     <style>
-        :root{--primary:#4527a0;--secondary:#7986cb;--bg:#f0f2f5;--text:#2c3e50;--accent:#e91e63;--success:#2e7d32;--card-bg:#ffffff;--warning:#ff9800}body{font-family:'Segoe UI','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:15px;display:flex;flex-direction:column;height:100dvh;box-sizing:border-box;overflow:hidden}h1,h2,h3{color:var(--primary);margin-top:0}.top-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap}.header-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sheet-selector-wrapper{display:flex;align-items:center;gap:8px;background:#fff;padding:5px 15px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.05)}#app-container{display:grid;grid-template-columns:500px 1fr;gap:15px;flex:1;min-height:0;transition:all .3s ease}.panel{background:var(--card-bg);border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:20px;display:flex;flex-direction:column;overflow-y:auto;position:relative}#app-container.view-mode{grid-template-columns:1fr}#app-container.view-mode #panel-form{display:none}@media (max-width:850px){body{padding:8px}.app-title{display:none}.top-bar{margin-bottom:8px}.header-controls{flex-direction:row;align-items:center;width:100%;gap:6px;flex-wrap:nowrap;justify-content:space-between}.sheet-selector-wrapper{padding:4px 8px;flex:1;justify-content:flex-start}.sheet-label{display:none}#v_sheet{width:100%;font-size:15px;padding:2px}.btn-text{display:none}.top-bar button{padding:6px 10px;font-size:18px}#app-container{display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden}.panel{flex:none;overflow-y:visible;height:auto;margin-bottom:10px}#app-container.view-mode #panel-form{display:none}.form-grid{grid-template-columns:1fr;gap:8px}.form-group.full{grid-column:span 1}.filter-tools{flex-direction:row!important;flex-wrap:wrap!important;gap:5px!important}.filter-tools input,.filter-tools select,.custom-multi-select{width:100%!important;margin-bottom:4px!important;font-size:13px}.filter-tools h3{display:none}.time-filter-group{width:100%;justify-content:space-between}.catalog-grid{grid-template-columns:repeat(2,1fr)!important;gap:8px!important}.card{padding:8px}.card img{height:160px;margin-bottom:6px}.card .badge{top:8px;left:8px;font-size:10px;padding:2px 4px}}#auth-banner{background:#ffeeba;color:#856404;padding:10px;font-size:14px;text-align:center;font-weight:700;border-radius:8px;margin-bottom:10px;cursor:pointer;border:1px solid #ffdf7e;transition:.3s;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}.form-group{margin-bottom:8px}.form-group.full{grid-column:span 2}label{display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:5px;font-size:.85em;color:#666}input,select,textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box;font-size:14px;transition:.2s}input:focus,select:focus,textarea:focus{border-color:var(--primary);outline:0;box-shadow:0 0 0 2px rgba(69,39,160,.1)}input[readonly]{background:#f8f9fa;cursor:not-allowed}#v_magic_paste{background:#fff8e1;border-color:#ffb300;transition:all .3s}#v_magic_paste:focus{box-shadow:0 0 0 2px rgba(255,179,0,.3)}.photo-upload-area{margin:10px 0;position:relative}.img-preview-box{width:100%;height:350px;background:#f8f9fa;border:2px dashed #ccc;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;transition:.2s}.img-preview-box img{width:100%;height:100%;object-fit:contain}.img-preview-box:hover{border-color:var(--primary);background:#f3e5f5}.img-preview-box span{font-size:.9em;color:#777;text-align:center;line-height:1.5;padding:10px;pointer-events:none}.btn-delete-img{position:absolute;top:10px;right:10px;background:rgba(233,30,99,.9);color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:.2s;z-index:10}.btn-delete-img:hover{background:#c2185b;transform:scale(1.1)}.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:1000;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(5px)}.modal-wrapper{width:95%;max-width:600px;max-height:85%;background:#fff;padding:20px;border-radius:12px;display:flex;flex-direction:column;box-sizing:border-box}.modal-wrapper h3{margin-top:0;color:var(--primary);border-bottom:2px solid #eee;padding-bottom:10px}button{background:var(--primary);color:#fff;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px;transition:.3s;display:inline-flex;justify-content:center;align-items:center;gap:5px}button:hover{background:#311b92}button:disabled{background:#b0bec5;cursor:not-allowed;opacity:.7}button.danger{background:#e53935}button.danger:hover{background:#c62828}button.success{background:#2e7d32}button.success:hover{background:#1b5e20}button.secondary{background:#7986cb}button.secondary:hover{background:#5c6bc0}button.warning{background:var(--warning);color:#fff}button.warning:hover{background:#f57c00}button.mini{padding:4px 8px;font-size:12px;border-radius:4px}#loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:99999;justify-content:center;align-items:center;color:#fff;font-size:20px;font-weight:700;display:none;flex-direction:column;text-align:center;padding:20px}#toast-container{position:fixed;top:-50px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:12px 24px;border-radius:8px;font-weight:700;font-size:15px;box-shadow:0 4px 15px rgba(0,0,0,.2);z-index:100000;opacity:0;pointer-events:none;transition:all .4s cubic-bezier(.175,.885,.32,1.275);display:flex;align-items:center;gap:8px}#toast-container.show{opacity:1;top:30px}.catalog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px;margin-top:15px;align-content:start}.card{border:1px solid #e0e0e0;border-radius:8px;padding:12px;cursor:pointer;transition:.2s;background:#fff;display:flex;flex-direction:column;position:relative;overflow:hidden}.card.selected{border:2px solid var(--accent);background:#fce4ec}.card:hover{transform:translateY(-4px);box-shadow:0 8px 16px rgba(69,39,160,.15);border-color:var(--secondary)}.card img{width:100%;height:240px;object-fit:contain;border-radius:6px;background:#f8f9fa;pointer-events:none}.img-container{position:relative;line-height:0;margin-bottom:10px}.card .badge{position:absolute;top:10px;left:10px;background:var(--accent);color:#fff;font-size:11px;padding:4px 8px;border-radius:4px;font-weight:700;box-shadow:0 2px 4px rgba(0,0,0,.2);pointer-events:none;z-index:5}.fav-btn{position:absolute;top:10px;right:10px;z-index:10;font-size:20px;cursor:pointer;text-shadow:0 2px 4px rgba(0,0,0,.4);transition:transform .2s;user-select:none}.fav-btn:hover{transform:scale(1.2)}.store-name{font-size:.8em;color:var(--secondary);font-weight:700;margin-bottom:4px;pointer-events:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;line-height:1.3;min-height:2.6em}.name-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}.mini-svg-box{display:flex;flex-direction:column;align-items:center;justify-content:center;width:32px;flex-shrink:0}.name-col{display:flex;flex-direction:column;flex:1;overflow:hidden;justify-content:center}.tech-name{font-size:1.15em;color:var(--text);font-weight:700;margin-bottom:2px;pointer-events:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.score-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}.big-badge{font-size:.8em;font-weight:700;color:#fff;padding:2px 6px;border-radius:4px;display:inline-block;white-space:nowrap;letter-spacing:.5px}.tags-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;pointer-events:none}.tag-item{font-size:.75em;background:#f3e5f5;color:var(--primary);padding:2px 6px;border-radius:4px;font-weight:700}.stats-row{display:flex;align-items:center;gap:6px;font-size:.85em;color:#555;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#f8f9fa;padding:4px 6px;border-radius:4px;pointer-events:none}.cup-badge{font-weight:700;padding:2px 6px;border-radius:4px;color:#fff;font-size:.9em;flex-shrink:0}.price-col{font-size:.9em;font-weight:700;color:var(--accent);text-align:left;display:flex;flex-direction:column;gap:2px;margin-bottom:4px;pointer-events:none}.card[draggable="true"]{cursor:grab}.card[draggable="true"]:active{cursor:grabbing}.card.dragging{opacity:.4;transform:scale(.95)}.card.drag-over{border:2px dashed}.sch-wrapper{display:flex;margin-top:8px;padding-top:8px;border-top:1px dashed #e0e0e0;position:relative}.sch-time-axis{display:flex;flex-direction:column;width:18px;position:relative;font-size:9px;color:#999;margin-top:24px;font-weight:700}.sch-time-axis span{position:absolute;right:4px;transform:translateY(-50%)}.sch-container-vert{flex:1;display:flex;justify-content:space-between;gap:4px;height:85px;position:relative}.sch-grid-line{position:absolute;left:0;right:0;border-top:1px dashed #e0e0e0;z-index:0}.sch-col{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;z-index:1}.sch-day{font-size:10px;font-weight:700;color:#555;text-align:center;line-height:1.1;margin-bottom:4px;height:24px;display:flex;flex-direction:column;justify-content:center}.sch-track-vert{width:18px;flex:1;background:rgba(238,238,238,.7);border-radius:4px;position:relative;overflow:hidden}.sch-fill-vert{position:absolute;width:100%;background:var(--accent);border-radius:4px;left:0;box-shadow:0 1px 2px rgba(0,0,0,.2)}.sch-fill-vert.off{background:#bdbdbd;height:100%;top:0;box-shadow:none}.time-filter-group{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid #ccc;padding:2px 6px;border-radius:6px}.time-filter-group select,.filter-tools select{border:none;outline:0;background:transparent;padding:4px;font-size:13px;margin:0!important;width:auto!important}.filter-select{background:#fff;border:1px solid #ccc;border-radius:6px;padding:6px;font-size:13px}
+        :root {
+            --primary: #4527a0;
+            --secondary: #7986cb;
+            --bg: #f0f2f5;
+            --text: #2c3e50;
+            --accent: #e91e63;
+            --success: #2e7d32;
+            --card-bg: #ffffff;
+            --warning: #ff9800;
+        }
+        body {
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        h1, h2, h3 { color: var(--primary); margin-top: 0; }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .sheet-selector-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            padding: 5px 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.05);
+        }
+        #app-container {
+            display: grid;
+            grid-template-columns: 500px 1fr;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+            transition: all .3s ease;
+        }
+        .panel {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,.08);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+        }
+        #app-container.view-mode {
+            grid-template-columns: 1fr;
+        }
+        #app-container.view-mode #panel-form {
+            display: none;
+        }
         
-        /* 凍結篩選列與批量操作條 */
+        @media (max-width: 850px) {
+            body { padding: 8px; }
+            .app-title { display: none; }
+            .top-bar { margin-bottom: 8px; }
+            .header-controls { flex-direction: row; align-items: center; width: 100%; gap: 6px; flex-wrap: nowrap; justify-content: space-between; }
+            .sheet-selector-wrapper { padding: 4px 8px; flex: 1; justify-content: flex-start; }
+            .sheet-label { display: none; }
+            #v_sheet { width: 100%; font-size: 15px; padding: 2px; }
+            .btn-text { display: none; }
+            .top-bar button { padding: 6px 10px; font-size: 18px; }
+            #app-container { display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+            .panel { flex: none; overflow-y: visible; height: auto; margin-bottom: 10px; }
+            #app-container.view-mode #panel-form { display: none; }
+            .form-grid { grid-template-columns: 1fr; gap: 8px; }
+            .form-group.full { grid-column: span 1; }
+            .filter-tools { flex-direction: row !important; flex-wrap: wrap !important; gap: 5px !important; }
+            .filter-tools input, .filter-tools select, .custom-multi-select { width: 100% !important; margin-bottom: 4px !important; font-size: 13px; }
+            .filter-tools h3 { display: none; }
+            .time-filter-group { width: 100%; justify-content: space-between; }
+            .catalog-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+            .card { padding: 8px; }
+            .card img { height: 160px; margin-bottom: 6px; }
+            .card .badge { top: 8px; left: 8px; font-size: 10px; padding: 2px 4px; }
+        }
+
+        #auth-banner {
+            background: #ffeeba; color: #856404; padding: 10px; font-size: 14px; text-align: center;
+            font-weight: 700; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 1px solid #ffdf7e;
+            transition: .3s; box-shadow: 0 2px 8px rgba(0,0,0,.05);
+        }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .form-group { margin-bottom: 8px; }
+        .form-group.full { grid-column: span 2; }
+        label { display: flex; justify-content: space-between; align-items: center; font-weight: 700; margin-bottom: 5px; font-size: .85em; color: #666; }
+        input, select, textarea {
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; transition: .2s;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: 0; box-shadow: 0 0 0 2px rgba(69,39,160,.1); }
+        input[readonly] { background: #f8f9fa; cursor: not-allowed; }
+        #v_magic_paste { background: #fff8e1; border-color: #ffb300; transition: all .3s; }
+        #v_magic_paste:focus { box-shadow: 0 0 0 2px rgba(255,179,0,.3); }
+        
+        .photo-upload-area { margin: 10px 0; position: relative; }
+        .img-preview-box {
+            width: 100%; height: 350px; background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center;
+            justify-content: center; cursor: pointer; overflow: hidden; position: relative; transition: .2s;
+        }
+        .img-preview-box img { width: 100%; height: 100%; object-fit: contain; }
+        .img-preview-box:hover { border-color: var(--primary); background: #f3e5f5; }
+        .img-preview-box span { font-size: .9em; color: #777; text-align: center; line-height: 1.5; padding: 10px; pointer-events: none; }
+        .btn-delete-img {
+            position: absolute; top: 10px; right: 10px; background: rgba(233,30,99,.9); color: #fff; border: none; border-radius: 50%;
+            width: 32px; height: 32px; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: .2s; z-index: 10;
+        }
+        .btn-delete-img:hover { background: #c2185b; transform: scale(1.1); }
+        
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.85); z-index: 1000;
+            flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .modal-wrapper {
+            width: 95%; max-width: 600px; max-height: 85%; background: #fff; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; box-sizing: border-box;
+        }
+        .modal-wrapper h3 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        button {
+            background: var(--primary); color: #fff; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 14px; transition: .3s; display: inline-flex; justify-content: center; align-items: center; gap: 5px;
+        }
+        button:hover { background: #311b92; }
+        button:disabled { background: #b0bec5; cursor: not-allowed; opacity: .7; }
+        button.danger { background: #e53935; }
+        button.danger:hover { background: #c62828; }
+        button.success { background: #2e7d32; }
+        button.success:hover { background: #1b5e20; }
+        button.secondary { background: #7986cb; }
+        button.secondary:hover { background: #5c6bc0; }
+        button.warning { background: var(--warning); color: #fff; }
+        button.warning:hover { background: #f57c00; }
+        button.mini { padding: 4px 8px; font-size: 12px; border-radius: 4px; }
+        
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,.7); z-index: 99999; justify-content: center; align-items: center; color: #fff; font-size: 20px; font-weight: 700; display: none; flex-direction: column; text-align: center; padding: 20px;
+        }
+        #toast-container {
+            position: fixed; top: -50px; left: 50%; transform: translateX(-50%); background: var(--success); color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,.2); z-index: 100000; opacity: 0; pointer-events: none; transition: all .4s cubic-bezier(.175,.885,.32,1.275); display: flex; align-items: center; gap: 8px;
+        }
+        #toast-container.show { opacity: 1; top: 30px; }
+        
+        .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 15px; align-content: start; }
+        .card {
+            border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; cursor: pointer; transition: .2s; background: #fff; display: flex; flex-direction: column; position: relative; overflow: hidden;
+        }
+        .card.selected { border: 2px solid var(--accent); background: #fce4ec; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(69,39,160,.15); border-color: var(--secondary); }
+        .card img { width: 100%; height: 240px; object-fit: contain; border-radius: 6px; background: #f8f9fa; pointer-events: none; }
+        .img-container { position: relative; line-height: 0; margin-bottom: 10px; }
+        .card .badge {
+            position: absolute; top: 10px; left: 10px; background: var(--accent); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,.2); pointer-events: none; z-index: 5;
+        }
+        .fav-btn {
+            position: absolute; top: 10px; right: 10px; z-index: 10; font-size: 20px; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,.4); transition: transform .2s; user-select: none;
+        }
+        .fav-btn:hover { transform: scale(1.2); }
+        .store-name {
+            font-size: .8em; color: var(--secondary); font-weight: 700; margin-bottom: 4px; pointer-events: none; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; min-height: 2.6em;
+        }
+        .name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .mini-svg-box { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 32px; flex-shrink: 0; }
+        .name-col { display: flex; flex-direction: column; flex: 1; overflow: hidden; justify-content: center; }
+        .tech-name { font-size: 1.15em; color: var(--text); font-weight: 700; margin-bottom: 2px; pointer-events: none; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .score-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+        .big-badge { font-size: .8em; font-weight: 700; color: #fff; padding: 2px 6px; border-radius: 4px; display: inline-block; white-space: nowrap; letter-spacing: .5px; }
+        .tags-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; pointer-events: none; }
+        .tag-item { font-size: .75em; background: #f3e5f5; color: var(--primary); padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+        .stats-row { display: flex; align-items: center; gap: 6px; font-size: .85em; color: #555; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #f8f9fa; padding: 4px 6px; border-radius: 4px; pointer-events: none; }
+        .cup-badge { font-weight: 700; padding: 2px 6px; border-radius: 4px; color: #fff; font-size: .9em; flex-shrink: 0; }
+        .price-col { font-size: .9em; font-weight: 700; color: var(--accent); text-align: left; display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; pointer-events: none; }
+        
+        .card[draggable="true"] { cursor: grab; }
+        .card[draggable="true"]:active { cursor: grabbing; }
+        .card.dragging { opacity: .4; transform: scale(.95); }
+        .card.drag-over { border: 2px dashed; }
+        
+        .sch-wrapper { display: flex; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e0e0e0; position: relative; }
+        .sch-time-axis { display: flex; flex-direction: column; width: 18px; position: relative; font-size: 9px; color: #999; margin-top: 24px; font-weight: 700; }
+        .sch-time-axis span { position: absolute; right: 4px; transform: translateY(-50%); }
+        .sch-container-vert { flex: 1; display: flex; justify-content: space-between; gap: 4px; height: 85px; position: relative; }
+        .sch-grid-line { position: absolute; left: 0; right: 0; border-top: 1px dashed #e0e0e0; z-index: 0; }
+        .sch-col { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; z-index: 1; }
+        .sch-day { font-size: 10px; font-weight: 700; color: #555; text-align: center; line-height: 1.1; margin-bottom: 4px; height: 24px; display: flex; flex-direction: column; justify-content: center; }
+        .sch-track-vert { width: 18px; flex: 1; background: rgba(238,238,238,.7); border-radius: 4px; position: relative; overflow: hidden; }
+        .sch-fill-vert { position: absolute; width: 100%; background: var(--accent); border-radius: 4px; left: 0; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+        .sch-fill-vert.off { background: #bdbdbd; height: 100%; top: 0; box-shadow: none; }
+        
+        .time-filter-group { display: flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #ccc; padding: 2px 6px; border-radius: 6px; }
+        .time-filter-group select, .filter-tools select { border: none; outline: 0; background: transparent; padding: 4px; font-size: 13px; margin: 0 !important; width: auto !important; }
+        .filter-select { background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 6px; font-size: 13px; }
+        
         .filter-tools { position: sticky; top: -20px; margin-top: -20px; padding-top: 20px; padding-bottom: 10px; background: var(--card-bg); z-index: 50; border-bottom: 2px solid var(--secondary); }
         .card-checkbox { position: absolute; top: 10px; right: 40px; z-index: 15; width: 20px; height: 20px; cursor: pointer; }
         #batch-actions-bar { display: none; background: #fff3e0; padding: 8px 15px; border-radius: 6px; border: 1px solid #ffb300; margin-bottom: 10px; align-items: center; gap: 10px; font-size: 13px; font-weight: bold; position: sticky; top: 40px; z-index: 49; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -248,6 +455,81 @@
         const DRIVE_FOLDER_ID = '1s1x7yyWUE3JB_8YnjOAoL93u7No6NP9p'; 
         const PLACEHOLDER_URL = 'https://placehold.co/300x400/eeeeee/999999?text=No+Photo';
 
+        // 動態規則引擎 (Metadata Driven)
+        class RuleEngine {
+            constructor() {
+                this.rules = [];
+            }
+            
+            setRules(rawData) {
+                if (!rawData || rawData.length < 2) return;
+                this.rules = rawData.slice(1).map(r => ({
+                    priority: parseInt(r[0]) || 0,
+                    siteMatch: r[1] || 'Common',
+                    field: r[2] || '',
+                    ruleType: r[3] || '',
+                    pattern: r[4] || '',
+                    action: r[5] || '',
+                    note: r[6] || ''
+                }));
+                this.rules.sort((a, b) => a.priority - b.priority); // 優先級排序 (數值越小越先執行)
+            }
+            
+            getRulesForField(field, siteMatches = ['Common']) {
+                return this.rules.filter(r => r.field === field && (siteMatches.includes(r.siteMatch) || r.siteMatch === 'Common'));
+            }
+            
+            evaluateMath(formula, context) {
+                try {
+                    const keys = Object.keys(context);
+                    const values = Object.values(context);
+                    const func = new Function(...keys, `return ${formula};`);
+                    return func(...values);
+                } catch(e) {
+                    console.warn('Math eval err', e);
+                    return 0;
+                }
+            }
+            
+            extractByRules(text, html, field, siteMatches) {
+                let rules = this.getRulesForField(field, siteMatches);
+                let result = { value: '', secondaryValue: '', tags: new Set(), level: '' };
+                let valueFound = false;
+
+                for (let rule of rules) {
+                    if (rule.ruleType === 'Regex_Extract' && !valueFound) {
+                        let match = text.match(new RegExp(rule.pattern, 'im'));
+                        if (match) {
+                            if (rule.action === 'Extract_Group_1' && match[1]) { result.value = match[1].trim(); valueFound = true; }
+                            else if (rule.action === 'Extract_Group_1_2' && match[1] && match[2]) { result.value = match[1].trim(); result.secondaryValue = match[2].trim(); valueFound = true; }
+                            else if (rule.action === 'Extract_Number' && match[1]) { result.value = match[1].replace(/,/g, '').trim(); valueFound = true; }
+                            else if (rule.action === 'Extract_Date' && match[1] && match[2] && match[3]) { result.value = `${match[1]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}`; valueFound = true; }
+                            else if (rule.action === 'Extract_Raw') { result.value = match[0].trim(); valueFound = true; }
+                        }
+                    } else if (rule.ruleType === 'Regex_Tag') {
+                        if (new RegExp(rule.pattern, 'i').test(text) || new RegExp(rule.pattern, 'i').test(result.value)) {
+                            result.tags.add(rule.action.replace('Tag: ', '').trim());
+                        }
+                    } else if (rule.ruleType === 'HTML_Img_Tag') {
+                        if (html && html.includes(rule.pattern)) {
+                            result.tags.add(rule.action.replace('Tag: ', '').trim());
+                        }
+                    } else if (rule.ruleType === 'Regex_Level') {
+                        let match = text.match(new RegExp(rule.pattern, 'i'));
+                        if (match && match[1]) result.level = match[1];
+                    } else if (rule.ruleType === 'Set_Default' && !valueFound) {
+                        let patternRegex = new RegExp(rule.pattern, 'i');
+                        if (patternRegex.test(text) || siteMatches.some(s => patternRegex.test(s))) {
+                            result.value = rule.action;
+                            valueFound = true;
+                        }
+                    }
+                }
+                return result;
+            }
+        }
+        window.ruleEngine = new RuleEngine();
+
         class Utility {
             static generateID() { return 'N' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'); }
             static showLoading(msg) { document.getElementById('loading-text').innerText = msg; document.getElementById('loading-overlay').style.display = 'flex'; }
@@ -268,6 +550,7 @@
             
             static showToast(msg, isError = false) {
                 const toast = document.getElementById('toast-container');
+                if(!toast) return;
                 toast.innerText = msg;
                 if (isError) {
                     toast.style.background = '#e53935'; 
@@ -282,23 +565,38 @@
                 this.toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3000);
             }
 
-            static parseName(rawName) {
+            // 動態 Metadata 驅動：姓名與標籤淨化
+            static parseName(rawName, engine = window.ruleEngine) {
                 if (!rawName) return { pureName: "", tags: [], level: "" };
                 let tags = new Set();
                 let level = "";
-                
-                if (/(AFOK|#AF|ＡＦＯＫ|＃ＡＦ)/i.test(rawName)) tags.add('AF');
-                if (/(3POK|#3P|３ＰＯＫ|＃３Ｐ)/i.test(rawName)) tags.add('3P');
-                if (/Shooting\s*[○〇O]/i.test(rawName)) tags.add('射O');
-                
-                let symbolMatch = rawName.match(/([♤♠♡♥♧♣♦♢])/);
-                if (symbolMatch) level = symbolMatch[1];
-                
-                let pureName = rawName.replace(/(AFOK|#AF|3POK|#3P|ＡＦＯＫ|＃ＡＦ|３ＰＯＫ|＃３Ｐ|Shooting\s*[○〇O◎]?)/ig, '')
-                                      .replace(/[♤♠♡♥♧♣♦♢]/g, '')
-                                      .replace(/[\s\u3000|｜・_＿○〇◎*＊]+$/, '')
-                                      .trim();
-                return { pureName, tags: Array.from(tags), level };
+
+                let afTagRules = engine.getRulesForField('v_af');
+                afTagRules.forEach(r => {
+                    if(r.ruleType === 'Regex_Tag' && new RegExp(r.pattern, 'i').test(rawName)) {
+                        tags.add(r.action.replace('Tag: ', '').trim());
+                    }
+                });
+
+                let levelRules = engine.getRulesForField('v_level');
+                levelRules.forEach(r => {
+                    if(r.ruleType === 'Regex_Level') {
+                        let m = rawName.match(new RegExp(r.pattern));
+                        if(m && m[1]) level = m[1];
+                    }
+                });
+
+                let pureName = rawName;
+                let cleanRules = engine.getRulesForField('v_name');
+                cleanRules.forEach(r => {
+                    if(r.ruleType === 'Clean_Remove') {
+                        pureName = pureName.replace(new RegExp(r.pattern, 'ig'), '');
+                    } else if(r.ruleType === 'Clean_End') {
+                        pureName = pureName.replace(new RegExp(r.pattern, 'g'), '');
+                    }
+                });
+
+                return { pureName: pureName.trim(), tags: Array.from(tags), level };
             }
 
             static parseStats(rawStats) {
@@ -329,53 +627,70 @@
                 return {h, b, w, hp, cup};
             }
 
-            static getCupScore(rawStats) {
+            // 動態 Metadata 驅動：罩杯分數
+            static getCupScore(rawStats, engine = window.ruleEngine) {
                 const {cup} = this.parseStats(rawStats);
                 if (cup === '?') return 0;
                 return cup.charCodeAt(0) - 64; 
             }
 
-            static getBodyScore(rawStats) {
-                const {h, b, w, hp} = this.parseStats(rawStats);
+            // 動態 Metadata 驅動：身材分數
+            static getBodyScore(rawStats, engine = window.ruleEngine) {
+                const {h, b, w, hp, cup} = this.parseStats(rawStats);
                 if (!h || !b || !w || !hp) return 0;
-                let hourglass = (b - w) + (hp - w);
-                return Math.min(99, Math.max(1, 40 + hourglass)); 
+                let scoreRules = engine.getRulesForField('v_score_body');
+                if(scoreRules.length > 0) {
+                    return Math.round(engine.evaluateMath(scoreRules[0].pattern, {h, b, w, hp, cup}));
+                }
+                return Math.min(99, Math.max(1, 40 + ((b - w) + (hp - w)))); 
             }
 
-            static getBodyShapeData(rawStats) {
+            // 動態 Metadata 驅動：身形判定
+            static getBodyShapeData(rawStats, engine = window.ruleEngine) {
+                if(!engine) engine = window.ruleEngine;
                 const parsed = this.parseStats(rawStats);
                 const {h, b, w, hp, cup} = parsed;
                 if (!h || !b || !w || !hp) return null;
 
-                let s2 = h * 0.46; 
                 let shapeType = "H型", shapeIcon = "▯";
-                let bustDiff = b - w;
-                let hipDiff = hp - w;
-                
-                if (w >= hp) {
-                    shapeType = "蘋果型"; shapeIcon = "🍎";
-                } else if (bustDiff >= 28 && hipDiff >= 25) {
-                    shapeType = "魔鬼型(疑造假)"; shapeIcon = "🔥";
-                } else if (bustDiff >= 18 && hipDiff >= 23 && Math.abs(b - hp) <= 10) {
-                    shapeType = "沙漏型"; shapeIcon = "⏳";
-                } else if (hp - s2 > 3 || hp - b > 5) {
-                    shapeType = "梨型"; shapeIcon = "🍐";
-                } else if (s2 - hp > 3 || b - hp > 10) {
-                    shapeType = "倒三角"; shapeIcon = "🔻";
+                let score = 0;
+                let trueCup = "AA-";
+
+                let shapeRules = engine.getRulesForField('v_shape');
+                for (let rule of shapeRules) {
+                    if (rule.ruleType === 'Condition_Shape') {
+                        let isMatch = rule.pattern === 'TRUE' ? true : engine.evaluateMath(rule.pattern, {h, b, w, hp, cup});
+                        if (isMatch) {
+                            let parts = rule.action.split('|');
+                            shapeType = parts[0] || shapeType;
+                            shapeIcon = parts[1] || shapeIcon;
+                            break;
+                        }
+                    }
                 }
 
-                let hourglass = (b - w) + (hp - w);
-                let score = Math.min(99, Math.max(1, 40 + hourglass));
+                let scoreRules = engine.getRulesForField('v_score_body');
+                if(scoreRules.length > 0) {
+                    score = Math.round(engine.evaluateMath(scoreRules[0].pattern, {h, b, w, hp, cup}));
+                } else {
+                    score = Math.min(99, Math.max(1, 40 + ((b - w) + (hp - w))));
+                }
+
                 let scoreColor = '#4caf50'; 
                 if (score >= 98) scoreColor = '#6200ea'; 
                 else if (score >= 95) scoreColor = '#e91e63'; 
                 else if (score >= 90) scoreColor = '#ff9800'; 
 
-                let estUB = Math.round(((w + 10) + (h * 0.43)) / 2);
-                let diff = b - estUB;
+                let cupRules = engine.getRulesForField('v_true_cup');
+                let trueCupIdx = -1;
+                if(cupRules.length > 0) {
+                    trueCupIdx = Math.floor(engine.evaluateMath(cupRules[0].pattern, {h, b, w, hp, cup}));
+                } else {
+                    trueCupIdx = Math.floor((b - Math.round(((w + 10) + (h * 0.43)) / 2) - 7.5) / 2.5);
+                }
+                
                 let cupNames = ['AA','A','B','C','D','E','F','G','H','I','J','K','L'];
-                let trueCupIdx = Math.floor((diff - 7.5) / 2.5);
-                let trueCup = trueCupIdx >= 0 ? (cupNames[Math.min(trueCupIdx, cupNames.length-1)]) : 'AA-';
+                if(trueCupIdx >= 0) trueCup = cupNames[Math.min(trueCupIdx, cupNames.length-1)] || 'L+';
 
                 let claimedCupIdx = cupNames.indexOf(cup);
                 if (claimedCupIdx === -1 && cup !== '?') {
@@ -394,10 +709,19 @@
                     cupDiffColor = '#4caf50'; 
                 }
 
-                const whtr = w / h;
-                let shapeColor = '#4caf50', whtrText = '標準';
-                if (whtr < 0.36) { shapeColor = '#2196f3'; whtrText = '瘦'; }
-                else if (whtr > 0.41) { shapeColor = '#e91e63'; whtrText = '胖'; }
+                let whtrRules = engine.getRulesForField('v_whtr');
+                let whtrText = '標準', shapeColor = '#4caf50';
+                for(let rule of whtrRules) {
+                     if (rule.ruleType === 'Condition_WHTR') {
+                        let isMatch = rule.pattern === 'TRUE' ? true : engine.evaluateMath(rule.pattern, {h, b, w, hp, cup});
+                        if(isMatch) {
+                            let parts = rule.action.split('|');
+                            whtrText = parts[0] || whtrText;
+                            shapeColor = parts[1] || shapeColor;
+                            break;
+                        }
+                     }
+                }
 
                 const avgH = 158, avgB = 82, avgW = 61, avgH_p = 86;
                 const scaleY = 100 / 180, scaleX = 0.8; 
@@ -453,11 +777,23 @@
                 return h * 60 + m;
             }
 
-            static parseAndFormatSchedule(rawText) {
-                if (!rawText) return '';
+            // 動態 Metadata 驅動：班表轉換與清洗
+            static parseAndFormatSchedule(rawText, engine = window.ruleEngine) {
+                if (!rawText || !engine) return '';
                 
-                const dayMap = {'月':'一', '火':'二', '水':'三', '木':'四', '金':'五', '土':'六', '日':'日'};
-                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\(([月火水木金土日一二三四五六])\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2}\s*(?:\(.\))?)|\s*$)/g;
+                const dayMapRules = engine.getRulesForField('Schedule_Day');
+                const dayMap = {};
+                dayMapRules.forEach(r => dayMap[r.pattern] = r.action);
+
+                const statusMapRules = engine.getRulesForField('Schedule_Status');
+                let restRegexStr = '休|み|缺|^\\s*-\\s*$'; 
+                if(statusMapRules.length > 0) restRegexStr = statusMapRules[0].pattern;
+
+                const cutRules = engine.getRulesForField('Schedule_Stop');
+                let stopRegexStr = '(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記|搜尋熱門|返回商店|返回首頁|Top|日本的風俗店|北海道・東北|上門服務)';
+                if(cutRules.length > 0) stopRegexStr = cutRules[0].pattern;
+
+                const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\((.)\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2}\s*(?:\(.\))?)|\s*$)/g;
                 let cleanedLines = [];
                 let match;
                 
@@ -470,7 +806,7 @@
                     let day = rawDay && dayMap[rawDay] ? `(${dayMap[rawDay]})` : (rawDay ? `(${rawDay})` : '');
                     
                     let content = match[4] || ''; 
-                    let stopMatch = content.search(/(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記|搜尋熱門|返回商店|返回首頁|Top|日本的風俗店|北海道・東北|上門服務)/);
+                    let stopMatch = content.search(new RegExp(stopRegexStr));
                     if (stopMatch !== -1) {
                         content = content.substring(0, stopMatch);
                     }
@@ -480,7 +816,7 @@
                     
                     if (timeMatch) {
                         timeStr = `${timeMatch[1].replace('：',':')}-${timeMatch[2].replace('：',':')}`;
-                    } else if (content.includes('休') || content.includes('み') || content.includes('缺') || /^\s*-\s*$/.test(content) || content.trim() === '-') {
+                    } else if (new RegExp(restRegexStr).test(content) || content.trim() === '-') {
                         timeStr = '休息';
                     }
                     
@@ -538,7 +874,7 @@
                         const timeStr = match[3];
 
                         let trackHtml = '';
-                        if (timeStr.includes('休') || timeStr.includes('み')) {
+                        if (timeStr.includes('休') || timeStr.includes('み') || timeStr.includes('休息')) {
                             trackHtml = `<div class="sch-fill-vert off" title="${date} 休息"></div>`;
                         } else {
                             const tMatch = timeStr.match(/(\d{1,2}:\d{2})\s*[-~〜ー]\s*(\d{1,2}:\d{2})/);
@@ -600,7 +936,7 @@
                 this.cropper = null;
                 this.pendingBlob = null; 
 
-                document.getElementById('fileInputPhoto').addEventListener('change', (e) => this.handleFile(e.target.files[0], false));
+                document.getElementById('fileInputPhoto')?.addEventListener('change', (e) => this.handleFile(e.target.files[0], false));
                 
                 document.addEventListener('paste', (e) => {
                     if (!window.app || !window.app.accessToken) return;
@@ -625,7 +961,11 @@
                         let text = (e.clipboardData || e.originalEvent.clipboardData).getData('text');
                         let html = (e.clipboardData || e.originalEvent.clipboardData).getData('text/html') || '';
                         if (text) {
-                            if (text.split(/收藏夾/g).length > 2 || text.split(/No\./i).length > 3) {
+                            let splitterRules = window.ruleEngine.getRulesForField('System_Anchor');
+                            let splitPattern = '收藏夾';
+                            splitterRules.forEach(r => { if(r.ruleType === 'Block_Splitter') splitPattern = r.pattern; });
+
+                            if (text.split(new RegExp(splitPattern, 'g')).length > 2 || text.split(/No\./i).length > 3) {
                                 e.preventDefault();
                                 if (!window.app.isEditMode) window.app.toggleMode();
                                 document.getElementById('v_magic_paste').value = text;
@@ -642,23 +982,25 @@
                 });
 
                 const previewBox = document.querySelector('.img-preview-box');
-                previewBox.addEventListener('click', (e) => {
-                    if (e.target.id === 'btn_del_photo') return;
-                    if (!window.app.accessToken) { window.app.triggerAuth(); return; }
-                    
-                    const previewImg = document.getElementById('preview_photo');
-                    if (previewImg.style.display === 'block' && previewImg.src) {
-                        if (previewImg.src.startsWith('http') && !previewImg.src.startsWith('data:')) {
-                            Utility.showToast('⚠️ 雲端圖片無法二次裁切，請直接使用 Ctrl+V 貼上新截圖！', true);
-                            return;
+                if(previewBox) {
+                    previewBox.addEventListener('click', (e) => {
+                        if (e.target.id === 'btn_del_photo') return;
+                        if (!window.app.accessToken) { window.app.triggerAuth(); return; }
+                        
+                        const previewImg = document.getElementById('preview_photo');
+                        if (previewImg.style.display === 'block' && previewImg.src) {
+                            if (previewImg.src.startsWith('http') && !previewImg.src.startsWith('data:')) {
+                                Utility.showToast('⚠️ 雲端圖片無法二次裁切，請直接使用 Ctrl+V 貼上新截圖！', true);
+                                return;
+                            }
+                            this.imageElement.removeAttribute('crossorigin');
+                            this.imageElement.src = previewImg.src;
+                            this.openModal();
+                        } else {
+                            document.getElementById('fileInputPhoto').click();
                         }
-                        this.imageElement.removeAttribute('crossorigin');
-                        this.imageElement.src = previewImg.src;
-                        this.openModal();
-                    } else {
-                        document.getElementById('fileInputPhoto').click();
-                    }
-                });
+                    });
+                }
             }
 
             handleFile(file, fromPaste = false) {
@@ -773,7 +1115,11 @@
                         let text = (e.clipboardData || window.clipboardData).getData('text');
                         let html = (e.clipboardData || window.clipboardData).getData('text/html') || '';
                         
-                        if (text.split(/收藏夾/g).length > 2 || text.split(/No\./i).length > 3) {
+                        let splitterRules = window.ruleEngine.getRulesForField('System_Anchor');
+                        let splitPattern = '收藏夾';
+                        splitterRules.forEach(r => { if(r.ruleType === 'Block_Splitter') splitPattern = r.pattern; });
+
+                        if (text.split(new RegExp(splitPattern, 'g')).length > 2 || text.split(/No\./i).length > 3) {
                             e.preventDefault();
                             magicInput.value = text;
                             Utility.showToast('✨ 已載入批次清單！請填寫下方共同設定後，點擊上方按鈕');
@@ -793,22 +1139,22 @@
                     }
                 });
 
-                document.getElementById('catalogGrid').addEventListener('change', (e) => {
+                document.getElementById('catalogGrid')?.addEventListener('change', (e) => {
                     if (e.target.classList.contains('card-checkbox')) {
                         const idx = parseInt(e.target.value);
                         if (e.target.checked) {
                             this.selectedCards.add(idx);
-                            e.target.closest('.card').classList.add('selected');
+                            e.target.closest('.card')?.classList.add('selected');
                         } else {
                             this.selectedCards.delete(idx);
-                            e.target.closest('.card').classList.remove('selected');
+                            e.target.closest('.card')?.classList.remove('selected');
                         }
                         this.updateBatchUI();
                     }
                 });
             }
 
-            get currentSheet() { return document.getElementById('v_sheet').value; }
+            get currentSheet() { return document.getElementById('v_sheet')?.value; }
 
             setupDragScroll() {
                 let scrollInterval = null;
@@ -826,10 +1172,10 @@
                         scrollInterval = setInterval(() => {
                             const catalog = document.getElementById('panel-catalog');
                             if (window.innerWidth <= 850) {
-                                document.getElementById('app-container').scrollBy(0, scrollY);
+                                document.getElementById('app-container')?.scrollBy(0, scrollY);
                                 window.scrollBy(0, scrollY);
                             } else {
-                                catalog.scrollBy(0, scrollY);
+                                catalog?.scrollBy(0, scrollY);
                             }
                         }, 20);
                     } else if (scrollY === 0 && scrollInterval) {
@@ -845,7 +1191,7 @@
             populateTimeDropdowns() {
                 const startSel = document.getElementById('filterTimeStart');
                 const endSel = document.getElementById('filterTimeEnd');
-                if(startSel.options.length > 0) return; 
+                if(!startSel || !endSel || startSel.options.length > 0) return; 
 
                 startSel.innerHTML = '<option value="">🕒 起始</option>';
                 endSel.innerHTML = '<option value="">🕒 結束</option>';
@@ -881,7 +1227,7 @@
 
             toggleAfDropdown() {
                 const dropdown = document.getElementById('af-dropdown');
-                dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
+                if(dropdown) dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
             }
 
             selectAllAf(isChecked) {
@@ -906,17 +1252,19 @@
                 });
 
                 const box = document.querySelector('#af-filter-container .select-box');
-                if (allChecked || !anyChecked) {
-                    box.innerText = "🏷️ 屬性篩選 (全選)";
-                    if (!anyChecked) {
-                        checkboxes.forEach(cb => {
-                            cb.checked = true;
-                            this.selectedAfs.add(cb.value);
-                        });
+                if(box) {
+                    if (allChecked || !anyChecked) {
                         box.innerText = "🏷️ 屬性篩選 (全選)";
+                        if (!anyChecked) {
+                            checkboxes.forEach(cb => {
+                                cb.checked = true;
+                                this.selectedAfs.add(cb.value);
+                            });
+                            box.innerText = "🏷️ 屬性篩選 (全選)";
+                        }
+                    } else {
+                        box.innerText = `🏷️ 已選 ${this.selectedAfs.size} 項`;
                     }
-                } else {
-                    box.innerText = `🏷️ 已選 ${this.selectedAfs.size} 項`;
                 }
                 this.renderCatalog();
             }
@@ -924,27 +1272,30 @@
             updateBatchUI() {
                 const batchBar = document.getElementById('batch-actions-bar');
                 const countSpan = document.getElementById('sel-count');
-                if (this.isEditMode && this.selectedCards.size > 0) {
-                    batchBar.style.display = 'flex';
-                    countSpan.innerText = `已選 ${this.selectedCards.size} 張卡片`;
-                } else {
-                    batchBar.style.display = 'none';
+                if(batchBar && countSpan) {
+                    if (this.isEditMode && this.selectedCards.size > 0) {
+                        batchBar.style.display = 'flex';
+                        countSpan.innerText = `已選 ${this.selectedCards.size} 張卡片`;
+                    } else {
+                        batchBar.style.display = 'none';
+                    }
                 }
             }
 
             selectAllCards() {
                 const checkboxes = document.querySelectorAll('.card-checkbox');
-                let allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                let allChecked = Array.from(checkboxes).every(cb => cb?.checked);
                 
                 checkboxes.forEach(cb => {
+                    if(!cb) return;
                     cb.checked = !allChecked;
                     const idx = parseInt(cb.value);
                     if (!allChecked) {
                         this.selectedCards.add(idx);
-                        cb.closest('.card').classList.add('selected');
+                        cb.closest('.card')?.classList.add('selected');
                     } else {
                         this.selectedCards.delete(idx);
-                        cb.closest('.card').classList.remove('selected');
+                        cb.closest('.card')?.classList.remove('selected');
                     }
                 });
                 this.updateBatchUI();
@@ -956,7 +1307,7 @@
                 let selectedArr = [...this.selectedCards].map(idx => ({ record: this.dataStore[idx], oldIdx: idx }));
                 selectedArr.sort((a,b) => a.oldIdx - b.oldIdx);
                 
-                let recordsToMove = selectedArr.map(item => item.record);
+                let recordsToMove = selectedArr.map(item => item.record).filter(Boolean);
                 let newStore = this.dataStore.filter((_, idx) => !this.selectedCards.has(idx));
                 
                 if (position === 'top') {
@@ -979,9 +1330,10 @@
                 Utility.showLoading("批量刪除資料中...");
                 try {
                     const sheetSelect = document.getElementById('v_sheet');
+                    if(!sheetSelect || !sheetSelect.options[sheetSelect.selectedIndex]) throw new Error("無效分頁");
                     const sheetId = sheetSelect.options[sheetSelect.selectedIndex].dataset.sheetId;
                     
-                    let rowIndices = [...this.selectedCards].map(idx => this.dataStore[idx]._rowIndex - 1);
+                    let rowIndices = [...this.selectedCards].map(idx => this.dataStore[idx]?._rowIndex - 1).filter(idx => !isNaN(idx));
                     rowIndices.sort((a,b) => b - a);
 
                     const requests = rowIndices.map(rIdx => ({
@@ -1010,8 +1362,8 @@
 
             async deleteRecordForm() {
                 if (!this.accessToken || !this.hasWriteAccess) return;
-                const targetRowIdx = document.getElementById('v_row_index').value;
-                const nameVal = document.getElementById('v_name').value || '此技師';
+                const targetRowIdx = document.getElementById('v_row_index')?.value;
+                const nameVal = document.getElementById('v_name')?.value || '此技師';
                 
                 if (!targetRowIdx) { Utility.showToast("⚠️ 請先選擇要刪除的資料！", true); return; }
                 if (!confirm(`⚠️ 警告：確定要永久刪除「${nameVal}」的資料嗎？`)) return;
@@ -1044,7 +1396,7 @@
             }
 
             executeBatchCreate() {
-                const formStoreVal = document.getElementById('v_store').value.trim();
+                const formStoreVal = document.getElementById('v_store')?.value.trim();
                 if (!formStoreVal) {
                     Utility.showToast('⚠️ 批次建立新卡片前，請務必在左側輸入共同的【店名】！', true);
                     return;
@@ -1052,43 +1404,49 @@
                 this.processBatchData(true);
             }
 
+            // 動態 Metadata 驅動：批次處理引擎
             processBatchData(createMissing) {
                 if (!this.accessToken || !this.hasWriteAccess) { 
                     Utility.showToast("⚠️ 請先切換至編輯模式並完成 Google 授權！", true);
                     return; 
                 }
 
-                const text = document.getElementById('v_magic_paste').value.trim();
-                if (!text || text.split(/收藏夾|No\.\d+/ig).length <= 1) {
+                const text = document.getElementById('v_magic_paste')?.value.trim();
+                
+                let splitterRules = window.ruleEngine.getRulesForField('System_Anchor');
+                let splitPattern = '收藏夾';
+                let singlePattern = '(?:名稱|名前|Name)';
+                splitterRules.forEach(r => {
+                    if(r.ruleType === 'Block_Splitter') splitPattern = r.pattern;
+                    if(r.ruleType === 'Single_Detector') singlePattern = r.pattern;
+                });
+
+                if (!text || text.split(new RegExp(splitPattern, 'g')).length <= 1) {
                     Utility.showToast('⚠️ 請在【魔法貼上】框內貼上女優一覽的批次資料！', true);
                     return;
                 }
 
-                const formStoreVal = document.getElementById('v_store').value.trim();
-                const formPriceVal = document.getElementById('v_price').value.trim();
-                const formLocationVal = document.getElementById('v_location').value.trim();
-                const formAfVal = document.getElementById('v_af').value.trim();
+                const formStoreVal = document.getElementById('v_store')?.value.trim() || "";
+                const formPriceVal = document.getElementById('v_price')?.value.trim() || "";
+                const formLocationVal = document.getElementById('v_location')?.value.trim() || "";
+                const formAfVal = document.getElementById('v_af')?.value.trim() || "";
                 const formTags = formAfVal.split(/[\/／]/).map(t => t.trim()).filter(t => t);
 
-                Utility.showLoading("批次解析與同步資料庫中...");
+                Utility.showLoading("動態規則解析與同步資料庫中...");
 
                 setTimeout(() => {
-                    let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
-                    let baseStore = mStore ? mStore[1].trim() : formStoreVal;
+                    let mStore = window.ruleEngine.extractByRules(text, "", "v_store", ['Common']);
+                    let baseStore = mStore.value ? mStore.value : formStoreVal;
 
-                    const blocks = text.split(/收藏夾/g).filter(b => b.trim().length > 10);
+                    const blocks = text.split(new RegExp(splitPattern, 'g')).filter(b => b.trim().length > 10);
                     let updateCount = 0;
                     let createCount = 0;
 
                     blocks.forEach(block => {
-                        let mName = block.match(/No\.\d+\s*\n\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i); 
-                        if (!mName) {
-                            mName = block.match(/(?:名稱|名前|Name)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
-                        }
+                        let extractedName = window.ruleEngine.extractByRules(block, "", "v_name", ['Common']);
+                        if (!extractedName.value) return;
                         
-                        if (!mName) return;
-                        
-                        let nameInfo = Utility.parseName(mName[1]);
+                        let nameInfo = Utility.parseName(extractedName.value, window.ruleEngine);
                         let pureName = nameInfo.pureName;
 
                         let finalStore = baseStore;
@@ -1096,17 +1454,17 @@
                             finalStore += " " + formStoreVal;
                         }
 
-                        let extStats = "";
-                        let mStats = block.match(/(T\d{3}[^\n]+)/i);
-                        if (mStats) extStats = mStats[1].replace(/from.*/i, '').replace(/[\n\r]/g, '').trim();
+                        let extStatsObj = window.ruleEngine.extractByRules(block, "", "v_stats", ['Common']);
+                        let extStats = extStatsObj.value;
 
-                        let mSch = block.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
+                        let mSchObj = window.ruleEngine.extractByRules(block, "", "v_schedule", ['Common']);
+                        let mSch = mSchObj.value;
+                        
                         if (mSch) {
-                            let formattedSch = Utility.parseAndFormatSchedule(mSch[0]);
+                            let formattedSch = Utility.parseAndFormatSchedule(mSch, window.ruleEngine);
                             let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
                             
                             if (hasSchedule || extStats) {
-                                
                                 let tagSet = new Set();
                                 nameInfo.tags.forEach(t => tagSet.add(t)); 
                                 
@@ -1120,7 +1478,7 @@
 
                                 const recordIdx = this.dataStore.findIndex(r => {
                                     let dbName = r._raw[this.colMap.name] || "";
-                                    let cleanDbName = Utility.parseName(dbName).pureName; 
+                                    let cleanDbName = Utility.parseName(dbName, window.ruleEngine).pureName; 
                                     
                                     let dbStore = r._raw[this.colMap.store] || "";
                                     let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
@@ -1134,7 +1492,7 @@
                                     return nameMatch && (storeMatch || statsMatch);
                                 });
 
-                                if (recordIdx !== -1) {
+                                if (recordIdx !== -1 && this.dataStore[recordIdx]) {
                                     if (hasSchedule) this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
                                     if (extStats) this.dataStore[recordIdx]._raw[this.colMap.stats] = extStats; 
                                     
@@ -1172,8 +1530,8 @@
                                     if (tagSet.size > 0) setV('af', Array.from(tagSet).join(' / '));
                                     if (levelVal) setV('level', levelVal);
 
-                                    let mAge = block.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || block.match(/(\d+)\s*(?:歳|才|歲)/);
-                                    if (mAge) setV('age', mAge[1] + "歲");
+                                    let mAgeObj = window.ruleEngine.extractByRules(block, "", "v_age", ['Common']);
+                                    if (mAgeObj.value) setV('age', mAgeObj.value + "歲");
 
                                     this.dataStore.push({
                                         id: String(newRowData[this.colMap.techId]),
@@ -1194,7 +1552,8 @@
                         } else {
                             Utility.showToast(`✅ 更新批次完成！成功更新了 ${updateCount} 筆資料。`);
                         }
-                        document.getElementById('v_magic_paste').value = ''; 
+                        const mPaste = document.getElementById('v_magic_paste');
+                        if(mPaste) mPaste.value = ''; 
                     } else {
                         Utility.showToast('⚠️ 找不到可建立或更新的技師資料，請確認內容格式。', true);
                     }
@@ -1202,10 +1561,10 @@
                 }, 100); 
             }
 
+            // 動態 Metadata 驅動：單人魔法解析
             processMagicPaste(text, html) {
                 if (!text) return;
-                const magicInput = document.getElementById('v_magic_paste');
-
+                
                 let extractedUrl = "";
                 let urlMatch = text.match(/https?:\/\/[^\s]+/);
                 if (urlMatch) {
@@ -1228,56 +1587,39 @@
                         this.editRecord(recordIdx);
                         Utility.showToast('✨ 偵測到資料庫已有此網址，已自動載入該技師資料！');
                     } else {
-                        document.getElementById('v_url').value = extractedUrl;
+                        const urlInput = document.getElementById('v_url');
+                        if(urlInput) urlInput.value = extractedUrl;
                         Utility.showToast('✨ 已自動辨識並填入新網址！');
                     }
                     return;
                 }
 
-                let isYoasobi = html.includes('yoasobi-heaven.com') || text.includes('from\n￥') || text.includes('身體尺寸') || text.includes('３サイズ');
+                let siteMatches = ['Common'];
+                if(html && html.includes('yoasobi-heaven.com') || text.includes('yoasobi')) siteMatches.push('yoasobi-heaven.com');
+                if(html && html.includes('yoshiwara-soap.jp') || text.includes('yoshiwara')) siteMatches.push('yoshiwara-soap.jp');
+                const specificMatch = extractedUrl.match(/(YA\d+|A\d+)/);
+                if(specificMatch) siteMatches.push(specificMatch[1]);
 
-                let rawNameExt = "";
-                let extStore = "";
-                let lines = text.split('\n').map(l => l.trim()).filter(l => l);
+                let extractedNameObj = window.ruleEngine.extractByRules(text, html, 'v_name', siteMatches);
+                let extractedStatsObj = window.ruleEngine.extractByRules(text, html, 'v_stats', siteMatches);
+                let extractedScheduleObj = window.ruleEngine.extractByRules(text, html, 'v_schedule', siteMatches);
+                let extractedAgeObj = window.ruleEngine.extractByRules(text, html, 'v_age', siteMatches);
+                let extractedDateObj = window.ruleEngine.extractByRules(text, html, 'v_start_date', siteMatches);
+                let extractedPriceObj = window.ruleEngine.extractByRules(text, html, 'v_price', siteMatches);
+                let extractedStoreObj = window.ruleEngine.extractByRules(text, html, 'v_store', siteMatches);
 
-                if (isYoasobi) {
-                    let mName = text.match(/(?:名稱|名前|Name)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i); 
-                    if (mName) rawNameExt = mName[1];
-                } else {
-                    for(let i=0; i < Math.min(5, lines.length); i++) {
-                        let nameStoreMatch = lines[i].match(/^([^|]+)\s*\|\s*([^|]+)$/);
-                        if (nameStoreMatch && !lines[i].includes('http')) {
-                            rawNameExt = nameStoreMatch[1];
-                            extStore = nameStoreMatch[2].trim();
-                            break;
-                        }
-                    }
-                    if (!rawNameExt) {
-                        let mName = text.match(/(?:Name|名前)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
-                        if (mName) rawNameExt = mName[1];
-                    }
-                }
+                let rawNameExt = extractedNameObj.value || "";
+                let extStore = extractedNameObj.secondaryValue || extractedStoreObj.value || document.getElementById('v_store')?.value.trim() || "";
 
-                let mStore = text.match(/店名\s*\n\s*([^\n]+)/);
-                if (mStore) {
-                    extStore = mStore[1].trim();
-                }
-                if (!extStore) extStore = document.getElementById('v_store').value.trim();
-
-                let nameInfo = Utility.parseName(rawNameExt);
-                let pureName = nameInfo.pureName;
-
-                let extStats = "";
-                let mStats = text.match(/(T\d{3}[^\n]+)/i);
-                if (mStats) {
-                    extStats = mStats[1].replace(/from.*/i, '').trim();
-                }
+                let nameInfo = Utility.parseName(rawNameExt, window.ruleEngine);
+                let pureName = nameInfo.pureName || rawNameExt;
+                let extStats = extractedStatsObj.value;
 
                 let isExisting = false;
                 if (recordIdx === -1 && pureName) {
                     recordIdx = this.dataStore.findIndex(r => {
                         let dbName = r._raw[this.colMap.name] || "";
-                        let cleanDbName = Utility.parseName(dbName).pureName; 
+                        let cleanDbName = Utility.parseName(dbName, window.ruleEngine).pureName; 
                         
                         let dbStore = (r._raw[this.colMap.store] || "").trim();
                         let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
@@ -1292,7 +1634,7 @@
                     });
                 }
 
-                if (recordIdx !== -1) {
+                if (recordIdx !== -1 && this.dataStore[recordIdx]) {
                     this.editRecord(recordIdx); 
                     isExisting = true;
                 }
@@ -1304,75 +1646,66 @@
                 });
 
                 if (!isExisting) {
-                    document.getElementById('v_row_index').value = '';
-                    document.getElementById('v_tech_id').value = '';
+                    let rIdx = document.getElementById('v_row_index');
+                    let tIdx = document.getElementById('v_tech_id');
+                    if(rIdx) rIdx.value = '';
+                    if(tIdx) tIdx.value = '';
                 }
                 
-                if (pureName) document.getElementById('v_name').value = pureName; 
-                if (extStore) document.getElementById('v_store').value = extStore;
-                if (extractedUrl) document.getElementById('v_url').value = extractedUrl;
-                if (extStats) document.getElementById('v_stats').value = extStats;
+                let elName = document.getElementById('v_name');
+                let elStore = document.getElementById('v_store');
+                let elUrl = document.getElementById('v_url');
+                let elStats = document.getElementById('v_stats');
+                let elAge = document.getElementById('v_age');
+                let elStartDate = document.getElementById('v_start_date');
+                let elAf = document.getElementById('v_af');
+                let elLevel = document.getElementById('v_level');
+                let elSchedule = document.getElementById('v_schedule');
 
-                let mAge = text.match(/(?:Age|年齢|年齡)\s*(\d+)/i) || text.match(/(\d+)\s*(?:歳|才|歲)/);
-                if (mAge) document.getElementById('v_age').value = mAge[1] + "歲";
-
-                let mDate = text.match(/(?:EntryDay|入店日?)\s*(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})/i);
-                if (mDate) {
-                    document.getElementById('v_start_date').value = `${mDate[1]}-${mDate[2].padStart(2,'0')}-${mDate[3].padStart(2,'0')}`;
-                }
+                if (pureName && elName) elName.value = pureName; 
+                if (extStore && elStore) elStore.value = extStore;
+                if (extractedUrl && elUrl) elUrl.value = extractedUrl;
+                if (extStats && elStats) elStats.value = extStats;
+                if (extractedAgeObj.value && elAge) elAge.value = extractedAgeObj.value + "歲";
+                if (extractedDateObj.value && elStartDate) elStartDate.value = extractedDateObj.value;
                 
-                const tagMap = {
-                    'tbc_tag': '禁菸',
-                    'ppn_tag': '白虎',
-                    'pee_tag': '潮',
-                    'mat_tag': '墊子',
-                    'denma_tag': '電マ',
-                    'tbc_iqos': '加熱菸',
-                    'tto_tag': '刺青',
-                    'dbl_tag': '3P'
-                };
-                let imgRegex = /<img[^>]+src=["'][^"']*?\/img\/([^/"']+)\.png["']/ig;
-                let imgMatch;
                 let foundTags = new Set();
-                
-                let existingTags = document.getElementById('v_af').value.split(/[\/／]/).map(t=>t.trim()).filter(t=>t);
+                let existingTags = (elAf?.value || "").split(/[\/／]/).map(t=>t.trim()).filter(t=>t);
                 existingTags.forEach(t => foundTags.add(t));
                 
                 let isTagUpdated = false;
-                while ((imgMatch = imgRegex.exec(html)) !== null) {
-                    isTagUpdated = true;
-                    let filename = imgMatch[1];
-                    if (tagMap[filename] || filename.endsWith('_tag')) {
-                        foundTags.add(tagMap[filename] || `[${filename}]`);
-                    }
-                }
                 
-                if (/肛交\s*[○〇O]/.test(text)) { foundTags.add('AF'); isTagUpdated = true; }
-                if (/(?:三人組|3P|３Ｐ)\s*[○〇O]/i.test(text)) { foundTags.add('3P'); isTagUpdated = true; }
-                if (/Shooting\s*[○〇O◎]?/i.test(text)) { foundTags.add('射O'); isTagUpdated = true; }
+                // 動態取得 HTML 與 Text 中的標籤
+                let afRuleTags = window.ruleEngine.extractByRules(text, html, 'v_af', siteMatches);
+                if (afRuleTags.tags.size > 0) {
+                    afRuleTags.tags.forEach(t => foundTags.add(t));
+                    isTagUpdated = true;
+                }
 
                 if (nameInfo.tags.length > 0) {
                     nameInfo.tags.forEach(t => { foundTags.add(t); isTagUpdated = true; });
                 }
-                if (nameInfo.level) {
-                    document.getElementById('v_level').value = nameInfo.level;
+                
+                if (nameInfo.level && elLevel) {
+                    elLevel.value = nameInfo.level;
+                } else if (extractedNameObj.level && elLevel) {
+                    elLevel.value = extractedNameObj.level;
                 }
 
-                if (isTagUpdated && foundTags.size > 0) {
-                    document.getElementById('v_af').value = Array.from(foundTags).join(' / ');
+                if (isTagUpdated && foundTags.size > 0 && elAf) {
+                    elAf.value = Array.from(foundTags).join(' / ');
                 }
 
                 let scheduleText = text;
-                let mSch = text.match(/(?:出勤情報|スケジュール|出勤表|出勤スケジュール)[\s\S]*/);
-                if (mSch) {
-                    scheduleText = mSch[0];
+                if (extractedScheduleObj.value) {
+                    scheduleText = extractedScheduleObj.value;
                 }
                 
-                let formattedSch = Utility.parseAndFormatSchedule(scheduleText);
+                let formattedSch = Utility.parseAndFormatSchedule(scheduleText, window.ruleEngine);
                 let hasSchedule = /\d{1,2}\/\d{1,2}/.test(formattedSch) && (formattedSch.includes('休息') || formattedSch.includes(':'));
                 
-                if (hasSchedule) {
-                    document.getElementById('v_schedule').value = formattedSch;
+                if (hasSchedule && elSchedule) {
+                    elSchedule.value = formattedSch;
                 }
 
                 if (isExisting) {
@@ -1386,28 +1719,35 @@
 
             setupSchedulePasting() {
                 const scheduleInput = document.getElementById('v_schedule');
+                if(!scheduleInput) return;
                 scheduleInput.addEventListener('paste', (e) => {
                     e.preventDefault();
                     let pastedText = (e.clipboardData || window.clipboardData).getData('text');
-                    scheduleInput.value = Utility.parseAndFormatSchedule(pastedText);
+                    scheduleInput.value = Utility.parseAndFormatSchedule(pastedText, window.ruleEngine);
                     Utility.showToast('✅ 班表已成功解析貼上');
                 });
             }
 
             setupDatePasting() {
                 const dateInput = document.getElementById('v_start_date');
+                if(!dateInput) return;
                 dateInput.addEventListener('paste', (e) => {
                     e.preventDefault();
                     let pastedText = (e.clipboardData || window.clipboardData).getData('text');
                     
-                    let match = pastedText.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/);
-                    if (match) {
-                        let y = match[1];
-                        let m = match[2].padStart(2, '0');
-                        let d = match[3].padStart(2, '0');
-                        dateInput.value = `${y}-${m}-${d}`;
+                    let extractObj = window.ruleEngine.extractByRules(pastedText, "", "v_start_date", ['Common']);
+                    if (extractObj.value) {
+                         dateInput.value = extractObj.value;
                     } else {
-                        Utility.showToast('⚠️ 無法辨識日期格式，請手動選擇或輸入', true);
+                        let match = pastedText.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/);
+                        if (match) {
+                            let y = match[1];
+                            let m = match[2].padStart(2, '0');
+                            let d = match[3].padStart(2, '0');
+                            dateInput.value = `${y}-${m}-${d}`;
+                        } else {
+                            Utility.showToast('⚠️ 無法辨識日期格式，請手動選擇或輸入', true);
+                        }
                     }
                 });
             }
@@ -1417,6 +1757,7 @@
                     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
                         e.preventDefault();
                         const saveBtn = document.getElementById('btn-save');
+                        if(!saveBtn) return;
                         if (this.accessToken && !saveBtn.disabled && this.hasWriteAccess) {
                             this.saveToGoogleSheet();
                         } else if (!this.hasWriteAccess) {
@@ -1430,7 +1771,7 @@
 
             toggleMode() {
                 if (!this.isEditMode) {
-                    if (!this.hasWriteAccess) {
+                    if (!this.hasWriteAccess && this.tokenClient) {
                         this.tokenClient.callback = (resp) => {
                             if (resp.error) {
                                 Utility.showToast('⚠️ 已取消授權，無法進入編輯模式', true);
@@ -1456,6 +1797,7 @@
                 this.isEditMode = !this.isEditMode;
                 const container = document.getElementById('app-container');
                 const btn = document.getElementById('btn-mode-toggle');
+                if(!container || !btn) return;
                 
                 this.selectedCards.clear();
                 this.updateBatchUI();
@@ -1479,7 +1821,8 @@
 
             toggleSortDir() {
                 this.sortDesc = !this.sortDesc;
-                document.getElementById('btn-sort-dir').innerHTML = this.sortDesc ? '⬇ 降序' : '⬆ 升序';
+                const btn = document.getElementById('btn-sort-dir');
+                if(btn) btn.innerHTML = this.sortDesc ? '⬇ 降序' : '⬆ 升序';
                 this.renderCatalog();
             }
 
@@ -1502,11 +1845,13 @@
             }
 
             onAuthSuccess() {
-                document.getElementById('auth-banner').style.display = 'none';
+                const banner = document.getElementById('auth-banner');
+                if(banner) banner.style.display = 'none';
                 this.fetchSheetNames();
             }
 
             triggerAuth() {
+                if(!this.tokenClient) return;
                 this.tokenClient.callback = (resp) => {
                     if (resp.error) return;
                     this.accessToken = resp.access_token;
@@ -1522,6 +1867,7 @@
                 });
             }
 
+            // 動態取得分頁與規則設定表
             async fetchSheetNames() {
                 if (!this.accessToken) return;
                 try {
@@ -1540,18 +1886,38 @@
 
                     if (data.sheets) {
                         const select = document.getElementById('v_sheet');
-                        select.innerHTML = ''; 
-                        data.sheets.forEach(s => {
-                            const opt = document.createElement('option');
-                            opt.value = s.properties.title;
-                            opt.innerText = s.properties.title;
-                            opt.dataset.sheetId = s.properties.sheetId; 
-                            select.appendChild(opt);
-                        });
+                        if(select) {
+                            select.innerHTML = ''; 
+                            data.sheets.forEach(s => {
+                                const opt = document.createElement('option');
+                                opt.value = s.properties.title;
+                                opt.innerText = s.properties.title;
+                                opt.dataset.sheetId = s.properties.sheetId; 
+                                select.appendChild(opt);
+                            });
+                        }
+                        
+                        // 動態讀取 RuleEngine 設定
+                        await this.fetchRulesSheet();
                         this.loadSheetData(); 
                     }
                 } catch (e) {
                     alert(`❌ 讀取失敗！請確認 Google 帳號授權狀態。`);
+                }
+            }
+
+            async fetchRulesSheet() {
+                try {
+                    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Rules!A:Z`, {
+                        headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                    });
+                    const data = await res.json();
+                    if(data && data.values) {
+                        window.ruleEngine.setRules(data.values);
+                        console.log("Metadata Rules Engine Loaded successfully.");
+                    }
+                } catch(e) {
+                    console.warn("Rules load notice: ", e.message);
                 }
             }
 
@@ -1560,11 +1926,14 @@
                 sessionStorage.removeItem('gapi_has_write');
                 this.accessToken = null;
                 this.hasWriteAccess = false;
-                document.getElementById('auth-banner').style.display = 'block';
-                document.getElementById('auth-banner').innerHTML = '⚠️ 登入已過期，請點擊此處重新授權！';
-                document.getElementById('auth-banner').style.background = '#f8d7da';
-                document.getElementById('auth-banner').style.color = '#721c24';
-                document.getElementById('auth-banner').style.borderColor = '#f5c6cb';
+                const banner = document.getElementById('auth-banner');
+                if(banner) {
+                    banner.style.display = 'block';
+                    banner.innerHTML = '⚠️ 登入已過期，請點擊此處重新授權！';
+                    banner.style.background = '#f8d7da';
+                    banner.style.color = '#721c24';
+                    banner.style.borderColor = '#f5c6cb';
+                }
             }
 
             async loadSheetData(keepForm = false) {
@@ -1575,7 +1944,8 @@
                 if (!sheetName) return;
 
                 Utility.showLoading(`載入「${sheetName}」中...`);
-                document.getElementById('btn-save-order').style.display = 'none';
+                const saveOrderBtn = document.getElementById('btn-save-order');
+                if(saveOrderBtn) saveOrderBtn.style.display = 'none';
                 
                 try {
                     const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(sheetName)}!A:Z`, {
@@ -1616,7 +1986,8 @@
                     if (this.colMap.name === -1 || this.colMap.store === -1) {
                         alert(`⚠️ 找不到必要的欄位 (姓名 或 店名)。`);
                     } else {
-                        document.getElementById('btn-save').disabled = false;
+                        const saveBtn = document.getElementById('btn-save');
+                        if(saveBtn) saveBtn.disabled = false;
                     }
 
                     if (this.colMap.schedule === -1) {
@@ -1646,7 +2017,6 @@
                         }
                     }
 
-                    // 強制重構過濾器
                     this.populateFilters(); 
                     this.renderCatalog();
                     
@@ -1659,9 +2029,9 @@
                 }
             }
 
-            // ===== 修復：補回遺失的 populateFilters 方法 =====
             populateFilters() {
                 const storeSelect = document.getElementById('filterStore');
+                if(!storeSelect) return;
                 const uniqueStores = [...new Set(this.dataStore.map(r => r._raw[this.colMap.store]).filter(s => s && s.trim() !== ''))];
                 const currentStore = storeSelect.value;
                 storeSelect.innerHTML = '<option value="">🏪 所有店鋪</option>';
@@ -1673,15 +2043,17 @@
                 storeSelect.value = currentStore;
 
                 const locSelect = document.getElementById('filterLocation');
-                const uniqueLocations = [...new Set(this.dataStore.map(r => r._raw[this.colMap.location]).filter(loc => loc && loc.trim() !== ''))];
-                const currentLoc = locSelect.value;
-                locSelect.innerHTML = '<option value="">🗺️ 所有位置</option>';
-                uniqueLocations.sort().forEach(loc => {
-                    const opt = document.createElement('option');
-                    opt.value = loc; opt.innerText = loc;
-                    locSelect.appendChild(opt);
-                });
-                locSelect.value = currentLoc;
+                if(locSelect) {
+                    const uniqueLocations = [...new Set(this.dataStore.map(r => r._raw[this.colMap.location]).filter(loc => loc && loc.trim() !== ''))];
+                    const currentLoc = locSelect.value;
+                    locSelect.innerHTML = '<option value="">🗺️ 所有位置</option>';
+                    uniqueLocations.sort().forEach(loc => {
+                        const opt = document.createElement('option');
+                        opt.value = loc; opt.innerText = loc;
+                        locSelect.appendChild(opt);
+                    });
+                    locSelect.value = currentLoc;
+                }
 
                 const afSet = new Set();
                 this.dataStore.forEach(r => {
@@ -1693,43 +2065,47 @@
                 });
                 
                 const afBox = document.getElementById('af-checkboxes');
-                let renderAf = true;
-                if (afBox.children.length > 0) {
-                    let existingValues = Array.from(afBox.querySelectorAll('input')).map(i => i.value);
-                    if (existingValues.length === afSet.size + 1 && existingValues.every(val => afSet.has(val) || val === '(無屬性)')) {
-                        renderAf = false; 
+                if(afBox) {
+                    let renderAf = true;
+                    if (afBox.children.length > 0) {
+                        let existingValues = Array.from(afBox.querySelectorAll('input')).map(i => i.value);
+                        if (existingValues.length === afSet.size + 1 && existingValues.every(val => afSet.has(val) || val === '(無屬性)')) {
+                            renderAf = false; 
+                        }
+                    }
+
+                    if (renderAf) {
+                        afBox.innerHTML = '<label><input type="checkbox" value="(無屬性)" checked onchange="app.updateAfSelection()"> <i>(無屬性)</i></label>';
+                        [...afSet].sort().forEach(a => {
+                            afBox.innerHTML += `<label><input type="checkbox" value="${a}" checked onchange="app.updateAfSelection()"> ${a}</label>`;
+                        });
+                        this.selectAllAf(true); 
                     }
                 }
 
-                if (renderAf) {
-                    afBox.innerHTML = '<label><input type="checkbox" value="(無屬性)" checked onchange="app.updateAfSelection()"> <i>(無屬性)</i></label>';
-                    [...afSet].sort().forEach(a => {
-                        afBox.innerHTML += `<label><input type="checkbox" value="${a}" checked onchange="app.updateAfSelection()"> ${a}</label>`;
-                    });
-                    this.selectAllAf(true); 
-                }
-
                 const dateSelect = document.getElementById('filterDate');
-                const dateSet = new Set();
-                this.dataStore.forEach(r => {
-                    const sch = r._raw[this.colMap.schedule] || '';
-                    const matches = sch.match(/\d{1,2}\/\d{1,2}/g);
-                    if (matches) matches.forEach(m => dateSet.add(m));
-                });
-                const currentDate = dateSelect.value;
-                dateSelect.innerHTML = '<option value="">📅 所有日期</option>';
-                [...dateSet].sort().forEach(d => {
-                    const opt = document.createElement('option');
-                    opt.value = d; opt.innerText = d;
-                    dateSelect.appendChild(opt);
-                });
-                if (dateSet.has(currentDate)) dateSelect.value = currentDate;
+                if(dateSelect) {
+                    const dateSet = new Set();
+                    this.dataStore.forEach(r => {
+                        const sch = r._raw[this.colMap.schedule] || '';
+                        const matches = sch.match(/\d{1,2}\/\d{1,2}/g);
+                        if (matches) matches.forEach(m => dateSet.add(m));
+                    });
+                    const currentDate = dateSelect.value;
+                    dateSelect.innerHTML = '<option value="">📅 所有日期</option>';
+                    [...dateSet].sort().forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = d; opt.innerText = d;
+                        dateSelect.appendChild(opt);
+                    });
+                    if (dateSet.has(currentDate)) dateSelect.value = currentDate;
+                }
             }
 
             async saveToGoogleSheet() {
                 if (!this.accessToken) { this.triggerAuth(); return; }
-                const storeVal = document.getElementById('v_store').value.trim();
-                const nameVal = document.getElementById('v_name').value.trim();
+                const storeVal = document.getElementById('v_store')?.value.trim();
+                const nameVal = document.getElementById('v_name')?.value.trim();
                 
                 if (!storeVal || !nameVal) { 
                     Utility.showToast("⚠️ 請確實填寫「店名」與「姓名」！", true); 
@@ -1738,9 +2114,9 @@
 
                 Utility.showLoading("寫入資料與上傳照片...");
                 try {
-                    let techId = document.getElementById('v_tech_id').value.trim() || Utility.generateID();
-                    let finalUrl = document.getElementById('v_photo_url').value;
-                    let targetRowIdx = document.getElementById('v_row_index').value; 
+                    let techId = document.getElementById('v_tech_id')?.value.trim() || Utility.generateID();
+                    let finalUrl = document.getElementById('v_photo_url')?.value || "";
+                    let targetRowIdx = document.getElementById('v_row_index')?.value; 
 
                     let sheetTechId = techId;
                     if (/^\d+$/.test(techId)) {
@@ -1762,18 +2138,18 @@
 
                     const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
 
-                    setV('location', document.getElementById('v_location').value);
+                    setV('location', document.getElementById('v_location')?.value || "");
                     setV('store', storeVal);
                     setV('techId', sheetTechId);
-                    setV('startDate', document.getElementById('v_start_date').value);
+                    setV('startDate', document.getElementById('v_start_date')?.value || "");
                     setV('name', nameVal);
-                    setV('age', document.getElementById('v_age').value);
-                    setV('stats', document.getElementById('v_stats').value);
-                    setV('price', document.getElementById('v_price').value);
-                    setV('url', document.getElementById('v_url').value);
-                    setV('af', document.getElementById('v_af').value);
-                    setV('level', document.getElementById('v_level').value);
-                    setV('schedule', document.getElementById('v_schedule').value);
+                    setV('age', document.getElementById('v_age')?.value || "");
+                    setV('stats', document.getElementById('v_stats')?.value || "");
+                    setV('price', document.getElementById('v_price')?.value || "");
+                    setV('url', document.getElementById('v_url')?.value || "");
+                    setV('af', document.getElementById('v_af')?.value || "");
+                    setV('level', document.getElementById('v_level')?.value || "");
+                    setV('schedule', document.getElementById('v_schedule')?.value || "");
                     setV('photo', finalUrl);
                     setV('updateTime', Utility.getCurrentTime());
 
@@ -1841,13 +2217,14 @@
                         item._rowIndex = idx + 2; 
                     });
 
+                    const saveOrderBtn = document.getElementById('btn-save-order');
+                    if(saveOrderBtn) saveOrderBtn.style.display = 'none';
+
                     if (!isBackground) {
                         Utility.showToast("✅ 變更與排序儲存成功！");
-                        document.getElementById('btn-save-order').style.display = 'none';
                         this.renderCatalog();
                     } else {
                         Utility.showToast("✅ 背景自動儲存成功！");
-                        document.getElementById('btn-save-order').style.display = 'none';
                     }
                 } catch (e) {
                     Utility.showToast(`❌ 錯誤: ${e.message}`, true);
@@ -1867,13 +2244,15 @@
                 if(!record) return;
                 const r = record._raw;
 
-                document.getElementById('v_row_index').value = record._rowIndex || '';
-                document.getElementById('v_location').value = r[this.colMap.location] || "";
-                document.getElementById('v_store').value = r[this.colMap.store] || "";
+                const setValue = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+
+                setValue('v_row_index', record._rowIndex || '');
+                setValue('v_location', r[this.colMap.location] || "");
+                setValue('v_store', r[this.colMap.store] || "");
                 
                 let displayTechId = r[this.colMap.techId] || "";
                 if (displayTechId.startsWith("'")) displayTechId = displayTechId.substring(1);
-                document.getElementById('v_tech_id').value = displayTechId;
+                setValue('v_tech_id', displayTechId);
                 
                 let rawDate = r[this.colMap.startDate] || "";
                 let formattedDate = "";
@@ -1881,35 +2260,41 @@
                     let match = rawDate.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/);
                     if (match) {
                         formattedDate = `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
+                    } else {
+                        formattedDate = rawDate;
                     }
                 }
-                document.getElementById('v_start_date').value = formattedDate;
+                setValue('v_start_date', formattedDate);
                 
-                document.getElementById('v_name').value = r[this.colMap.name] || "";
-                document.getElementById('v_age').value = r[this.colMap.age] || "";
-                document.getElementById('v_stats').value = r[this.colMap.stats] || "";
-                document.getElementById('v_price').value = r[this.colMap.price] || "";
-                document.getElementById('v_url').value = r[this.colMap.url] || "";
-                document.getElementById('v_af').value = r[this.colMap.af] || "";
-                document.getElementById('v_level').value = r[this.colMap.level] || "";
-                document.getElementById('v_schedule').value = r[this.colMap.schedule] || "";
+                setValue('v_name', r[this.colMap.name] || "");
+                setValue('v_age', r[this.colMap.age] || "");
+                setValue('v_stats', r[this.colMap.stats] || "");
+                setValue('v_price', r[this.colMap.price] || "");
+                setValue('v_url', r[this.colMap.url] || "");
+                setValue('v_af', r[this.colMap.af] || "");
+                setValue('v_level', r[this.colMap.level] || "");
+                setValue('v_schedule', r[this.colMap.schedule] || "");
 
                 const rawUrl = r[this.colMap.photo] || "";
-                document.getElementById('v_photo_url').value = rawUrl; 
+                setValue('v_photo_url', rawUrl); 
                 const cleanImg = Utility.cleanDriveUrl(rawUrl);
                 
+                const previewImg = document.getElementById('preview_photo');
+                const textPhoto = document.getElementById('text_photo');
+                const btnDelPhoto = document.getElementById('btn_del_photo');
+
                 if(cleanImg && cleanImg.startsWith('http')) {
-                    document.getElementById('preview_photo').src = cleanImg;
-                    document.getElementById('preview_photo').style.display = 'block';
-                    document.getElementById('text_photo').style.display = 'none';
-                    document.getElementById('btn_del_photo').style.display = 'flex';
+                    if(previewImg) { previewImg.src = cleanImg; previewImg.style.display = 'block'; }
+                    if(textPhoto) textPhoto.style.display = 'none';
+                    if(btnDelPhoto) btnDelPhoto.style.display = 'flex';
                 } else {
-                    document.getElementById('preview_photo').style.display = 'none';
-                    document.getElementById('text_photo').style.display = 'block';
-                    document.getElementById('btn_del_photo').style.display = 'none';
+                    if(previewImg) previewImg.style.display = 'none';
+                    if(textPhoto) textPhoto.style.display = 'block';
+                    if(btnDelPhoto) btnDelPhoto.style.display = 'none';
                 }
 
-                document.getElementById('btn-delete').style.display = 'inline-flex';
+                const btnDelete = document.getElementById('btn-delete');
+                if(btnDelete) btnDelete.style.display = 'inline-flex';
                 
                 if (window.innerWidth <= 850) {
                     const formPanel = document.getElementById('panel-form');
@@ -1920,14 +2305,21 @@
             }
 
             clearForm() {
-                document.getElementById('v_row_index').value = '';
-                const inputs = ['v_location', 'v_store', 'v_tech_id', 'v_start_date', 'v_name', 'v_age', 'v_stats', 'v_price', 'v_url', 'v_af', 'v_level', 'v_schedule', 'v_photo_url'];
-                inputs.forEach(id => document.getElementById(id).value = '');
-                document.getElementById('preview_photo').style.display = 'none';
-                document.getElementById('text_photo').style.display = 'block';
-                document.getElementById('btn_del_photo').style.display = 'none';
+                const setValue = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
                 
-                document.getElementById('btn-delete').style.display = 'none';
+                setValue('v_row_index', '');
+                const inputs = ['v_location', 'v_store', 'v_tech_id', 'v_start_date', 'v_name', 'v_age', 'v_stats', 'v_price', 'v_url', 'v_af', 'v_level', 'v_schedule', 'v_photo_url'];
+                inputs.forEach(id => setValue(id, ''));
+                
+                const previewImg = document.getElementById('preview_photo');
+                const textPhoto = document.getElementById('text_photo');
+                const btnDelPhoto = document.getElementById('btn_del_photo');
+                const btnDelete = document.getElementById('btn-delete');
+
+                if(previewImg) previewImg.style.display = 'none';
+                if(textPhoto) textPhoto.style.display = 'block';
+                if(btnDelPhoto) btnDelPhoto.style.display = 'none';
+                if(btnDelete) btnDelete.style.display = 'none';
 
                 cropperSvc.pendingBlob = null;
                 
@@ -1947,6 +2339,7 @@
 
             copyItem(oldIdx, newIdx) {
                 const originalItem = this.dataStore[oldIdx];
+                if(!originalItem) return;
                 const newRaw = [...originalItem._raw];
                 
                 const colsToClear = ['photo', 'techId', 'url', 'age', 'stats', 'startDate', 'schedule', 'favorite', 'updateTime'];
@@ -1982,24 +2375,35 @@
             }
 
             renderCatalog() {
-                const kw = document.getElementById('searchInput').value.trim();
-                const filterStore = document.getElementById('filterStore').value;
-                const filterLoc = document.getElementById('filterLocation').value;
-                const filterDate = document.getElementById('filterDate').value;
-                const filterStartStr = document.getElementById('filterTimeStart').value;
-                const filterEndStr = document.getElementById('filterTimeEnd').value;
-                const filterStatus = document.getElementById('filterStatus').value;
-                const sortOpt = document.getElementById('sortOption').value;
+                const searchInput = document.getElementById('searchInput');
+                const filterStoreObj = document.getElementById('filterStore');
+                const filterLocObj = document.getElementById('filterLocation');
+                const filterDateObj = document.getElementById('filterDate');
+                const filterTimeStartObj = document.getElementById('filterTimeStart');
+                const filterTimeEndObj = document.getElementById('filterTimeEnd');
+                const filterStatusObj = document.getElementById('filterStatus');
+                const sortOptionObj = document.getElementById('sortOption');
+
+                const kw = searchInput ? searchInput.value.trim() : "";
+                const filterStore = filterStoreObj ? filterStoreObj.value : "";
+                const filterLoc = filterLocObj ? filterLocObj.value : "";
+                const filterDate = filterDateObj ? filterDateObj.value : "";
+                const filterStartStr = filterTimeStartObj ? filterTimeStartObj.value : "";
+                const filterEndStr = filterTimeEndObj ? filterTimeEndObj.value : "";
+                const filterStatus = filterStatusObj ? filterStatusObj.value : "";
+                const sortOpt = sortOptionObj ? sortOptionObj.value : "";
                 
                 const filterStart = filterStartStr ? parseInt(filterStartStr) : null;
                 const filterEnd = filterEndStr ? parseInt(filterEndStr) : null;
 
                 const grid = document.getElementById('catalogGrid');
+                if(!grid) return;
                 grid.innerHTML = '';
 
                 let displayList = [];
 
                 this.dataStore.forEach((record, index) => {
+                    if(!record) return;
                     const r = record._raw;
                     
                     const recStore = r[this.colMap.store] || '';
@@ -2024,7 +2428,7 @@
                     }
                     if (!hasMatchingAf && this.selectedAfs.size > 0) return;
 
-                    let searchTargetStr = `${r[this.colMap.name]} ${r[this.colMap.store]} ${r[this.colMap.techId]} ${recLocation} ${recAfStr} ${r[this.colMap.level]}`.toLowerCase();
+                    let searchTargetStr = `${r[this.colMap.name] || ''} ${r[this.colMap.store] || ''} ${r[this.colMap.techId] || ''} ${recLocation} ${recAfStr} ${r[this.colMap.level] || ''}`.toLowerCase();
 
                     if (kw) {
                         let conditions = kw.split('+').map(s => s.trim()).filter(s => s);
@@ -2054,7 +2458,7 @@
                                 let conditionMet = false;
                                 if (recordVal !== null && recordVal !== 0 && recordVal !== '?') {
                                     if (field === 'CUP' || field === '罩杯') {
-                                        let recScore = recordVal.charCodeAt(0);
+                                        let recScore = String(recordVal).charCodeAt(0);
                                         let targetScore = val.toUpperCase().charCodeAt(0);
                                         if (op === '>') conditionMet = recScore > targetScore;
                                         else if (op === '<') conditionMet = recScore < targetScore;
@@ -2094,7 +2498,7 @@
                             if (match) {
                                 let d = match[1];
                                 let tStr = match[3];
-                                let isOff = tStr.includes('休') || tStr.includes('み');
+                                let isOff = tStr.includes('休') || tStr.includes('み') || tStr.includes('休息');
 
                                 if (filterDate && d !== filterDate) continue; 
                                 dateEvaluated = true;
@@ -2135,11 +2539,10 @@
 
                     let res = 0;
                     if (sortOpt === 'cup') {
-                        res = Utility.getCupScore(a.record._raw[this.colMap.stats]) - Utility.getCupScore(b.record._raw[this.colMap.stats]);
+                        res = Utility.getCupScore(a.record._raw[this.colMap.stats], window.ruleEngine) - Utility.getCupScore(b.record._raw[this.colMap.stats], window.ruleEngine);
                     } else if (sortOpt === 'body') {
-                        res = Utility.getBodyScore(a.record._raw[this.colMap.stats]) - Utility.getBodyScore(b.record._raw[this.colMap.stats]);
+                        res = Utility.getBodyScore(a.record._raw[this.colMap.stats], window.ruleEngine) - Utility.getBodyScore(b.record._raw[this.colMap.stats], window.ruleEngine);
                     } else if (sortOpt === 'updateTime') {
-                        // 【修復】空值防護：如果尚未建立更新時間，視為最舊資料 (給予時間戳 0)
                         let tA = a.record._raw[this.colMap.updateTime] ? new Date(a.record._raw[this.colMap.updateTime]).getTime() : 0;
                         if (isNaN(tA)) tA = 0;
                         let tB = b.record._raw[this.colMap.updateTime] ? new Date(b.record._raw[this.colMap.updateTime]).getTime() : 0;
@@ -2227,7 +2630,7 @@
                         priceHtml += '</div>';
                     }
 
-                    const shapeData = Utility.getBodyShapeData(r[this.colMap.stats]);
+                    const shapeData = Utility.getBodyShapeData(r[this.colMap.stats], window.ruleEngine);
                     let nameRowHtml = '';
                     if (shapeData) {
                         tagsHtml += `<span class="tag-item" style="background:#546e7a; color:white;" title="身型分類">${shapeData.shapeIcon} ${shapeData.shapeType}</span>`;
@@ -2350,9 +2753,7 @@
                         };
                     } else {
                         card.draggable = false;
-                        card.ondragstart = (e) => {
-                            e.preventDefault();
-                        };
+                        card.ondragstart = (e) => { e.preventDefault(); };
                     }
                     
                     let checkboxHtml = this.isEditMode ? `<input type="checkbox" class="card-checkbox" value="${index}" ${this.selectedCards.has(index) ? 'checked' : ''}>` : '';
@@ -2374,15 +2775,6 @@
                     `;
                     grid.appendChild(card);
                 });
-            }
-            
-            deleteImage(event) {
-                event.stopPropagation();
-                document.getElementById('v_photo_url').value = '';
-                document.getElementById('preview_photo').style.display = 'none';
-                document.getElementById('text_photo').style.display = 'block';
-                document.getElementById('btn_del_photo').style.display = 'none';
-                cropperSvc.pendingBlob = null;
             }
         }
 
