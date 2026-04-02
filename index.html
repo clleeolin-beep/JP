@@ -27,23 +27,23 @@
         </div>
     </div>
 
-    <div id="auth-banner" onclick="app.triggerAuth()">🔒 安全鎖定中：點擊登入授權</div>
+    <div id="auth-banner" onclick="app.triggerAuth()">🔒 安全鎖定中：點擊此處登入授權</div>
 
     <div id="app-container" class="view-mode">
         <div class="panel" id="panel-form">
             <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid var(--primary);padding-bottom:8px;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
                 <h3 style="margin:0;">📝 資料編輯</h3>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                    <button class="secondary mini" onclick="app.executeBatch(false)" title="僅更新已有技師的班表與數值，不建立新卡片">⚡ 僅批次更新</button>
-                    <button class="warning mini" onclick="app.executeBatch(true)" title="更新既有，若無重複則自動建立新卡片(繼承下方設定)">🌟 批次建檔+更新</button>
+                    <button class="secondary mini" onclick="app.executeBatch(false)">⚡ 僅批次更新</button>
+                    <button class="warning mini" onclick="app.executeBatch(true)">🌟 批次建檔+更新</button>
                     <button class="success mini" onclick="app.clearForm()">➕ 新增</button>
                 </div>
             </div>
             <input type="hidden" id="v_row_index">
-            <div class="form-grid"><div class="form-group full"><label>✨ 魔法貼上 (單人自動解析 / 多人批次匯入)</label><textarea id="v_magic_paste" rows="2" placeholder="在此貼上「單人網址、文字」可自動分配。&#10;若貼上「多人一覽清單」，請選擇上方按鈕執行批次！"></textarea></div></div>
+            <div class="form-grid"><div class="form-group full"><label>✨ 魔法貼上</label><textarea id="v_magic_paste" rows="2" placeholder="在此貼上「單人網址、文字」可自動分配。&#10;若貼上「多人一覽清單」，請選擇上方按鈕執行批次！"></textarea></div></div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>店名* <div><button class="mini warning" onclick="app.cleanupDriveImages()" style="font-size:10px;padding:2px 4px;" title="清理 Google Drive 雲端未使用的照片並自動改名">☁️ 清理</button> <button class="mini secondary" onclick="app.openRulesModal()" style="font-size:10px;padding:2px 4px;">⚙️ 規則</button></div></label>
+                    <label>店名* <div><button class="mini warning" onclick="app.cleanupDriveImages()" style="font-size:10px;padding:2px 4px;">☁️ 清理</button> <button class="mini secondary" onclick="app.openRulesModal()" style="font-size:10px;padding:2px 4px;">⚙️ 規則</button></div></label>
                     <input type="text" id="v_store">
                 </div>
                 <div class="form-group"><label>姓名*</label><input type="text" id="v_name"></div>
@@ -80,8 +80,12 @@
 
         <div class="panel" id="panel-catalog">
             <div class="filter-tools">
+                <h3 style="margin:0; min-width: 80px; display: none;">📚 資料庫</h3>
+                <button id="btn-save-order" class="warning mini" onclick="app.saveOrderToGoogleSheet(false)" style="display: none;">💾 儲存排序</button>
                 <select id="filterStore" class="filter-select" onchange="app.renderCatalog()"><option value="">🏪 所有店鋪</option></select>
+                <select id="filterLocation" class="filter-select" onchange="app.renderCatalog()"><option value="">🗺️ 所有位置</option></select>
                 <select id="filterStatus" class="filter-select" onchange="app.renderCatalog()"><option value="">⚪ 班表狀態</option><option value="working">🟢 有上班</option><option value="off">🔴 全休假</option></select>
+                
                 <div class="custom-multi-select" id="af-filter-container">
                     <div class="select-box" onclick="app.toggleAfDropdown()">🏷️ 屬性 (全選)</div>
                     <div class="dropdown-list" id="af-dropdown" style="display:none;">
@@ -89,12 +93,21 @@
                         <div id="af-checkboxes"></div>
                     </div>
                 </div>
+                
+                <select id="filterDate" class="filter-select" onchange="app.renderCatalog()"><option value="">📅 所有日期</option></select>
+                <div class="time-filter-group" title="尋找此時段內有上班的女優">
+                    <select id="filterTimeStart" onchange="app.renderCatalog()"></select>
+                    <span style="color:#666; font-weight:bold;">~</span>
+                    <select id="filterTimeEnd" onchange="app.renderCatalog()"></select>
+                </div>
+
                 <div style="display:flex;gap:4px;">
                     <select id="sortOption" class="filter-select" onchange="app.renderCatalog()"><option value="">🔀 預設排序</option><option value="cup">👙 罩杯</option><option value="body">⏳ 曲線</option><option value="updateTime">🕒 更新</option></select>
                     <button id="btn-sort-dir" class="secondary mini" onclick="app.toggleSortDir()">⬇</button>
                 </div>
-                <input type="text" id="searchInput" class="filter-select" placeholder="🔍 B>90 + 巨乳 - 潮..." oninput="app.renderCatalog()" style="flex:2;">
+                <input type="text" id="searchInput" class="filter-select" placeholder="🔍 搜尋 B>90 + 巨乳 - 潮..." oninput="app.renderCatalog()" style="flex:2;">
             </div>
+            
             <div id="batch-actions-bar">
                 <span id="sel-count">已選 0 張</span>
                 <button class="mini" onclick="app.selectAllCards()">全選</button>
@@ -309,7 +322,7 @@
                 this.setupDragScroll(); this.registerKeyboardShortcuts();
                 
                 let dp = document.getElementById('v_start_date'); if(dp) dp.addEventListener('paste', e=>{ e.preventDefault(); let t=(e.clipboardData||window.clipboardData).getData('text'); let m=t.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/); if(m) e.target.value=`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`; });
-                let sp = document.getElementById('v_schedule'); if(sp) sp.addEventListener('paste', e=>{ e.preventDefault(); let t=(e.clipboardData||window.clipboardData).getData('text'); e.target.value=RuleEngine.parseAndFormatSchedule(t,"",document.getElementById('v_store').value.trim()||"Common",this.rulesData); });
+                let sp = document.getElementById('v_schedule'); if(sp) sp.addEventListener('paste', e=>{ e.preventDefault(); let t=(e.clipboardData||window.clipboardData).getData('text'); e.target.value=RuleEngine.parseAndFormatSchedule(t,"",document.getElementById('v_store')?.value.trim()||"Common",this.rulesData); });
 
                 const mi = document.getElementById('v_magic_paste');
                 if(mi) {
@@ -326,12 +339,12 @@
                 }
                 
                 document.addEventListener('click', e => { let c=document.getElementById('af-filter-container'), d=document.getElementById('af-dropdown'); if(c&&d&&!c.contains(e.target)) d.style.display='none'; });
-                document.getElementById('catalogGrid').addEventListener('change', e => {
+                document.getElementById('catalogGrid')?.addEventListener('change', e => {
                     if(e.target.classList.contains('card-checkbox')){ let idx=parseInt(e.target.value); if(e.target.checked){this.selectedCards.add(idx);e.target.closest('.card').classList.add('selected');}else{this.selectedCards.delete(idx);e.target.closest('.card').classList.remove('selected');} this.updateBatchUI(); }
                 });
             }
 
-            get currentSheet() { return document.getElementById('v_sheet').value; }
+            get currentSheet() { return document.getElementById('v_sheet')?.value; }
             
             genId(code) {
                 if(!code) return 'N'+Math.floor(Math.random()*10000).toString().padStart(4,'0');
@@ -357,6 +370,19 @@
 
             registerKeyboardShortcuts() { document.addEventListener('keydown', e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'){e.preventDefault(); if(this.accessToken&&this.hasWriteAccess)this.saveToGoogleSheet(); else Utility.showToast('請先切換至編輯模式');} }); }
             
+            handleTokenExpired() {
+                sessionStorage.removeItem('gapi_access_token');
+                sessionStorage.removeItem('gapi_has_write');
+                this.accessToken = null; this.hasWriteAccess = false;
+                let ab = document.getElementById('auth-banner');
+                if(ab) {
+                    ab.style.display = 'block';
+                    ab.innerHTML = '⚠️ 授權已過期，請點擊此處重新登入！';
+                    ab.style.background = '#f8d7da'; ab.style.color = '#721c24';
+                }
+                Utility.showToast('⚠️ 授權已過期，請重新登入', true);
+            }
+
             toggleMode() { 
                 if(!this.isEditMode && !this.hasWriteAccess){ 
                     if(!this.tokenClient){ alert("⚠️ Google 授權模組異常。\n請確保透過 https:// 網域開啟！"); return; }
@@ -365,7 +391,7 @@
                 } 
                 this.isEditMode=!this.isEditMode; 
                 document.getElementById('app-container').className=this.isEditMode?'edit-mode':'view-mode'; 
-                document.getElementById('btn-mode-toggle').innerHTML=this.isEditMode?'👁️ 瀏覽':'📝 編輯'; 
+                let btnT = document.getElementById('btn-mode-toggle'); if(btnT) btnT.innerHTML=this.isEditMode?'👁️ 瀏覽':'📝 編輯'; 
                 this.selectedCards.clear(); this.updateBatchUI(); this.renderCatalog(); 
             }
             
@@ -390,20 +416,33 @@
             }
 
             triggerAuth() { 
-                if(!this.tokenClient) { alert("⚠️ 授權模組未載入。請稍後或確認是否阻擋腳本。"); return; }
+                if(!this.tokenClient) { alert("⚠️ 授權模組未載入。請稍後或確認是否被擋。"); return; }
                 this.tokenClient.requestAccessToken({prompt:'consent'}); 
             }
             
-            onAuthSuccess() { document.getElementById('auth-banner').style.display='none'; this.fetchSheetNames(); this.reloadRules(); }
+            onAuthSuccess() { let b=document.getElementById('auth-banner'); if(b)b.style.display='none'; this.fetchSheetNames(); this.reloadRules(); }
             
             async fetchSheetNames() {
-                try { let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets.properties(title)`,{headers:{'Authorization':'Bearer '+this.accessToken}}); let d=await res.json(); if(d.sheets) { let sel=document.getElementById('v_sheet'); sel.innerHTML=''; d.sheets.forEach(s=>{if(s.properties.title!=='Rules')sel.innerHTML+=`<option value="${s.properties.title}">${s.properties.title}</option>`;}); this.loadSheetData(); } }catch(e){}
+                try { 
+                    let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?fields=sheets.properties(title)`,{headers:{'Authorization':'Bearer '+this.accessToken}}); 
+                    if(res.status===401){ this.handleTokenExpired(); return; }
+                    let d=await res.json(); 
+                    if(d.sheets) { 
+                        let sel=document.getElementById('v_sheet'); 
+                        if(sel){
+                            sel.innerHTML=''; 
+                            d.sheets.forEach(s=>{if(s.properties.title!=='Rules')sel.innerHTML+=`<option value="${s.properties.title}">${s.properties.title}</option>`;}); 
+                        }
+                        this.loadSheetData(); 
+                    } 
+                }catch(e){}
             }
 
             async reloadRules(show=false) {
                 if(!this.accessToken) return;
                 try {
                     let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Rules!A:G`,{headers:{'Authorization':'Bearer '+this.accessToken}});
+                    if(res.status===401){ this.handleTokenExpired(); return; }
                     let d=await res.json();
                     if(d.values) {
                         this.rulesData = d.values.slice(1).map(r=>({priority:parseInt(r[0])||3,site:(r[1]||'').trim(),field:(r[2]||'').trim(),ruleType:(r[3]||'').trim(),pattern:r[4],action:r[5]})).sort((a,b)=>a.priority-b.priority);
@@ -412,13 +451,16 @@
                 } catch(e) { console.warn("Rules fail", e); }
             }
 
-            openRulesModal() { document.getElementById('rulesModal').style.display='flex'; document.getElementById('rule-current-store').innerText = document.getElementById('v_store').value.trim()||"Common"; this.renderRulesPreview(); }
+            openRulesModal() { document.getElementById('rulesModal').style.display='flex'; document.getElementById('rule-current-store').innerText = document.getElementById('v_store')?.value.trim()||"Common"; this.renderRulesPreview(); }
             renderRulesPreview() { let b=document.getElementById('rule-preview-box'); if(this.rulesData.length===0){b.innerHTML="無可用規則";return;} let h="<table style='width:100%;text-align:left;border-collapse:collapse;'><tr style='border-bottom:1px solid #ccc'><th>Pri</th><th>Site</th><th>Field</th><th>Pattern</th></tr>"; this.rulesData.forEach(r=>h+=`<tr><td>${r.priority}</td><td>${r.site}</td><td>${r.field}</td><td style='color:var(--primary)'>${r.pattern}</td></tr>`); b.innerHTML=h+"</table>"; }
 
             async loadSheetData(keep=false) {
-                if(!this.accessToken||!this.currentSheet) return; Utility.showLoading("讀取中..."); document.getElementById('btn-save-order').style.display='none';
+                if(!this.accessToken||!this.currentSheet) return; Utility.showLoading("讀取中..."); 
+                let btnO=document.getElementById('btn-save-order'); if(btnO)btnO.style.display='none';
                 try {
-                    let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(this.currentSheet)}!A:Z`,{headers:{'Authorization':'Bearer '+this.accessToken}}); let d=await res.json();
+                    let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(this.currentSheet)}!A:Z`,{headers:{'Authorization':'Bearer '+this.accessToken}}); 
+                    if(res.status===401){ this.handleTokenExpired(); Utility.hideLoading(); return; }
+                    let d=await res.json();
                     if(d.values&&d.values.length>0) {
                         this.headerRow = d.values[0]; const g = n=>this.headerRow.findIndex(x=>x.trim()===n);
                         this.colMap = {location:g('位置'),store:g('店名'),techId:g('技師編號'),startDate:g('到職日'),name:g('姓名'),age:g('年齡'),stats:g('數值'),photo:g('技師照片'),price:g('價金'),url:g('網址'),af:g('屬性'),level:g('等級'),schedule:g('行事曆'),favorite:g('最愛'),updateTime:g('更新時間')};
@@ -432,13 +474,24 @@
             }
 
             populateFilters() {
-                const sS=document.getElementById('filterStore'), cS=sS.value; sS.innerHTML='<option value="">🏪 所有店鋪</option>'; [...new Set(this.dataStore.map(r=>r._raw[this.colMap.store]).filter(x=>x))].sort().forEach(s=>sS.innerHTML+=`<option value="${s}">${s}</option>`); sS.value=cS;
-                const lS=document.getElementById('filterLocation'), cL=lS.value; lS.innerHTML='<option value="">🗺️ 所有位置</option>'; [...new Set(this.dataStore.map(r=>r._raw[this.colMap.location]).filter(x=>x))].sort().forEach(s=>lS.innerHTML+=`<option value="${s}">${s}</option>`); lS.value=cL;
+                const sS=document.getElementById('filterStore');
+                if(sS){ const cS=sS.value; sS.innerHTML='<option value="">🏪 所有店鋪</option>'; [...new Set(this.dataStore.map(r=>r._raw[this.colMap.store]).filter(x=>x))].sort().forEach(s=>sS.innerHTML+=`<option value="${s}">${s}</option>`); sS.value=cS; }
+                
+                const lS=document.getElementById('filterLocation');
+                if(lS){ const cL=lS.value; lS.innerHTML='<option value="">🗺️ 所有位置</option>'; [...new Set(this.dataStore.map(r=>r._raw[this.colMap.location]).filter(x=>x))].sort().forEach(s=>lS.innerHTML+=`<option value="${s}">${s}</option>`); lS.value=cL; }
+                
                 let afs=new Set(); this.dataStore.forEach(r=>{ (r._raw[this.colMap.af]||'').split(/[\/／]/).forEach(a=>{if(a.trim())afs.add(a.trim());}); });
-                let b=document.getElementById('af-checkboxes'); b.innerHTML='<label><input type="checkbox" value="(無屬性)" checked onchange="app.updateAfSelection()"> <i>(無屬性)</i></label>';
-                [...afs].sort().forEach(a=>b.innerHTML+=`<label><input type="checkbox" value="${a}" checked onchange="app.updateAfSelection()"> ${a}</label>`); this.selectAllAf(true);
-                let dS=document.getElementById('filterDate'), dt=new Set(); this.dataStore.forEach(r=>{let m=(r._raw[this.colMap.schedule]||'').match(/\d{1,2}\/\d{1,2}/g);if(m)m.forEach(x=>dt.add(x));});
-                let cD=dS.value; dS.innerHTML='<option value="">📅 所有日期</option>'; [...dt].sort().forEach(x=>dS.innerHTML+=`<option value="${x}">${x}</option>`); if(dt.has(cD))dS.value=cD;
+                let b=document.getElementById('af-checkboxes'); 
+                if(b){
+                    b.innerHTML='<label><input type="checkbox" value="(無屬性)" checked onchange="app.updateAfSelection()"> <i>(無屬性)</i></label>';
+                    [...afs].sort().forEach(a=>b.innerHTML+=`<label><input type="checkbox" value="${a}" checked onchange="app.updateAfSelection()"> ${a}</label>`); this.selectAllAf(true);
+                }
+                
+                let dS=document.getElementById('filterDate');
+                if(dS){
+                    let dt=new Set(); this.dataStore.forEach(r=>{let m=(r._raw[this.colMap.schedule]||'').match(/\d{1,2}\/\d{1,2}/g);if(m)m.forEach(x=>dt.add(x));});
+                    let cD=dS.value; dS.innerHTML='<option value="">📅 所有日期</option>'; [...dt].sort().forEach(x=>dS.innerHTML+=`<option value="${x}">${x}</option>`); if(dt.has(cD))dS.value=cD;
+                }
             }
 
             async saveToGoogleSheet() {
@@ -462,7 +515,7 @@
                 if(!this.accessToken)return; if(!bg)Utility.showLoading("排序中...");
                 try {
                     await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(this.currentSheet)}!A2?valueInputOption=USER_ENTERED`,{method:'PUT',headers:{'Authorization':'Bearer '+this.accessToken},body:JSON.stringify({values:this.dataStore.map(x=>x._raw)})});
-                    this.dataStore.forEach((x,i)=>x._rowIndex=i+2); if(!bg){Utility.showToast("✅ 儲存成功"); document.getElementById('btn-save-order').style.display='none'; this.renderCatalog();}
+                    this.dataStore.forEach((x,i)=>x._rowIndex=i+2); if(!bg){Utility.showToast("✅ 儲存成功"); let bo=document.getElementById('btn-save-order');if(bo)bo.style.display='none'; this.renderCatalog();}
                 }catch(e){if(!bg)Utility.showToast("❌ 錯誤",true);} if(!bg)Utility.hideLoading();
             }
 
@@ -541,53 +594,34 @@
                 setTimeout(()=>mi.value='', 100);
             }
 
-            async deleteSelected() {
-                if(!this.accessToken||this.selectedCards.size===0)return; if(!confirm(`⚠️ 刪除這 ${this.selectedCards.size} 筆資料？`))return; Utility.showLoading("批量刪除...");
-                try {
-                    let sId = parseInt(document.getElementById('v_sheet').options[document.getElementById('v_sheet').selectedIndex].dataset.sheetId);
-                    let rs=[...this.selectedCards].map(i=>this.dataStore[i]._rowIndex-1).sort((a,b)=>b-a);
-                    let reqs=rs.map(r=>({deleteDimension:{range:{sheetId:sId,dimension:"ROWS",startIndex:r,endIndex:r+1}}}));
-                    let res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,{method:'POST',headers:{'Authorization':'Bearer '+this.accessToken},body:JSON.stringify({requests:reqs})});
-                    if(!res.ok)throw new Error(); Utility.showToast("✅ 批量刪除成功"); this.selectedCards.clear(); this.updateBatchUI(); this.loadSheetData();
-                }catch(e){Utility.showToast("❌ 錯誤",true);} Utility.hideLoading();
-            }
-
             editRecord(i) {
                 if(!this.isEditMode)this.toggleMode(); let r=this.dataStore[i]._raw;
-                const sv=(id,k)=>{document.getElementById(id).value=r[this.colMap[k]]||'';};
-                document.getElementById('v_row_index').value=this.dataStore[i]._rowIndex||'';
+                const sv=(id,k)=>{let el=document.getElementById(id);if(el)el.value=r[this.colMap[k]]||'';};
+                let ri=document.getElementById('v_row_index'); if(ri)ri.value=this.dataStore[i]._rowIndex||'';
                 sv('v_location','location');sv('v_store','store');sv('v_name','name');sv('v_age','age');sv('v_stats','stats');sv('v_price','price');sv('v_url','url');sv('v_af','af');sv('v_level','level');sv('v_schedule','schedule');
-                let tid=r[this.colMap.techId]||""; document.getElementById('v_tech_id').value=tid.startsWith("'")?tid.substring(1):tid;
-                let d=r[this.colMap.startDate]||"", m=d.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/); document.getElementById('v_start_date').value=m?`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`:'';
-                let u=r[this.colMap.photo]||""; document.getElementById('v_photo_url').value=u; let cu=Utility.cleanDriveUrl(u);
+                let tid=r[this.colMap.techId]||""; let tv=document.getElementById('v_tech_id'); if(tv)tv.value=tid.startsWith("'")?tid.substring(1):tid;
+                let d=r[this.colMap.startDate]||"", m=d.match(/(\d{4})\s*[年\/\-.]\s*(\d{1,2})\s*[月\/\-.]\s*(\d{1,2})/); let sdv=document.getElementById('v_start_date'); if(sdv)sdv.value=m?`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`:'';
+                let u=r[this.colMap.photo]||""; let pu=document.getElementById('v_photo_url'); if(pu)pu.value=u; let cu=Utility.cleanDriveUrl(u);
                 let img=document.getElementById('preview_photo'), txt=document.getElementById('text_photo'), btn=document.getElementById('btn_del_photo');
-                if(cu&&cu.startsWith('http')){img.src=cu;img.style.display='block';txt.style.display='none';btn.style.display='flex';}else{img.style.display='none';txt.style.display='block';btn.style.display='none';}
-                document.getElementById('btn-delete').style.display='inline-flex'; if(window.innerWidth<=850)document.getElementById('panel-form').scrollIntoView();
+                if(img&&txt&&btn){if(cu&&cu.startsWith('http')){img.src=cu;img.style.display='block';txt.style.display='none';btn.style.display='flex';}else{img.style.display='none';txt.style.display='block';btn.style.display='none';}}
+                let bd=document.getElementById('btn-delete'); if(bd)bd.style.display='inline-flex'; if(window.innerWidth<=850)document.getElementById('panel-form')?.scrollIntoView();
             }
 
             clearForm() {
-                ['v_row_index','v_location','v_store','v_tech_id','v_start_date','v_name','v_age','v_stats','v_price','v_url','v_af','v_level','v_schedule','v_photo_url'].forEach(i=>document.getElementById(i).value='');
-                document.getElementById('preview_photo').style.display='none'; document.getElementById('text_photo').style.display='block'; document.getElementById('btn_del_photo').style.display='none'; document.getElementById('btn-delete').style.display='none'; cropperSvc.pendingBlob=null; if(!this.isEditMode)this.toggleMode();
+                ['v_row_index','v_location','v_store','v_tech_id','v_start_date','v_name','v_age','v_stats','v_price','v_url','v_af','v_level','v_schedule','v_photo_url'].forEach(i=>{let el=document.getElementById(i);if(el)el.value='';});
+                let img=document.getElementById('preview_photo'), txt=document.getElementById('text_photo'), btn=document.getElementById('btn_del_photo'), bd=document.getElementById('btn-delete');
+                if(img)img.style.display='none'; if(txt)txt.style.display='block'; if(btn)btn.style.display='none'; if(bd)bd.style.display='none';
+                cropperSvc.pendingBlob=null; if(!this.isEditMode)this.toggleMode();
             }
 
             toggleFavorite(e, idx) { e.stopPropagation(); let r=this.dataStore[idx]._raw; r[this.colMap.favorite]=r[this.colMap.favorite]==='Y'?'':'Y'; this.renderCatalog(); this.saveOrderToGoogleSheet(true); }
             copyItem(o, n) { let c=[...this.dataStore[o]._raw]; ['photo','techId','url','age','stats','startDate','schedule','favorite','updateTime'].forEach(k=>{if(this.colMap[k]!==-1)c[this.colMap[k]]="";}); this.dataStore.splice(n,0,{id:`N${Date.now()}`,_raw:c,_rowIndex:""}); this.renderCatalog(); this.saveOrderToGoogleSheet(true); }
             reorderItems(o, n) { if(o===n)return; this.dataStore.splice(n,0,this.dataStore.splice(o,1)[0]); this.renderCatalog(); this.saveOrderToGoogleSheet(true); }
-            deleteImage(e) { e.stopPropagation(); document.getElementById('v_photo_url').value=''; document.getElementById('preview_photo').style.display='none'; document.getElementById('text_photo').style.display='block'; document.getElementById('btn_del_photo').style.display='none'; cropperSvc.pendingBlob=null; }
-            
-            async deleteRecordForm() { 
-                if(!confirm(`⚠️ 確定刪除？`))return; Utility.showLoading("刪除中..."); 
-                try{
-                    let sId = parseInt(document.getElementById('v_sheet').options[document.getElementById('v_sheet').selectedIndex].dataset.sheetId);
-                    let rIdx = parseInt(document.getElementById('v_row_index').value);
-                    let reqs=[{deleteDimension:{range:{sheetId:sId,dimension:"ROWS",startIndex:rIdx-1,endIndex:rIdx}}}]; 
-                    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}:batchUpdate`,{method:'POST',headers:{'Authorization':'Bearer '+this.accessToken},body:JSON.stringify({requests:reqs})}); Utility.showToast("✅ 刪除成功"); this.clearForm(); this.loadSheetData(); 
-                }catch(e){Utility.showToast("❌ 錯誤",true);} Utility.hideLoading(); 
-            }
+            deleteImage(e) { e.stopPropagation(); let pu=document.getElementById('v_photo_url'), img=document.getElementById('preview_photo'), txt=document.getElementById('text_photo'), btn=document.getElementById('btn_del_photo'); if(pu)pu.value=''; if(img)img.style.display='none'; if(txt)txt.style.display='block'; if(btn)btn.style.display='none'; cropperSvc.pendingBlob=null; }
 
             renderCatalog() {
-                const kw=document.getElementById('searchInput').value.trim(), fS=document.getElementById('filterStore').value, fL=document.getElementById('filterLocation').value, fD=document.getElementById('filterDate').value, fT1=document.getElementById('filterTimeStart').value, fT2=document.getElementById('filterTimeEnd').value, fSt=document.getElementById('filterStatus').value, sO=document.getElementById('sortOption').value, qS=fT1?parseInt(fT1):null, qE=fT2?parseInt(fT2):null;
-                const grid=document.getElementById('catalogGrid'); grid.innerHTML=''; let list=[];
+                const kw=document.getElementById('searchInput')?.value.trim().toLowerCase()||'', fS=document.getElementById('filterStore')?.value||'', fL=document.getElementById('filterLocation')?.value||'', fD=document.getElementById('filterDate')?.value||'', fT1=document.getElementById('filterTimeStart')?.value||'', fT2=document.getElementById('filterTimeEnd')?.value||'', fSt=document.getElementById('filterStatus')?.value||'', sO=document.getElementById('sortOption')?.value||'', qS=fT1?parseInt(fT1):null, qE=fT2?parseInt(fT2):null;
+                const grid=document.getElementById('catalogGrid'); if(!grid)return; grid.innerHTML=''; let list=[];
                 this.dataStore.forEach((item, index) => {
                     let r=item._raw, loc=r[this.colMap.location]||'', sto=r[this.colMap.store]||'';
                     if(fS&&sto!==fS)return; if(fL&&loc!==fL)return;
