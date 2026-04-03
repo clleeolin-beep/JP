@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Talent DB Bridge</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
@@ -10,26 +10,21 @@
       --bg: #f8fbff;
       --text: #0f172a;
       --muted: #64748b;
-      --card: rgba(255, 255, 255, 0.86);
+      --card: rgba(255, 255, 255, 0.88);
       --line: rgba(148, 163, 184, 0.28);
       --btn: #111827;
       --btn-hover: #1f2937;
       --danger: #dc2626;
     }
     * { box-sizing: border-box; }
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-    }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
     body {
       font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
       color: var(--text);
       background:
-        radial-gradient(circle at 14% 18%, rgba(191, 219, 254, 0.55), transparent 32%),
-        radial-gradient(circle at 84% 16%, rgba(251, 207, 232, 0.5), transparent 35%),
-        radial-gradient(circle at 84% 86%, rgba(186, 230, 253, 0.45), transparent 32%),
+        radial-gradient(circle at 14% 18%, rgba(191, 219, 254, 0.56), transparent 32%),
+        radial-gradient(circle at 84% 16%, rgba(251, 207, 232, 0.52), transparent 35%),
+        radial-gradient(circle at 84% 86%, rgba(186, 230, 253, 0.48), transparent 32%),
         #f8fbff;
     }
     #fiber-bg {
@@ -38,7 +33,7 @@
       width: 100%;
       height: 100%;
       z-index: 0;
-      opacity: 0.9;
+      opacity: 0.92;
       pointer-events: none;
     }
     #auth-overlay {
@@ -51,7 +46,7 @@
       padding: 16px;
     }
     .login-card {
-      width: min(720px, 100%);
+      width: min(760px, 100%);
       border-radius: 28px;
       border: 1px solid var(--line);
       background: var(--card);
@@ -150,23 +145,10 @@
       display: none;
     }
     @media (max-width: 760px) {
-      .login-card {
-        border-radius: 20px;
-        padding: 30px 16px 22px;
-      }
-      .chip {
-        width: 64px;
-        height: 64px;
-        font-size: 32px;
-      }
-      .login-btn {
-        height: 50px;
-      }
-      .g-badge {
-        width: 36px;
-        height: 36px;
-        font-size: 22px;
-      }
+      .login-card { border-radius: 20px; padding: 30px 16px 22px; }
+      .chip { width: 64px; height: 64px; font-size: 32px; }
+      .login-btn { height: 50px; }
+      .g-badge { width: 36px; height: 36px; font-size: 22px; }
     }
   </style>
 </head>
@@ -175,18 +157,18 @@
 
   <div id="auth-overlay">
     <div class="login-card">
-      <div class="chip">⚙</div>
+      <div class="chip">AI</div>
       <h1>AI Studio Lab</h1>
-      <p class="sub">安全性管制中 (v2.2.3)</p>
+      <p class="sub">Secure Access (v2.2.3)</p>
       <button id="btn-login" class="login-btn" type="button">
         <span class="g-badge">G</span>
-        <span>使用 Google 帳戶登入</span>
+        <span>Sign in with Google</span>
       </button>
-      <div id="status">初始化中...</div>
+      <div id="status">Waiting for Google sign in...</div>
     </div>
   </div>
 
-  <button id="btn-logout" type="button">登出</button>
+  <button id="btn-logout" type="button">Sign out</button>
   <iframe id="app-frame" title="Talent DB Private App"></iframe>
 
   <script>
@@ -211,7 +193,9 @@
       profileEmail: "",
       expiresAtMs: 0,
       refreshTimer: null,
-      appBlobUrl: ""
+      appBlobUrl: "",
+      bridgeNonce: "",
+      bridgeAcked: false
     };
 
     const overlayEl = document.getElementById("auth-overlay");
@@ -256,23 +240,23 @@
     }
 
     async function fetchDriveFileText(fileId) {
-      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-        headers: { Authorization: `Bearer ${state.accessToken}` }
+      const res = await fetch("https://www.googleapis.com/drive/v3/files/" + fileId + "?alt=media", {
+        headers: { Authorization: "Bearer " + state.accessToken }
       });
-      if (!res.ok) throw new Error(`Drive read failed (${res.status})`);
+      if (!res.ok) throw new Error("Drive read failed (" + res.status + ")");
       return res.text();
     }
 
     async function fetchDriveDocText(fileId) {
       const res = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`,
-        { headers: { Authorization: `Bearer ${state.accessToken}` } }
+        "https://www.googleapis.com/drive/v3/files/" + fileId + "/export?mimeType=text/plain",
+        { headers: { Authorization: "Bearer " + state.accessToken } }
       );
-      if (!res.ok) throw new Error(`Drive doc export failed (${res.status})`);
+      if (!res.ok) throw new Error("Drive doc export failed (" + res.status + ")");
       return res.text();
     }
 
-    async function fetchAnyText(fileId, preferDoc = false) {
+    async function fetchAnyText(fileId, preferDoc) {
       try {
         return preferDoc ? await fetchDriveDocText(fileId) : await fetchDriveFileText(fileId);
       } catch (_) {
@@ -283,7 +267,7 @@
     async function fetchProfileEmail() {
       try {
         const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${state.accessToken}` }
+          headers: { Authorization: "Bearer " + state.accessToken }
         });
         if (!res.ok) return "";
         const data = await res.json();
@@ -302,18 +286,19 @@
         const useDocExport = String(file.source || "").toLowerCase() === "gdoc";
         const src = await fetchAnyText(file.id, useDocExport);
         const safeJs = String(src || "").replace(/<\/script>/gi, "<\\/script>");
-        blocks.push(`<script>\n${safeJs}\n<\/script>`);
+        blocks.push("<script>\n" + safeJs + "\n<\\/script>");
       }
       if (!blocks.length) return entryHtml;
       const merged = blocks.join("\n");
-      return entryHtml.includes("</body>")
-        ? entryHtml.replace("</body>", `${merged}\n</body>`)
-        : `${entryHtml}\n${merged}`;
+      if (entryHtml.includes("</body>")) return entryHtml.replace("</body>", merged + "\n</body>");
+      return entryHtml + "\n" + merged;
     }
 
     function bridgeAuthToApp() {
+      const nonce = state.bridgeNonce || "";
       const payload = {
         type: "JP_AUTH_BRIDGE",
+        bridgeNonce: nonce,
         accessToken: state.accessToken,
         hasWriteAccess: state.hasWriteAccess
       };
@@ -328,7 +313,7 @@
             cw.sessionStorage.setItem("gapi_access_token", state.accessToken || "");
             cw.sessionStorage.setItem("gapi_has_write", state.hasWriteAccess ? "true" : "false");
           }
-          if (cw.app) {
+          if (state.bridgeAcked && cw.app) {
             cw.app.accessToken = state.accessToken || cw.app.accessToken;
             cw.app.hasWriteAccess = !!state.hasWriteAccess;
             if (typeof cw.app.onAuthSuccess === "function") cw.app.onAuthSuccess();
@@ -342,53 +327,44 @@
     }
 
     async function loadPrivateApp() {
-      try {
-        const manifestText = await fetchAnyText(APP_MANIFEST_FILE_ID, true);
-        const manifest = JSON.parse((manifestText || "").replace(/^\uFEFF/, ""));
-        if (!manifest.entryFileId) throw new Error("Manifest 缺少 entryFileId。");
+      const manifestText = await fetchAnyText(APP_MANIFEST_FILE_ID, true);
+      const manifest = JSON.parse((manifestText || "").replace(/^\uFEFF/, ""));
+      if (!manifest.entryFileId) throw new Error("Manifest missing entryFileId");
 
-        const useDocExport = String(manifest.entrySource || "").toLowerCase() === "gdoc";
-        let entryHtml = await fetchAnyText(manifest.entryFileId, useDocExport);
-        entryHtml = (entryHtml || "").replace(/^\uFEFF/, "");
-        entryHtml = await inlineCoreFiles(entryHtml, manifest.coreFiles);
+      const useDocExport = String(manifest.entrySource || "").toLowerCase() === "gdoc";
+      let entryHtml = await fetchAnyText(manifest.entryFileId, useDocExport);
+      entryHtml = (entryHtml || "").replace(/^\uFEFF/, "");
+      entryHtml = await inlineCoreFiles(entryHtml, manifest.coreFiles);
 
-        if (state.appBlobUrl) URL.revokeObjectURL(state.appBlobUrl);
-        state.appBlobUrl = URL.createObjectURL(new Blob([entryHtml], { type: "text/html" }));
+      if (state.appBlobUrl) URL.revokeObjectURL(state.appBlobUrl);
+      state.appBlobUrl = URL.createObjectURL(new Blob([entryHtml], { type: "text/html" }));
+      state.bridgeNonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
+      state.bridgeAcked = false;
 
-        frameEl.onload = () => {
-          bridgeAuthToApp();
-          showSignedIn();
-          setStatus("");
-        };
-        frameEl.src = state.appBlobUrl;
-      } catch (error) {
-        showSignedOut();
-        setStatus(`載入失敗：${error.message}`, "error");
-      }
+      frameEl.onload = () => {
+        bridgeAuthToApp();
+        showSignedIn();
+        setStatus("");
+      };
+      frameEl.src = state.appBlobUrl;
     }
 
     function scheduleSilentRefresh() {
       if (state.refreshTimer) clearTimeout(state.refreshTimer);
       if (!state.expiresAtMs || !state.tokenClient) return;
-
-      const now = Date.now();
-      const leadMs = 5 * 60 * 1000;
-      const dueIn = Math.max(15 * 1000, state.expiresAtMs - now - leadMs);
+      const dueIn = Math.max(15000, state.expiresAtMs - Date.now() - (5 * 60 * 1000));
       state.refreshTimer = setTimeout(() => {
-        try {
-          state.tokenClient.requestAccessToken({ prompt: "" });
-        } catch (_) {
-        }
+        try { state.tokenClient.requestAccessToken({ prompt: "" }); } catch (_) {}
       }, dueIn);
     }
 
     function onAuthError(resp) {
-      const err = String(resp && resp.error || "unknown");
+      const err = String((resp && resp.error) || "unknown");
       if (err === "access_denied" || err === "popup_closed") {
-        setStatus("登入流程已取消。", "error");
+        setStatus("Sign in cancelled.", "error");
         return;
       }
-      setStatus(`登入失敗：${err}`, "error");
+      setStatus("Sign in failed: " + err, "error");
     }
 
     async function onAuthSuccess(resp) {
@@ -403,21 +379,17 @@
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
       );
-
-      const expiresInSec = Number(resp.expires_in || 3600);
-      state.expiresAtMs = Date.now() + (expiresInSec * 1000);
+      state.expiresAtMs = Date.now() + (Number(resp.expires_in || 3600) * 1000);
       state.profileEmail = await fetchProfileEmail();
       persistAuth();
       scheduleSilentRefresh();
 
-      if (state.profileEmail) {
-        setStatus(`已使用 ${state.profileEmail} 登入`, "ok");
-      }
-
-      if (!frameEl.src || frameEl.src === "about:blank") {
+      if (state.profileEmail) setStatus("Signed in as: " + state.profileEmail, "ok");
+      try {
         await loadPrivateApp();
-      } else {
-        bridgeAuthToApp();
+      } catch (error) {
+        showSignedOut();
+        setStatus("Private app load failed: " + error.message, "error");
       }
     }
 
@@ -432,19 +404,19 @@
       clearPersistedAuth();
       frameEl.src = "about:blank";
       showSignedOut();
-      setStatus("已登出。");
+      setStatus("Signed out.");
       if (token && window.google && google.accounts && google.accounts.oauth2) {
         google.accounts.oauth2.revoke(token, () => {});
       }
     }
 
     function isTokenLikelyValid() {
-      return !!state.accessToken && !!state.expiresAtMs && (Date.now() < state.expiresAtMs - 10 * 1000);
+      return !!state.accessToken && !!state.expiresAtMs && (Date.now() < state.expiresAtMs - 10000);
     }
 
     function initAuth() {
       if (!CLIENT_ID || !APP_MANIFEST_FILE_ID) {
-        setStatus("橋接設定缺少 CLIENT_ID 或 APP_MANIFEST_FILE_ID。", "error");
+        setStatus("Missing CLIENT_ID or APP_MANIFEST_FILE_ID.", "error");
         return;
       }
       if (!window.google || !google.accounts || !google.accounts.oauth2) {
@@ -461,48 +433,52 @@
       loadPersistedAuth();
       if (isTokenLikelyValid()) {
         scheduleSilentRefresh();
-        loadPrivateApp();
+        loadPrivateApp().then(() => {
+          if (state.profileEmail) setStatus("Signed in as: " + state.profileEmail, "ok");
+        }).catch((error) => {
+          showSignedOut();
+          setStatus("Private app load failed: " + error.message, "error");
+        });
         return;
       }
 
-      setStatus("請選擇 Google 帳號登入");
-      try {
-        state.tokenClient.requestAccessToken({ prompt: "select_account" });
-      } catch (_) {
-      }
+      setStatus("Please sign in with Google.");
     }
 
     window.addEventListener("message", (event) => {
+      if (event.source !== frameEl.contentWindow) return;
       const data = event && event.data;
       if (!data || typeof data !== "object") return;
+      if (state.bridgeNonce && data.bridgeNonce && data.bridgeNonce !== state.bridgeNonce) return;
+
+      if (data.type === "JP_BRIDGE_READY") state.bridgeAcked = true;
+
       if (data.type === "JP_BRIDGE_REQUEST") {
         try {
           const cw = frameEl.contentWindow;
           if (!cw) return;
           cw.postMessage({
             type: "JP_AUTH_BRIDGE",
+            bridgeNonce: state.bridgeNonce,
             accessToken: state.accessToken,
             hasWriteAccess: state.hasWriteAccess
           }, "*");
         } catch (_) {
         }
       }
+
       if (data.type === "JP_BRIDGE_AUTH_ERROR") {
-        try {
-          state.tokenClient.requestAccessToken({ prompt: "" });
-        } catch (_) {
-        }
+        try { state.tokenClient.requestAccessToken({ prompt: "" }); } catch (_) {}
       }
     });
 
     loginBtn.addEventListener("click", () => {
       if (!state.tokenClient) {
-        setStatus("OAuth 尚未初始化，請稍後。", "error");
+        setStatus("OAuth not ready yet. Please retry.", "error");
         return;
       }
       state.tokenClient.requestAccessToken({ prompt: "select_account" });
     });
-
     logoutBtn.addEventListener("click", logout);
 
     function initFiber() {
@@ -528,7 +504,7 @@
             vx: rnd(-0.24, 0.24),
             vy: rnd(-0.24, 0.24),
             r: rnd(1.1, 2.2),
-            c: i % 2 ? "rgba(96,165,250,0.88)" : "rgba(244,114,182,0.8)"
+            c: i % 2 ? "rgba(96,165,250,0.88)" : "rgba(244,114,182,0.80)"
           });
         }
       }
@@ -553,8 +529,8 @@
             if (dist > linkDist) continue;
             const alpha = (1 - dist / linkDist) * 0.16;
             ctx.strokeStyle = i % 2
-              ? `rgba(96,165,250,${alpha.toFixed(3)})`
-              : `rgba(244,114,182,${alpha.toFixed(3)})`;
+              ? "rgba(96,165,250," + alpha.toFixed(3) + ")"
+              : "rgba(244,114,182," + alpha.toFixed(3) + ")";
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
