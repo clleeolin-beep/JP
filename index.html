@@ -218,7 +218,7 @@
         const tokenSeed = `<script>
 sessionStorage.setItem("gapi_access_token", ${JSON.stringify(state.accessToken)});
 sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ? "true" : "false")});
-</script>`;
+<\/script>`;
         const seededHtml = entryHtml.includes("<head>")
           ? entryHtml.replace("<head>", `<head>${tokenSeed}`)
           : `${tokenSeed}${entryHtml}`;
