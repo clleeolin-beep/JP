@@ -236,7 +236,7 @@
 <body>
 
     <div id="loading-overlay">
-        <div id="loading-text">資料處理中，請稍候...</div>
+        <div id="loading-text" style="white-space: pre-wrap;">資料處理中，請稍候...</div>
     </div>
     
     <div id="toast-container">ℹ️ 提示訊息</div>
@@ -265,6 +265,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <h3 style="margin:0;">📝 資料編輯</h3>
                 <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <button class="warning mini" onclick="app.cleanupDriveFolder()" title="清理無用圖片並依據新邏輯重新命名現有圖片">☁️ 雲端清理</button>
                     <button class="secondary mini" onclick="app.executeBatchUpdateOnly()" title="僅更新已有技師的班表與數值，不建立新卡片">⚡ 僅批次更新</button>
                     <button class="warning mini" onclick="app.executeBatchCreate()" title="更新既有，若無重複則自動建立新卡片(繼承下方設定)">🌟 批次建檔+更新</button>
                     <button class="success mini" onclick="app.clearForm()">➕ 新增</button>
@@ -275,8 +276,8 @@
 
             <div class="form-grid">
                 <div class="form-group full">
-                    <label>✨ 魔法貼上 (單人自動解析 / 多人批次匯入)</label>
-                    <textarea id="v_magic_paste" rows="2" placeholder="在此貼上「單人網址、文字」可自動分配。&#10;若貼上「多人一覽清單」，請選擇上方按鈕執行批次！"></textarea>
+                    <label>✨ 魔法貼上 (單人解析 / 批次匯入 / 貼上網址自動爬蟲)</label>
+                    <textarea id="v_magic_paste" rows="2" placeholder="支援三種模式：&#10;1. 貼上「單人資料文本」&#10;2. 貼上「多人一覽清單文本」&#10;3. 直接貼上「清單網址」(例如 yoasobi 的 girls-list)，將自動跨域抓取代碼！"></textarea>
                 </div>
             </div>
 
@@ -293,8 +294,8 @@
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label>技師編號 (留白自動生成)</label>
-                    <input type="text" id="v_tech_id" placeholder="例如：001 或 N001">
+                    <label>技師編號 (留白自動依店名代碼生成)</label>
+                    <input type="text" id="v_tech_id" placeholder="例如：robo-deli_0001">
                 </div>
                 <div class="form-group">
                     <label>到職日</label>
@@ -356,7 +357,7 @@
             <input type="hidden" id="v_photo_url">
 
             <div class="photo-upload-area">
-                <label>📷 技師照片 (自動命名：店名-姓名)</label>
+                <label>📷 技師照片 (自動命名：店名代碼_姓名)</label>
                 <div class="img-preview-box" title="點擊上傳或調整裁切，或直接全域 Ctrl+V 貼上截圖">
                     <img id="preview_photo" src="" style="display:none; pointer-events: none;">
                     <span id="text_photo">點擊上傳，或 <b>Ctrl+V</b> 貼上截圖</span>
@@ -491,7 +492,9 @@
             }
             
             getSafePattern(pattern) {
-                return pattern ? pattern.replace(/^\(\?[a-z]+\)/i, '') : '';
+                if (!pattern) return '';
+                // 終極防護：拔除 Google Sheets 容易導致的無效 JS Regex 標記
+                return pattern.replace(/\(\?[a-z]+\)/gi, '');
             }
 
             extractByRules(text, html, field, siteMatches) {
@@ -541,15 +544,35 @@
         window.ruleEngine = new RuleEngine();
 
         class Utility {
-            static generateID() { return 'N' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'); }
+            static generateID(storeCode = 'UNKNOWN') {
+                return storeCode + '_' + Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            }
+
+            static getStoreCodeByName(storeName) {
+                if (!storeName) return 'UNKNOWN';
+                let cleanTarget = Utility.cleanStoreNameDisplay(storeName).toLowerCase();
+                let rule = window.ruleEngine.rules.find(r => r.field === 'v_store' && r.action && Utility.cleanStoreNameDisplay(r.action).toLowerCase() === cleanTarget);
+                if (rule) return rule.pattern || rule.siteMatch;
+                
+                rule = window.ruleEngine.rules.find(r => r.field === 'v_store' && r.action && Utility.cleanStoreNameDisplay(r.action).toLowerCase().includes(cleanTarget));
+                if (rule) return rule.pattern || rule.siteMatch;
+                return 'UNKNOWN';
+            }
+
+            static extractDriveFileId(url) {
+                if (!url) return null;
+                const match = url.match(/[-\w]{25,}/);
+                return match ? match[0] : null;
+            }
+
             static showLoading(msg) { document.getElementById('loading-text').innerText = msg; document.getElementById('loading-overlay').style.display = 'flex'; }
             static hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
             
             static getSafePattern(pattern) {
-                return pattern ? pattern.replace(/^\(\?[a-z]+\)/i, '') : '';
+                if (!pattern) return '';
+                return pattern.replace(/\(\?[a-z]+\)/gi, '');
             }
             
-            // 強制清洗所有店名的顯示與輸入雜訊
             static cleanStoreNameDisplay(store) {
                 if (!store) return "";
                 return store.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
@@ -803,9 +826,8 @@
                 return h * 60 + m;
             }
 
-            // 【終極防護】：絕對拒絕「子包含母」而引發的跨店污染，強制精準隔離！
             static isSameStore(dbStore, extStore) {
-                if (!dbStore || !extStore) return false; // 若來源未知，禁止盲目覆蓋
+                if (!dbStore || !extStore) return false; 
                 
                 let s1 = dbStore.toLowerCase().replace(/[\s　]/g, '');
                 let s2 = extStore.toLowerCase().replace(/[\s　]/g, '');
@@ -1017,7 +1039,17 @@
                     if (!hasImage && !isInput) {
                         let text = (e.clipboardData || e.originalEvent.clipboardData).getData('text');
                         let html = (e.clipboardData || e.originalEvent.clipboardData).getData('text/html') || '';
+                        
                         if (text) {
+                            // 🚀 若偵測到網址，自動攔截送去 proxy 爬蟲
+                            if (text.trim().match(/^https?:\/\/[^\s]+$/) && (text.includes('list') || text.includes('cast'))) {
+                                e.preventDefault();
+                                if (!window.app.isEditMode) window.app.toggleMode();
+                                document.getElementById('v_magic_paste').value = text;
+                                window.app.fetchAndProcessList(text.trim());
+                                return;
+                            }
+
                             let splitterRules = window.ruleEngine.getRulesForField('System_Anchor');
                             let splitPattern = '收藏夾';
                             splitterRules.forEach(r => { if(r.ruleType === 'Block_Splitter') splitPattern = r.pattern; });
@@ -1176,6 +1208,15 @@
                         let text = (e.clipboardData || window.clipboardData).getData('text');
                         let html = (e.clipboardData || window.clipboardData).getData('text/html') || '';
                         
+                        // 🚀 URL 貼上事件攔截
+                        if (text.trim().match(/^https?:\/\/[^\s]+$/) && (text.includes('list') || text.includes('cast'))) {
+                            e.preventDefault();
+                            if (!this.isEditMode) this.toggleMode();
+                            magicInput.value = text;
+                            this.fetchAndProcessList(text.trim());
+                            return;
+                        }
+
                         let splitterRules = window.ruleEngine.getRulesForField('System_Anchor');
                         let splitPattern = '收藏夾';
                         splitterRules.forEach(r => { if(r.ruleType === 'Block_Splitter') splitPattern = r.pattern; });
@@ -1220,6 +1261,162 @@
             }
 
             get currentSheet() { return document.getElementById('v_sheet')?.value; }
+
+            // ☁️ 核心升級：一鍵掃描 Google Drive，自動刪除廢圖並重命名
+            async cleanupDriveFolder() {
+                if (!this.accessToken || !this.hasWriteAccess) {
+                    Utility.showToast("⚠️ 請先切換至編輯模式並完成 Google 授權！", true);
+                    return;
+                }
+                if (!confirm("⚠️ 警告：此操作將掃描指定的 Google Drive 資料夾，刪除目前所有分頁清單中沒有用到的廢棄照片，並自動將現有照片依據 [店名代碼_姓名.jpg] 重新命名。\n\n確定要執行嗎？(此過程可能需要數分鐘)")) return;
+
+                Utility.showLoading("📡 掃描雲端硬碟與資料庫中...");
+                try {
+                    // 1. 取得所有 Google Sheets 分頁的資料
+                    const sheetRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}?includeGridData=true`, {
+                        headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                    });
+                    const sheetData = await sheetRes.json();
+                    
+                    let usedFiles = new Map();
+                    
+                    // 歷遍所有分頁
+                    if (sheetData.sheets) {
+                        sheetData.sheets.forEach(sheet => {
+                            let rows = sheet.data[0].rowData;
+                            if (!rows || rows.length <= 1) return;
+                            
+                            let headerRow = rows[0].values ? rows[0].values.map(v => v.formattedValue || "") : [];
+                            const photoIdx = headerRow.findIndex(h => String(h).trim() === '技師照片');
+                            const storeIdx = headerRow.findIndex(h => String(h).trim() === '店名');
+                            const nameIdx = headerRow.findIndex(h => String(h).trim() === '姓名');
+                            
+                            if (photoIdx !== -1) {
+                                for (let i = 1; i < rows.length; i++) {
+                                    if (!rows[i].values) continue;
+                                    let photoUrl = rows[i].values[photoIdx] ? rows[i].values[photoIdx].formattedValue : "";
+                                    let fileId = Utility.extractDriveFileId(photoUrl);
+                                    if (fileId) {
+                                        let storeVal = storeIdx !== -1 && rows[i].values[storeIdx] ? rows[i].values[storeIdx].formattedValue : "";
+                                        let nameVal = nameIdx !== -1 && rows[i].values[nameIdx] ? rows[i].values[nameIdx].formattedValue : "";
+                                        
+                                        let storeCode = Utility.getStoreCodeByName(storeVal);
+                                        let pureName = Utility.parseName(nameVal, window.ruleEngine).pureName || nameVal;
+                                        let expectedName = `${storeCode}_${pureName}.jpg`;
+                                        usedFiles.set(fileId, expectedName);
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // 2. 獲取 Google Drive 檔案清單
+                    let files = [];
+                    let pageToken = null;
+                    do {
+                        let q = encodeURIComponent(`'${DRIVE_FOLDER_ID}' in parents and trashed=false`);
+                        let url = `https://www.googleapis.com/drive/v3/files?q=${q}&fields=nextPageToken,files(id,name)&pageSize=100`;
+                        if (pageToken) url += `&pageToken=${pageToken}`;
+
+                        let res = await fetch(url, { headers: { 'Authorization': `Bearer ${this.accessToken}` } });
+                        let data = await res.json();
+                        if (data.error) throw new Error(data.error.message);
+                        files = files.concat(data.files || []);
+                        pageToken = data.nextPageToken;
+                    } while (pageToken);
+
+                    // 3. 對比並執行刪除與重命名
+                    let deletedCount = 0;
+                    let renamedCount = 0;
+
+                    for (let file of files) {
+                        if (!usedFiles.has(file.id)) {
+                            Utility.showLoading(`🗑️ 刪除無用照片中... (${deletedCount} / ${files.length})\n${file.name}`);
+                            await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, {
+                                method: 'DELETE',
+                                headers: { 'Authorization': `Bearer ${this.accessToken}` }
+                            });
+                            deletedCount++;
+                        } else {
+                            let expectedName = usedFiles.get(file.id);
+                            if (file.name !== expectedName) {
+                                Utility.showLoading(`📝 重新命名照片中... (${renamedCount})\n${file.name} -> ${expectedName}`);
+                                await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Authorization': `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ name: expectedName })
+                                });
+                                renamedCount++;
+                            }
+                        }
+                    }
+
+                    Utility.showToast(`✅ 雲端清理完成！刪除 ${deletedCount} 張無用照片，重新命名 ${renamedCount} 張照片。`);
+                } catch (e) {
+                    Utility.showToast(`❌ 雲端清理失敗：${e.message}`, true);
+                } finally {
+                    Utility.hideLoading();
+                }
+            }
+
+            // 🕷️ 核心升級：跨域抓取網頁原始碼並自動辨識
+            async fetchAndProcessList(url) {
+                Utility.showLoading("📡 跨域抓取網頁代碼中，請稍候...\n(受限於瀏覽器安全機制，此過程可能需數秒)");
+                try {
+                    let urlLower = url.toLowerCase();
+                    let storeCode = '';
+                    
+                    if(urlLower.includes('yoasobi-heaven.com')) {
+                        let urlM = url.match(/\/tokyo\/[A-Za-z0-9_]+\/([^\/]+)/i);
+                        if (urlM) storeCode = urlM[1].toLowerCase();
+                    } else if (urlLower.includes('yoshiwara-soap')) {
+                        storeCode = 'yoshiwara-soap';
+                    }
+
+                    const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+                    if (!response.ok) throw new Error('跨域請求失敗');
+                    const data = await response.json();
+                    const html = data.contents;
+                    
+                    let tempDiv = document.createElement('div');
+                    let cleanHtml = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                                        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+                                        .replace(/<br\s*[\/]?>/gi, "\n")
+                                        .replace(/<\/p>/gi, "\n</p>")
+                                        .replace(/<\/div>/gi, "\n</div>");
+                    tempDiv.innerHTML = cleanHtml;
+                    
+                    // 為了保留網址當主鍵，強制將 html 內的 href 提取成純文字
+                    tempDiv.querySelectorAll('a').forEach(a => {
+                        if (a.href && (a.href.includes('girlid') || a.href.includes('/cast/'))) {
+                            a.innerText = a.innerText + '\n' + a.href + '\n';
+                        }
+                    });
+
+                    let extractedText = tempDiv.innerText.replace(/\n\s*\n/g, '\n');
+
+                    if (storeCode) {
+                        let storeRule = window.ruleEngine.rules.find(r => r.field === 'v_store' && (r.siteMatch === storeCode || r.pattern.includes(storeCode)));
+                        if (storeRule && storeRule.action) {
+                            document.getElementById('v_store').value = storeRule.action;
+                        }
+                    }
+
+                    document.getElementById('v_magic_paste').value = extractedText;
+                    
+                    // 自動啟動批次建檔更新
+                    if(confirm(`✅ 網頁代碼抓取成功！\n是否直接為您開始【批次建檔+更新】作業？`)) {
+                        this.processBatchData(true);
+                    } else {
+                        Utility.hideLoading();
+                        Utility.showToast('網頁代碼已準備就緒，請手動確認。');
+                    }
+                    
+                } catch(e) {
+                    Utility.showToast(`❌ 抓取網頁失敗：${e.message}`, true);
+                    Utility.hideLoading();
+                }
+            }
 
             setupDragScroll() {
                 let scrollInterval = null;
@@ -1469,21 +1666,26 @@
                 let splitRegex;
                 try { splitRegex = new RegExp(safeSplit, 'g'); } catch(err) { splitRegex = /收藏夾/g; }
 
-                if (!text || text.split(splitRegex).length <= 1) {
-                    Utility.showToast('⚠️ 請在【魔法貼上】框內貼上女優一覽的批次資料！', true);
+                if (!text || text.split(splitRegex).length <= 0) {
+                    Utility.showToast('⚠️ 請在【魔法貼上】框內貼上女優資料！', true);
                     return;
                 }
 
                 let siteMatches = ['Common'];
                 let lowerText = text.toLowerCase();
+                let urlStoreCode = '';
+                
                 if(lowerText.includes('yoasobi-heaven.com') || lowerText.includes('yoasobi') || lowerText.includes('出勤表')) {
                     siteMatches.push('yoasobi-heaven.com');
+                    let urlM = lowerText.match(/\/tokyo\/[A-Za-z0-9_]+\/([^\/]+)/i);
+                    if (urlM) urlStoreCode = urlM[1].toLowerCase();
                 }
                 if(lowerText.includes('yoshiwara-soap.jp') || lowerText.includes('yoshiwara')) {
                     siteMatches.push('yoshiwara-soap.jp');
+                    urlStoreCode = 'yoshiwara-soap';
                 }
+                if (urlStoreCode) siteMatches.push(urlStoreCode);
 
-                // 核心保護：強勢清洗左側輸入框帶來的店名
                 const formStoreVal = Utility.cleanStoreNameDisplay(document.getElementById('v_store')?.value);
                 const formPriceVal = document.getElementById('v_price')?.value.trim() || "";
                 const formLocationVal = document.getElementById('v_location')?.value.trim() || "";
@@ -1495,10 +1697,11 @@
                 setTimeout(() => {
                     try {
                         let mStore = window.ruleEngine.extractByRules(text, "", "v_store", siteMatches);
-                        // 核心保護：強勢清洗從網頁抓取來的店名
                         let baseStore = Utility.cleanStoreNameDisplay(mStore.value ? mStore.value : formStoreVal);
 
-                        const blocks = text.split(splitRegex).filter(b => b.trim().length > 10);
+                        let blocks = text.split(splitRegex).filter(b => b.trim().length > 10);
+                        if (blocks.length === 0) blocks = [text]; // 支援單人頁面的直接解析
+
                         let updateCount = 0;
                         let createCount = 0;
 
@@ -1506,11 +1709,11 @@
                             let extractedName = window.ruleEngine.extractByRules(block, "", "v_name", siteMatches);
                             
                             if (!extractedName.value) {
-                                let fallbackMatch = block.match(/No\.\d+\s*\n\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
+                                let fallbackMatch = block.match(/No\.\d+\s*\n\s*([^\n(（]+)/i);
                                 if (fallbackMatch && fallbackMatch[1]) {
                                     extractedName.value = fallbackMatch[1].trim();
                                 } else {
-                                    let altMatch = block.match(/(?:名稱|名前|Name)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
+                                    let altMatch = block.match(/(?:名稱|名前|Name)\s*([^\n(（]+)/i);
                                     if (altMatch && altMatch[1]) extractedName.value = altMatch[1].trim();
                                 }
                             }
@@ -1524,7 +1727,7 @@
                             if (formStoreVal && !finalStore.includes(formStoreVal)) {
                                 finalStore += " " + formStoreVal;
                             }
-                            finalStore = Utility.cleanStoreNameDisplay(finalStore); // 強制清洗合併後的最終店名
+                            finalStore = Utility.cleanStoreNameDisplay(finalStore);
 
                             let extStatsObj = window.ruleEngine.extractByRules(block, "", "v_stats", siteMatches);
                             let extStats = extStatsObj.value;
@@ -1533,11 +1736,10 @@
                                 if (mStats) extStats = mStats[1].replace(/from.*/i, '').trim();
                             }
 
-                            // 🚨 第一道主鍵鎖：提取 URL ID (具有絕對唯一性)
                             let extractedUrlObj = window.ruleEngine.extractByRules(block, "", "v_url", siteMatches);
                             let extUrl = extractedUrlObj.value;
                             if (!extUrl) {
-                                let mUrl = block.match(/https?:\/\/[^\s]+/);
+                                let mUrl = block.match(/https?:\/\/[^\s"']+/);
                                 if (mUrl) extUrl = mUrl[0];
                             }
 
@@ -1563,10 +1765,8 @@
                                     });
 
                                     let levelVal = nameInfo.level;
-
                                     let recordIdx = -1;
 
-                                    // 🥇 第一順位匹配：URL (絕對唯一身分證)
                                     if (extUrl) {
                                         let cleanExtUrl = extUrl.split('?')[0].replace(/\/$/, "");
                                         recordIdx = this.dataStore.findIndex(r => {
@@ -1576,18 +1776,13 @@
                                         });
                                     }
 
-                                    // 🥈 第二順位匹配：如果沒有 URL，強制使用「姓名 + 嚴格店名」 (拒絕三圍匹配)
                                     if (recordIdx === -1) {
                                         recordIdx = this.dataStore.findIndex(r => {
                                             let dbName = r._raw[this.colMap.name] || "";
                                             let cleanDbName = Utility.parseName(dbName, window.ruleEngine).pureName; 
-                                            
                                             let dbStore = r._raw[this.colMap.store] || "";
-                                            
                                             let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
-                                            // 🛡️ 啟動防分店污染的主力：isSameStore 會拒絕 SHINJUKU 蓋過本家
                                             let storeMatch = Utility.isSameStore(dbStore, finalStore);
-
                                             return nameMatch && storeMatch;
                                         });
                                     }
@@ -1596,7 +1791,6 @@
                                         if (hasSchedule) this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
                                         if (extStats) this.dataStore[recordIdx]._raw[this.colMap.stats] = extStats; 
                                         
-                                        // 若原本資料庫裡沒有 URL，順便補上去
                                         if (extUrl && !this.dataStore[recordIdx]._raw[this.colMap.url]) {
                                             this.dataStore[recordIdx]._raw[this.colMap.url] = extUrl;
                                         }
@@ -1618,18 +1812,31 @@
                                         
                                         this.dataStore[recordIdx]._raw[this.colMap.updateTime] = Utility.getCurrentTime();
 
+                                        let currentTechId = this.dataStore[recordIdx]._raw[this.colMap.techId] || '';
+                                        let storeCode = Utility.getStoreCodeByName(finalStore);
+                                        if (!currentTechId.startsWith(storeCode + '_')) {
+                                            let numMatch = currentTechId.match(/\d{4}/);
+                                            if (numMatch) {
+                                                this.dataStore[recordIdx]._raw[this.colMap.techId] = `${storeCode}_${numMatch[0]}`;
+                                            } else {
+                                                this.dataStore[recordIdx]._raw[this.colMap.techId] = Utility.generateID(storeCode);
+                                            }
+                                        }
+
                                         updateCount++;
                                     } else if (createMissing) {
                                         let newRowData = new Array(this.headerRow.length).fill("");
                                         const setV = (key, val) => { const idx = this.colMap[key]; if(idx !== -1 && idx !== undefined) newRowData[idx] = val; };
                                         
-                                        setV('techId', Utility.generateID());
+                                        let storeCode = Utility.getStoreCodeByName(finalStore);
+                                        setV('techId', Utility.generateID(storeCode)); 
+                                        
                                         setV('store', finalStore);
                                         setV('name', pureName);
                                         setV('stats', extStats);
                                         setV('price', formPriceVal);
                                         setV('location', formLocationVal);
-                                        setV('url', extUrl); // 寫入唯一網址
+                                        setV('url', extUrl); 
                                         setV('updateTime', Utility.getCurrentTime());
                                         
                                         if (hasSchedule) setV('schedule', formattedSch);
@@ -1687,7 +1894,6 @@
                 }
 
                 let recordIdx = -1;
-                // 🥇 第一順位匹配：單人頁面 URL 檢查
                 if (extractedUrl) {
                     recordIdx = this.dataStore.findIndex(r => {
                         let dbUrl = (r._raw[this.colMap.url] || "").trim();
@@ -1711,10 +1917,18 @@
                 }
 
                 let siteMatches = ['Common'];
-                if(html && html.includes('yoasobi-heaven.com') || text.includes('yoasobi')) siteMatches.push('yoasobi-heaven.com');
-                if(html && html.includes('yoshiwara-soap.jp') || text.includes('yoshiwara')) siteMatches.push('yoshiwara-soap.jp');
-                const specificMatch = extractedUrl.match(/(YA\d+|A\d+)/);
-                if(specificMatch) siteMatches.push(specificMatch[1]);
+                let urlStoreCode = '';
+                let lowerText = text.toLowerCase();
+                if(html && html.includes('yoasobi-heaven.com') || lowerText.includes('yoasobi')) {
+                    siteMatches.push('yoasobi-heaven.com');
+                    let urlM = extractedUrl.match(/\/tokyo\/[A-Za-z0-9_]+\/([^\/]+)/i);
+                    if (urlM) urlStoreCode = urlM[1].toLowerCase();
+                }
+                if(html && html.includes('yoshiwara-soap.jp') || lowerText.includes('yoshiwara')) {
+                    siteMatches.push('yoshiwara-soap.jp');
+                    urlStoreCode = 'yoshiwara-soap';
+                }
+                if(urlStoreCode) siteMatches.push(urlStoreCode);
 
                 let extractedNameObj = window.ruleEngine.extractByRules(text, html, 'v_name', siteMatches);
                 let extractedStatsObj = window.ruleEngine.extractByRules(text, html, 'v_stats', siteMatches);
@@ -1726,13 +1940,13 @@
 
                 let rawNameExt = extractedNameObj.value || "";
                 if (!rawNameExt) {
-                    let altMatch = text.match(/No\.\d+\s*\n\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i) || 
-                                   text.match(/(?:名稱|名前|Name)\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
+                    let altMatch = text.match(/No\.\d+\s*\n\s*([^\n(（]+)/i) || 
+                                   text.match(/(?:名稱|名前|Name)\s*([^\n(（]+)/i);
                     if (altMatch) rawNameExt = altMatch[1].trim();
                 }
 
                 let extStore = extractedNameObj.secondaryValue || extractedStoreObj.value || document.getElementById('v_store')?.value.trim() || "";
-                extStore = Utility.cleanStoreNameDisplay(extStore); // 強勢清洗店名
+                extStore = Utility.cleanStoreNameDisplay(extStore); 
 
                 let nameInfo = Utility.parseName(rawNameExt, window.ruleEngine);
                 let pureName = nameInfo.pureName || rawNameExt;
@@ -1744,18 +1958,14 @@
                 }
 
                 let isExisting = false;
-                // 🥈 第二順位匹配：沒有網址的情況下，依賴「姓名 + 嚴格歸一店名」
                 if (recordIdx === -1 && pureName) {
                     recordIdx = this.dataStore.findIndex(r => {
                         let dbName = r._raw[this.colMap.name] || "";
                         let cleanDbName = Utility.parseName(dbName, window.ruleEngine).pureName; 
-                        
                         let dbStore = (r._raw[this.colMap.store] || "").trim();
-                        
                         let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
                         let storeMatch = Utility.isSameStore(dbStore, extStore);
-
-                        return nameMatch && storeMatch; // 拔除三圍誤判機制
+                        return nameMatch && storeMatch;
                     });
                 }
 
@@ -1774,7 +1984,9 @@
                     let rIdx = document.getElementById('v_row_index');
                     let tIdx = document.getElementById('v_tech_id');
                     if(rIdx) rIdx.value = '';
-                    if(tIdx) tIdx.value = '';
+                    
+                    let storeCode = Utility.getStoreCodeByName(extStore);
+                    if(tIdx) tIdx.value = Utility.generateID(storeCode);
                 }
                 
                 let elName = document.getElementById('v_name');
@@ -2109,7 +2321,7 @@
                         url: getIdx('網址'), 
                         af: getIdx('屬性') !== -1 ? getIdx('屬性') : getIdx('AF'), 
                         level: getIdx('等級'), schedule: getIdx('行事曆'),
-                        favorite: getIdx('最愛') !== -1 ? getIdx('最愛') : getIdx('Favorite'),
+                        favorite: getIdx('我的最愛') !== -1 ? getIdx('我的最愛') : (getIdx('最愛') !== -1 ? getIdx('最愛') : getIdx('Favorite')),
                         updateTime: getIdx('更新時間') !== -1 ? getIdx('更新時間') : getIdx('UpdateTime')
                     };
 
@@ -2126,7 +2338,7 @@
                     }
                     if (this.colMap.favorite === -1 || this.colMap.favorite === undefined) {
                         this.colMap.favorite = this.headerRow.length;
-                        this.headerRow.push('最愛');
+                        this.headerRow.push('我的最愛');
                     }
                     if (this.colMap.updateTime === -1 || this.colMap.updateTime === undefined) {
                         this.colMap.updateTime = this.headerRow.length;
@@ -2244,9 +2456,20 @@
 
                 Utility.showLoading("寫入資料與上傳照片...");
                 try {
-                    let techId = document.getElementById('v_tech_id')?.value.trim() || Utility.generateID();
+                    let techId = document.getElementById('v_tech_id')?.value.trim();
                     let finalUrl = document.getElementById('v_photo_url')?.value || "";
                     let targetRowIdx = document.getElementById('v_row_index')?.value; 
+
+                    let storeCode = Utility.getStoreCodeByName(storeVal);
+
+                    if (!techId || !techId.startsWith(storeCode + '_')) {
+                        let numMatch = techId ? techId.match(/\d{4}/) : null;
+                        if (numMatch) {
+                            techId = `${storeCode}_${numMatch[0]}`;
+                        } else {
+                            techId = Utility.generateID(storeCode);
+                        }
+                    }
 
                     let sheetTechId = techId;
                     if (/^\d+$/.test(techId)) {
@@ -2254,7 +2477,8 @@
                     }
 
                     if(cropperSvc.pendingBlob) {
-                        const fileName = `${storeVal}-${nameVal}.jpg`;
+                        let pureName = Utility.parseName(nameVal, window.ruleEngine).pureName || nameVal;
+                        const fileName = `${storeCode}_${pureName}.jpg`;
                         finalUrl = await cropperSvc.uploadToDrive(cropperSvc.pendingBlob, fileName, this.accessToken);
                     }
 
