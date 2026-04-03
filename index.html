@@ -1996,6 +1996,15 @@
                 return `${storeCode}_${seq}`;
             }
 
+            buildPhotoFileName(techId, storeName, name) {
+                const cleanTechId = String(techId || '').replace(/^'/, '').trim();
+                if (cleanTechId) return `${cleanTechId}.jpg`;
+
+                const storeCode = Utility.getStoreCodeByName(storeName || 'UNKNOWN');
+                const pureName = Utility.parseName(name || '').pureName || String(name || '').trim();
+                return `${storeCode}_${pureName}.jpg`;
+            }
+
             applyRecordToRow(targetRow, record, isNew = false) {
                 const setField = (key, value) => {
                     const idx = this.colMap[key];
@@ -2263,6 +2272,7 @@
                         const headerRow = rows[0].values ? rows[0].values.map(v => v.formattedValue || '') : [];
                         const photoIdx = headerRow.findIndex(h => String(h).trim() === '技師照片');
                         const storeIdx = headerRow.findIndex(h => String(h).trim() === '店名');
+                        const techIdIdx = headerRow.findIndex(h => String(h).trim() === '技師編號');
                         const nameIdx = headerRow.findIndex(h => String(h).trim() === '姓名');
                         if (photoIdx === -1) return;
 
@@ -2272,10 +2282,10 @@
                             const fileId = Utility.extractDriveFileId(photoUrl);
                             if (!fileId) continue;
                             const storeVal = storeIdx !== -1 ? (rows[i].values[storeIdx]?.formattedValue || '') : '';
+                            const techIdVal = techIdIdx !== -1 ? (rows[i].values[techIdIdx]?.formattedValue || '') : '';
                             const nameVal = nameIdx !== -1 ? (rows[i].values[nameIdx]?.formattedValue || '') : '';
-                            const storeCode = Utility.getStoreCodeByName(storeVal);
-                            const pureName = Utility.parseName(nameVal, window.ruleEngine).pureName || nameVal;
-                            usedFiles.set(fileId, `${storeCode}_${pureName}.jpg`);
+                            const expectedName = this.buildPhotoFileName(techIdVal, storeVal, nameVal);
+                            usedFiles.set(fileId, expectedName);
                         }
                     });
 
@@ -2722,9 +2732,10 @@
 
                     let fUrl = document.getElementById('v_photo_url').value || "";
                     if (cropperSvc.pendingBlob) {
+                        const uploadFileName = this.buildPhotoFileName(tId, st, nm);
                         fUrl = await cropperSvc.uploadToDrive(
                             cropperSvc.pendingBlob,
-                            `${sc}_${Utility.parseName(nm).pureName}.jpg`,
+                            uploadFileName,
                             this.accessToken
                         );
                     }
