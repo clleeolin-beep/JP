@@ -37,6 +37,44 @@
       padding: 24px;
     }
 
+    body.mobile .launcher {
+      width: min(100%, 940px);
+    }
+
+    body.focus-mode {
+      display: block;
+      padding: 0;
+      background: #dbe3ef;
+    }
+
+    body.focus-mode .launcher {
+      width: 100%;
+      max-width: none;
+      min-height: 100dvh;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 8px;
+      background: transparent;
+    }
+
+    body.focus-mode .chrome {
+      display: none;
+    }
+
+    body.focus-mode #app-host {
+      margin-top: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      padding: 0;
+      min-height: 100dvh;
+    }
+
+    body.focus-mode #app-frame {
+      min-height: 100dvh;
+      border-radius: 0;
+    }
+
     h1 {
       margin: 0 0 8px;
       font-size: 26px;
@@ -101,23 +139,62 @@
       font-size: 13px;
       color: var(--muted);
     }
+
+    .toolbar {
+      display: none;
+      position: fixed;
+      right: 12px;
+      top: 12px;
+      z-index: 30;
+      gap: 8px;
+    }
+
+    body.focus-mode .toolbar {
+      display: flex;
+    }
+
+    .toolbar button {
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(31, 41, 55, 0.9);
+      color: #fff;
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 8px;
+      }
+
+      .launcher {
+        width: 100%;
+        padding: 14px;
+      }
+
+      #app-frame {
+        min-height: 80dvh;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="launcher">
-    <h1>Talent DB Public Launcher</h1>
-    <p>This public page only handles sign-in and app bootstrap.</p>
-    <div class="actions">
+    <h1 class="chrome">Talent DB Public Launcher</h1>
+    <p class="chrome">This public page only handles sign-in and app bootstrap.</p>
+    <div class="actions chrome">
       <button id="btn-login">Sign in with Google</button>
       <button id="btn-load" class="secondary" disabled>Load Private App</button>
     </div>
-    <div id="status">Not signed in.</div>
+    <div id="status" class="chrome">Not signed in.</div>
     <div id="app-host">
       <iframe id="app-frame" title="Talent DB App"></iframe>
       <div id="app-placeholder">After sign-in, the app will load from private Google Drive files.</div>
     </div>
-    <p class="hint">Set CLIENT_ID and APP_MANIFEST_FILE_ID in this file before publishing.</p>
+    <p class="hint chrome">Set CLIENT_ID and APP_MANIFEST_FILE_ID in this file before publishing.</p>
   </main>
+  <div class="toolbar">
+    <button id="btn-toggle-shell" type="button">Show Launcher</button>
+  </div>
 
   <script>
     const CLIENT_ID = "615427641075-2e4i1l7smqp30l8v1qrf75c924aro94i.apps.googleusercontent.com";
@@ -138,10 +215,26 @@
     const loadBtn = document.getElementById("btn-load");
     const frameEl = document.getElementById("app-frame");
     const placeholderEl = document.getElementById("app-placeholder");
+    const toggleShellBtn = document.getElementById("btn-toggle-shell");
+
+    function detectDeviceMode() {
+      const isMobile = window.matchMedia("(max-width: 900px)").matches ||
+        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+      document.body.classList.toggle("mobile", isMobile);
+    }
+
+    function toggleFocusMode(force) {
+      const shouldEnable = typeof force === "boolean"
+        ? force
+        : !document.body.classList.contains("focus-mode");
+      document.body.classList.toggle("focus-mode", shouldEnable);
+      toggleShellBtn.textContent = shouldEnable ? "Show Launcher" : "Hide Launcher";
+    }
 
     function setStatus(text, isError = false) {
       statusEl.textContent = text;
       statusEl.className = isError ? "error" : "";
+      if (!statusEl.classList.contains("chrome")) statusEl.classList.add("chrome");
     }
 
     function assertConfigured() {
@@ -224,9 +317,19 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
           "https://drive.google.com/thumbnail?authuser=0&sz=w800&id=${m[0]}",
           "https://www.googleapis.com/drive/v3/files/${m[0]}?alt=media&access_token=${encodeURIComponent((window.__JP_TOKEN || sessionStorage.getItem('gapi_access_token') || '').replace(/^\"|\"$/g, ''))}"
         );
-        const seededHtml = patchedEntryHtml.includes("<head>")
-          ? patchedEntryHtml.replace("<head>", `<head>${tokenSeed}`)
-          : `${tokenSeed}${patchedEntryHtml}`;
+        const responsivePatch = `<style id="launcher-mobile-patch">
+@media (max-width: 900px) {
+  .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+</style>`;
+        let seededHtml = patchedEntryHtml.includes("<head>")
+          ? patchedEntryHtml.replace("<head>", `<head>${tokenSeed}${responsivePatch}`)
+          : `${tokenSeed}${responsivePatch}${patchedEntryHtml}`;
+
+        if (!/meta\s+name=["']viewport["']/i.test(seededHtml)) {
+          seededHtml = seededHtml.replace("<head>", '<head><meta name="viewport" content="width=device-width, initial-scale=1.0">');
+        }
+
         const blob = new Blob([seededHtml], { type: "text/html" });
         const blobUrl = URL.createObjectURL(blob);
 
@@ -234,6 +337,7 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
         frameEl.style.display = "block";
         placeholderEl.style.display = "none";
         setStatus("Private app loaded.");
+        toggleFocusMode(true);
       } catch (error) {
         setStatus(`Load failed: ${error.message}`, true);
       } finally {
@@ -276,7 +380,15 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
       loadPrivateApp();
     });
 
-    window.addEventListener("load", initAuth);
+    toggleShellBtn.addEventListener("click", () => {
+      toggleFocusMode(document.body.classList.contains("focus-mode") ? false : true);
+    });
+
+    window.addEventListener("resize", detectDeviceMode);
+    window.addEventListener("load", () => {
+      detectDeviceMode();
+      initAuth();
+    });
   </script>
 </body>
 </html>
