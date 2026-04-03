@@ -548,6 +548,12 @@
             static getSafePattern(pattern) {
                 return pattern ? pattern.replace(/^\(\?[a-z]+\)/i, '') : '';
             }
+            
+            // 強制清洗所有店名的顯示與輸入雜訊
+            static cleanStoreNameDisplay(store) {
+                if (!store) return "";
+                return store.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+            }
 
             static cleanDriveUrl(url) {
                 if (!url) return "";
@@ -797,9 +803,10 @@
                 return h * 60 + m;
             }
 
-            // 【核心防護】：強化店鋪判斷，只要名稱帶有分店特徵，絕對不允許跨店合併！
+            // 【終極防護】：絕對拒絕「子包含母」而引發的跨店污染，強制精準隔離！
             static isSameStore(dbStore, extStore) {
-                if (!dbStore || !extStore) return true;
+                if (!dbStore || !extStore) return false; // 若來源未知，禁止盲目覆蓋
+                
                 let s1 = dbStore.toLowerCase().replace(/[\s　]/g, '');
                 let s2 = extStore.toLowerCase().replace(/[\s　]/g, '');
                 
@@ -810,7 +817,6 @@
                     let shorter = s1.length > s2.length ? s2 : s1;
                     let extra = longer.replace(shorter, '');
                     
-                    // 只要多出來的字尾包含以下關鍵字，即判定為「分店」，禁止跨店覆蓋！
                     if (/(in|店|branch|浅草|asakusa|新宿|shinjuku|池袋|ikebukuro|渋谷|shibuya|五反田|gotanda|目黒|meguro|白金|shirokane|上野|ueno|秋葉原|akihabara|新橋|shinbashi|品川|shinagawa|吉原|yoshiwara|川崎|kawasaki|本店|分店)/i.test(extra)) {
                         return false; 
                     }
@@ -1477,7 +1483,8 @@
                     siteMatches.push('yoshiwara-soap.jp');
                 }
 
-                const formStoreVal = document.getElementById('v_store')?.value.trim() || "";
+                // 核心保護：強勢清洗左側輸入框帶來的店名
+                const formStoreVal = Utility.cleanStoreNameDisplay(document.getElementById('v_store')?.value);
                 const formPriceVal = document.getElementById('v_price')?.value.trim() || "";
                 const formLocationVal = document.getElementById('v_location')?.value.trim() || "";
                 const formAfVal = document.getElementById('v_af')?.value.trim() || "";
@@ -1488,7 +1495,8 @@
                 setTimeout(() => {
                     try {
                         let mStore = window.ruleEngine.extractByRules(text, "", "v_store", siteMatches);
-                        let baseStore = mStore.value ? mStore.value : formStoreVal;
+                        // 核心保護：強勢清洗從網頁抓取來的店名
+                        let baseStore = Utility.cleanStoreNameDisplay(mStore.value ? mStore.value : formStoreVal);
 
                         const blocks = text.split(splitRegex).filter(b => b.trim().length > 10);
                         let updateCount = 0;
@@ -1516,12 +1524,21 @@
                             if (formStoreVal && !finalStore.includes(formStoreVal)) {
                                 finalStore += " " + formStoreVal;
                             }
+                            finalStore = Utility.cleanStoreNameDisplay(finalStore); // 強制清洗合併後的最終店名
 
                             let extStatsObj = window.ruleEngine.extractByRules(block, "", "v_stats", siteMatches);
                             let extStats = extStatsObj.value;
                             if (!extStats) {
                                 let mStats = block.match(/(T\d{3}[^\n]+)/i);
                                 if (mStats) extStats = mStats[1].replace(/from.*/i, '').trim();
+                            }
+
+                            // 🚨 第一道主鍵鎖：提取 URL ID (具有絕對唯一性)
+                            let extractedUrlObj = window.ruleEngine.extractByRules(block, "", "v_url", siteMatches);
+                            let extUrl = extractedUrlObj.value;
+                            if (!extUrl) {
+                                let mUrl = block.match(/https?:\/\/[^\s]+/);
+                                if (mUrl) extUrl = mUrl[0];
                             }
 
                             let mSchObj = window.ruleEngine.extractByRules(block, "", "v_schedule", siteMatches);
@@ -1547,24 +1564,43 @@
 
                                     let levelVal = nameInfo.level;
 
-                                    const recordIdx = this.dataStore.findIndex(r => {
-                                        let dbName = r._raw[this.colMap.name] || "";
-                                        let cleanDbName = Utility.parseName(dbName, window.ruleEngine).pureName; 
-                                        
-                                        let dbStore = r._raw[this.colMap.store] || "";
-                                        
-                                        let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
-                                        
-                                        // 【核心修正：強制隔離分店】不允許單靠 statsMatch 就跨越 storeMatch 的防線！
-                                        let storeMatch = Utility.isSameStore(dbStore, finalStore);
+                                    let recordIdx = -1;
 
-                                        return nameMatch && storeMatch;
-                                    });
+                                    // 🥇 第一順位匹配：URL (絕對唯一身分證)
+                                    if (extUrl) {
+                                        let cleanExtUrl = extUrl.split('?')[0].replace(/\/$/, "");
+                                        recordIdx = this.dataStore.findIndex(r => {
+                                            let dbUrl = (r._raw[this.colMap.url] || "").trim();
+                                            let cleanDbUrl = dbUrl.split('?')[0].replace(/\/$/, "");
+                                            return cleanDbUrl && cleanDbUrl === cleanExtUrl;
+                                        });
+                                    }
+
+                                    // 🥈 第二順位匹配：如果沒有 URL，強制使用「姓名 + 嚴格店名」 (拒絕三圍匹配)
+                                    if (recordIdx === -1) {
+                                        recordIdx = this.dataStore.findIndex(r => {
+                                            let dbName = r._raw[this.colMap.name] || "";
+                                            let cleanDbName = Utility.parseName(dbName, window.ruleEngine).pureName; 
+                                            
+                                            let dbStore = r._raw[this.colMap.store] || "";
+                                            
+                                            let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
+                                            // 🛡️ 啟動防分店污染的主力：isSameStore 會拒絕 SHINJUKU 蓋過本家
+                                            let storeMatch = Utility.isSameStore(dbStore, finalStore);
+
+                                            return nameMatch && storeMatch;
+                                        });
+                                    }
 
                                     if (recordIdx !== -1 && this.dataStore[recordIdx]) {
                                         if (hasSchedule) this.dataStore[recordIdx]._raw[this.colMap.schedule] = formattedSch;
                                         if (extStats) this.dataStore[recordIdx]._raw[this.colMap.stats] = extStats; 
                                         
+                                        // 若原本資料庫裡沒有 URL，順便補上去
+                                        if (extUrl && !this.dataStore[recordIdx]._raw[this.colMap.url]) {
+                                            this.dataStore[recordIdx]._raw[this.colMap.url] = extUrl;
+                                        }
+
                                         let originalDbAf = this.dataStore[recordIdx]._raw[this.colMap.af] || "";
                                         originalDbAf.split(/[\/／]/).map(t=>t.trim()).filter(t=>t).forEach(t => {
                                             let upper = t.toUpperCase();
@@ -1593,6 +1629,7 @@
                                         setV('stats', extStats);
                                         setV('price', formPriceVal);
                                         setV('location', formLocationVal);
+                                        setV('url', extUrl); // 寫入唯一網址
                                         setV('updateTime', Utility.getCurrentTime());
                                         
                                         if (hasSchedule) setV('schedule', formattedSch);
@@ -1650,6 +1687,7 @@
                 }
 
                 let recordIdx = -1;
+                // 🥇 第一順位匹配：單人頁面 URL 檢查
                 if (extractedUrl) {
                     recordIdx = this.dataStore.findIndex(r => {
                         let dbUrl = (r._raw[this.colMap.url] || "").trim();
@@ -1694,6 +1732,7 @@
                 }
 
                 let extStore = extractedNameObj.secondaryValue || extractedStoreObj.value || document.getElementById('v_store')?.value.trim() || "";
+                extStore = Utility.cleanStoreNameDisplay(extStore); // 強勢清洗店名
 
                 let nameInfo = Utility.parseName(rawNameExt, window.ruleEngine);
                 let pureName = nameInfo.pureName || rawNameExt;
@@ -1705,6 +1744,7 @@
                 }
 
                 let isExisting = false;
+                // 🥈 第二順位匹配：沒有網址的情況下，依賴「姓名 + 嚴格歸一店名」
                 if (recordIdx === -1 && pureName) {
                     recordIdx = this.dataStore.findIndex(r => {
                         let dbName = r._raw[this.colMap.name] || "";
@@ -1713,11 +1753,9 @@
                         let dbStore = (r._raw[this.colMap.store] || "").trim();
                         
                         let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
-                        
-                        // 【核心修正：強制隔離分店】
                         let storeMatch = Utility.isSameStore(dbStore, extStore);
 
-                        return nameMatch && storeMatch;
+                        return nameMatch && storeMatch; // 拔除三圍誤判機制
                     });
                 }
 
