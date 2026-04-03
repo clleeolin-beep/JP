@@ -205,6 +205,7 @@
       }
       if (!assertManifestConfigured()) return;
 
+      loadBtn.disabled = true;
       setStatus("Loading manifest...");
       try {
         const manifest = await loadManifest();
@@ -219,6 +220,8 @@
         setStatus("Private app loaded.");
       } catch (error) {
         setStatus(`Load failed: ${error.message}`, true);
+      } finally {
+        loadBtn.disabled = false;
       }
     }
 
@@ -234,7 +237,8 @@
           }
           state.accessToken = resp.access_token;
           loadBtn.disabled = false;
-          setStatus("Signed in. Click Load Private App.");
+          setStatus("Signed in. Loading private app...");
+          loadPrivateApp();
         }
       });
     }
