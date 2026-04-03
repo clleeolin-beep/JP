@@ -347,9 +347,9 @@
 (function () {
   function bootWhenReady() {
     try {
-      if (!window.app) window.app = new AppCore();
+      if (!window.app && typeof AppCore === "function") window.app = new AppCore();
       if (window.google && window.google.accounts && window.google.accounts.oauth2) {
-        if (typeof window.app.initGoogleAuth === "function") window.app.initGoogleAuth();
+        if (window.app && typeof window.app.initGoogleAuth === "function") window.app.initGoogleAuth();
       } else {
         setTimeout(bootWhenReady, 120);
       }
@@ -357,12 +357,12 @@
       setTimeout(bootWhenReady, 180);
     }
   }
-  window.addEventListener("load", function () { setTimeout(bootWhenReady, 0); });
+  window.onload = function () { setTimeout(bootWhenReady, 0); };
 })();
 <\/script>`;
 
         entryHtml = entryHtml
-          .replace(/window\.onload\s*=\s*\(\)\s*=>\s*\{\s*window\.app\s*=\s*new AppCore\(\);\s*window\.app\.initGoogleAuth\(\);\s*\};?/m, injectedGoogleGuard);
+          .replace(/window\.onload\s*=\s*\(\)\s*=>\s*\{\s*window\.app\s*=\s*new AppCore\(\);\s*window\.app\.initGoogleAuth\(\);\s*\};?/m, "");
 
         const coreFiles = Array.isArray(manifest.coreFiles) ? manifest.coreFiles : [];
         if (coreFiles.length) {
@@ -717,9 +717,12 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
 })();
 <\/script>`;
 
-        const seededHtml = entryHtml.includes("<head>")
+        const seededHtmlBase = entryHtml.includes("<head>")
           ? entryHtml.replace("<head>", `<head>${tokenSeed}${debugPatch}`)
           : `${tokenSeed}${debugPatch}${entryHtml}`;
+        const seededHtml = seededHtmlBase.includes("</body>")
+          ? seededHtmlBase.replace("</body>", `${injectedGoogleGuard}</body>`)
+          : `${seededHtmlBase}${injectedGoogleGuard}`;
 
         const blob = new Blob([seededHtml], { type: "text/html" });
         const url = URL.createObjectURL(blob);
