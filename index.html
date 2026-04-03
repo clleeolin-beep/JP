@@ -312,6 +312,9 @@
         let entryHtml = await fetchAnyText(manifest.entryFileId, useDocExport);
         const coreFiles = Array.isArray(manifest.coreFiles) ? manifest.coreFiles : [];
         if (coreFiles.length) {
+          // When modular core files are provided, strip legacy inline scripts from entry html
+          // to avoid duplicate class declarations and runtime conflicts.
+          entryHtml = entryHtml.replace(/<script>([\s\S]*?)<\/script>/gi, "");
           const blocks = [];
           for (const file of coreFiles) {
             if (!file || !file.id) continue;
