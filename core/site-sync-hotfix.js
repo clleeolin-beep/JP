@@ -493,12 +493,59 @@
     return true;
   }
 
+  function applyTokenRecoveryPatch() {
+    var proto = null;
+    if (window.AppCore && window.AppCore.prototype) {
+      proto = window.AppCore.prototype;
+    } else if (window.app && window.app.constructor && window.app.constructor.prototype) {
+      proto = window.app.constructor.prototype;
+    }
+    if (!proto) return false;
+
+    if (!proto.__jpHandleTokenExpiredPatched && typeof proto.handleTokenExpired === "function") {
+      var origHandleTokenExpired = proto.handleTokenExpired;
+      proto.handleTokenExpired = function () {
+        try {
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: "JP_BRIDGE_AUTH_ERROR" }, "*");
+          }
+        } catch (_) {}
+
+        try {
+          var b = document.getElementById("auth-banner");
+          if (b) {
+            b.style.display = "block";
+            b.innerHTML = "⚠️ 授權過期，正在嘗試自動刷新...";
+            b.style.background = "#fff3cd";
+          }
+        } catch (_) {}
+
+        var self = this;
+        setTimeout(function () {
+          try {
+            var token = sessionStorage.getItem("gapi_access_token");
+            if (token) {
+              self.accessToken = token;
+              self.hasWriteAccess = sessionStorage.getItem("gapi_has_write") === "true";
+              if (typeof self.fetchSheetNames === "function") self.fetchSheetNames();
+              return;
+            }
+          } catch (_) {}
+          return origHandleTokenExpired.apply(self, arguments);
+        }, 1200);
+      };
+      proto.__jpHandleTokenExpiredPatched = true;
+    }
+    return true;
+  }
+
   installGlobalErrorBridge();
 
   var tries = 0;
   var timer = setInterval(function () {
     tries += 1;
-    var done = applyHotfix();
-    if (done || tries > 240) clearInterval(timer);
+    var done1 = applyHotfix();
+    var done2 = applyTokenRecoveryPatch();
+    if ((done1 && done2) || tries > 240) clearInterval(timer);
   }, 150);
 })();
