@@ -294,23 +294,35 @@
       }
     }
 
-    function patchEntryAuthBootstrap(entryHtml) {
-      const safeBootstrap = [
-        "if (window.google && window.google.accounts && window.google.accounts.oauth2) {",
-        "  window.app.initGoogleAuth();",
-        "} else {",
-        "  const __jpBootAuth = () => {",
-        "    if (window.google && window.google.accounts && window.google.accounts.oauth2) {",
-        "      window.app.initGoogleAuth();",
-        "    } else {",
-        "      setTimeout(__jpBootAuth, 150);",
-        "    }",
-        "  };",
-        "  __jpBootAuth();",
-        "}"
-      ].join("\n");
+    function bridgeTokenIntoPrivateApp() {
+      let tries = 0;
+      const timer = setInterval(() => {
+        tries += 1;
+        try {
+          const cw = frameEl.contentWindow;
+          if (!cw) return;
 
-      return entryHtml.split("window.app.initGoogleAuth();").join(safeBootstrap);
+          if (cw.sessionStorage) {
+            cw.sessionStorage.setItem("gapi_access_token", state.accessToken || "");
+            cw.sessionStorage.setItem("gapi_has_write", state.hasWriteAccess ? "true" : "false");
+          }
+
+          if (cw.app && !cw.app.__jpParentTokenInjected) {
+            cw.app.accessToken = state.accessToken || cw.app.accessToken;
+            cw.app.hasWriteAccess = !!state.hasWriteAccess;
+            if (typeof cw.app.onAuthSuccess === "function") {
+              cw.app.onAuthSuccess();
+            } else if (typeof cw.app.fetchSheetNames === "function") {
+              cw.app.fetchSheetNames();
+            }
+            cw.app.__jpParentTokenInjected = true;
+            clearInterval(timer);
+          }
+        } catch (e) {
+        }
+
+        if (tries > 80) clearInterval(timer);
+      }, 200);
     }
 
     async function loadPrivateApp() {
@@ -350,8 +362,6 @@
               : `${entryHtml}\n${merged}`;
           }
         }
-
-        entryHtml = patchEntryAuthBootstrap(entryHtml);
 
         const tokenSeed = `<script>
 window.__JP_TOKEN = ${JSON.stringify(state.accessToken)};
@@ -694,6 +704,7 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
         frameEl.src = url;
         frameEl.style.display = "block";
         placeholderEl.style.display = "none";
+        bridgeTokenIntoPrivateApp();
         setStatus("Private app loaded.");
         toggleFocusMode(true);
       } catch (error) {
