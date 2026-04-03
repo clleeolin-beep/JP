@@ -121,7 +121,7 @@
 
   <script>
     const CLIENT_ID = "REPLACE_WITH_GOOGLE_OAUTH_CLIENT_ID";
-    const APP_MANIFEST_FILE_ID = "REPLACE_WITH_DRIVE_MANIFEST_FILE_ID";
+    const APP_MANIFEST_FILE_ID = "1s38nseW-eMJGzRReXVVAskth6R1ENl3TWTLFXwPgvUQ";
     const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 
     const state = {
@@ -161,8 +161,33 @@
       return await res.text();
     }
 
+    async function fetchDriveDocText(fileId) {
+      const res = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`,
+        { headers: { Authorization: `Bearer ${state.accessToken}` } }
+      );
+      if (!res.ok) throw new Error(`Drive doc export failed (${res.status})`);
+      return await res.text();
+    }
+
+    async function fetchAnyText(fileId, preferDoc = false) {
+      if (preferDoc) {
+        try {
+          return await fetchDriveDocText(fileId);
+        } catch (error) {
+          return await fetchDriveFileText(fileId);
+        }
+      }
+
+      try {
+        return await fetchDriveFileText(fileId);
+      } catch (error) {
+        return await fetchDriveDocText(fileId);
+      }
+    }
+
     async function loadManifest() {
-      const text = await fetchDriveFileText(APP_MANIFEST_FILE_ID);
+      const text = await fetchAnyText(APP_MANIFEST_FILE_ID, true);
       let manifest;
       try {
         manifest = JSON.parse(text);
@@ -183,7 +208,8 @@
       setStatus("Loading manifest...");
       try {
         const manifest = await loadManifest();
-        const entryHtml = await fetchDriveFileText(manifest.entryFileId);
+        const useDocExport = String(manifest.entrySource || "").toLowerCase() === "gdoc";
+        const entryHtml = await fetchAnyText(manifest.entryFileId, useDocExport);
         const blob = new Blob([entryHtml], { type: "text/html" });
         const blobUrl = URL.createObjectURL(blob);
 
