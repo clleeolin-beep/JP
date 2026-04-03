@@ -447,6 +447,217 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
     syncBtnTry += 1;
     if (setupViewAutoSyncButton() || syncBtnTry > 80) clearInterval(syncBtnTimer);
   }, 150);
+
+  const setupAfFilterPatch = () => {
+    const app = window.app;
+    if (!app || app.__jpAfPatched !== undefined) return false;
+    if (typeof app.getSelectedAfValues !== "function") return false;
+    app.__jpAfPatched = true;
+    app.__jpAfState = null;
+
+    const originalGet = app.getSelectedAfValues.bind(app);
+    app.getSelectedAfValues = () => {
+      const selected = originalGet().map(v => String(v || "").trim()).filter(Boolean);
+      const all = document.querySelectorAll('#af-checkboxes input[type="checkbox"]');
+      const allCount = all.length;
+
+      if (app.__jpAfState && app.__jpAfState.length) {
+        return app.__jpAfState.slice();
+      }
+
+      if (allCount && (selected.length === allCount || selected.length >= Math.max(2, allCount - 1))) return [];
+      return selected;
+    };
+
+    const rememberAfState = () => {
+      const all = Array.from(document.querySelectorAll('#af-checkboxes input[type="checkbox"]'));
+      if (!all.length) return;
+      const selected = all.filter(cb => cb.checked).map(cb => cb.value);
+      if (!selected.length || selected.length === all.length || selected.length >= Math.max(2, all.length - 1)) {
+        app.__jpAfState = null;
+      } else {
+        app.__jpAfState = selected;
+      }
+    };
+
+    document.addEventListener("change", (e) => {
+      if (e.target && e.target.matches('#af-checkboxes input[type="checkbox"]')) {
+        rememberAfState();
+      }
+    }, true);
+
+    if (typeof app.toggleMode === "function") {
+      const originalToggleMode = app.toggleMode.bind(app);
+      app.toggleMode = () => {
+        rememberAfState();
+        originalToggleMode();
+      };
+    }
+
+    if (typeof app.updateAfSelectBoxText === "function") {
+      const originalUpdateText = app.updateAfSelectBoxText.bind(app);
+      app.updateAfSelectBoxText = () => {
+        const all = document.querySelectorAll('#af-checkboxes input[type="checkbox"]');
+        if (all.length && !app.__jpAfState) {
+          const box = document.querySelector('#af-filter-container .select-box');
+          if (box) box.textContent = '🏷️ 屬性篩選 (全選)';
+          return;
+        }
+        originalUpdateText();
+      };
+    }
+
+    setTimeout(rememberAfState, 0);
+    return true;
+  };
+
+  const ensureTalentModal = () => {
+    if (document.getElementById("jp-talent-modal")) return;
+    const modal = document.createElement("div");
+    modal.id = "jp-talent-modal";
+    modal.className = "jp-talent-modal";
+    modal.innerHTML =
+      '<div class="jp-talent-card">' +
+      '<div class="jp-talent-head">' +
+      '<strong id="jp-talent-title">技師詳細</strong>' +
+      '<button type="button" id="jp-talent-close">✖</button>' +
+      '</div>' +
+      '<div id="jp-talent-body" class="jp-talent-body"></div>' +
+      '<div class="jp-talent-actions">' +
+      '<button type="button" id="jp-talent-refresh">更新班表</button>' +
+      '<button type="button" id="jp-talent-open" class="secondary">開啟個人頁</button>' +
+      '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.classList.remove("show");
+    });
+    document.getElementById("jp-talent-close").addEventListener("click", () => modal.classList.remove("show"));
+  };
+
+  const findRecordIndexFromCard = (card) => {
+    const app = window.app;
+    if (!app || !card || !app.dataStore || !app.colMap) return -1;
+    const nameEl = card.querySelector(".tech-name");
+    const storeEl = card.querySelector(".store-name");
+    if (!nameEl || !storeEl) return -1;
+    const nameText = (nameEl.textContent || "").replace(/\([^)]*\)/g, "").trim();
+    const storeText = (storeEl.textContent || "").trim();
+    return app.dataStore.findIndex(item => {
+      const raw = item._raw || [];
+      const n = String(raw[app.colMap.name] || "").trim();
+      const s = String(raw[app.colMap.store] || "").trim();
+      return n === nameText && s === storeText;
+    });
+  };
+
+  const buildTalentDetailHtml = (idx) => {
+    const app = window.app;
+    const r = app.dataStore[idx]?._raw;
+    if (!r) return "<div>找不到資料</div>";
+    const f = (k) => String(r[app.colMap[k]] || "").trim();
+    const rows = [
+      ["店名", f("store")],
+      ["姓名", f("name")],
+      ["技師編號", f("techId")],
+      ["年齡", f("age")],
+      ["數值", f("stats")],
+      ["價金", f("price")],
+      ["屬性", f("af")],
+      ["等級", f("level")],
+      ["本周班表", f("schedule")],
+      ["網址", f("url")]
+    ];
+    return rows.map(([k, v]) => {
+      const safe = (v || "-").replace(/</g, "&lt;");
+      return '<div class="jp-row"><label>' + k + '</label><pre>' + safe + '</pre></div>';
+    }).join("");
+  };
+
+  const openTalentModal = (idx) => {
+    ensureTalentModal();
+    const app = window.app;
+    const modal = document.getElementById("jp-talent-modal");
+    const title = document.getElementById("jp-talent-title");
+    const body = document.getElementById("jp-talent-body");
+    const openBtn = document.getElementById("jp-talent-open");
+    const refreshBtn = document.getElementById("jp-talent-refresh");
+    if (!app || idx < 0 || !app.dataStore[idx]) return;
+
+    const raw = app.dataStore[idx]._raw;
+    const name = String(raw[app.colMap.name] || "技師");
+    const url = String(raw[app.colMap.url] || "").trim();
+    title.textContent = name + " 詳細";
+    body.innerHTML = buildTalentDetailHtml(idx);
+    openBtn.disabled = !url;
+    openBtn.onclick = () => { if (url) window.open(url, "_blank", "noopener,noreferrer"); };
+    refreshBtn.onclick = async () => {
+      if (!url || typeof app.fetchHtmlWithProxy !== "function") return;
+      refreshBtn.disabled = true;
+      const old = refreshBtn.textContent;
+      refreshBtn.textContent = "更新中...";
+      try {
+        const html = await app.fetchHtmlWithProxy(url);
+        const text = String(html || "").replace(/<[^>]+>/g, " ");
+        const matches = typeof app.inferSiteMatches === "function" ? app.inferSiteMatches(text, html, url) : [];
+        const rec = typeof app.extractRecordFromBlock === "function" ? app.extractRecordFromBlock(text, html, matches, url) : null;
+        if (rec) {
+          if (rec.schedule && app.colMap.schedule !== -1) raw[app.colMap.schedule] = rec.schedule;
+          if (rec.af && app.colMap.af !== -1) raw[app.colMap.af] = rec.af;
+          if (rec.level && app.colMap.level !== -1) raw[app.colMap.level] = rec.level;
+          if (rec.stats && app.colMap.stats !== -1) raw[app.colMap.stats] = rec.stats;
+          if (app.colMap.updateTime !== -1 && window.Utility?.getCurrentTime) raw[app.colMap.updateTime] = window.Utility.getCurrentTime();
+          app.renderCatalog();
+          if (typeof app.saveOrderToGoogleSheet === "function") app.saveOrderToGoogleSheet(true);
+          body.innerHTML = buildTalentDetailHtml(idx);
+        }
+      } catch (_) {
+      } finally {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = old;
+      }
+    };
+    modal.classList.add("show");
+  };
+
+  const setupCardInteractionPatch = () => {
+    const app = window.app;
+    const grid = document.getElementById("catalogGrid");
+    if (!app || !grid || grid.dataset.jpCardPatch === "1") return false;
+    grid.dataset.jpCardPatch = "1";
+
+    grid.addEventListener("click", (e) => {
+      if (app.isEditMode) return;
+      const card = e.target.closest(".card");
+      if (!card) return;
+      if (e.target.closest(".fav-btn") || e.target.closest(".card-checkbox")) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const idx = findRecordIndexFromCard(card);
+      if (idx >= 0) openTalentModal(idx);
+    }, true);
+
+    grid.addEventListener("contextmenu", (e) => {
+      const card = e.target.closest(".card");
+      if (!card) return;
+      const idx = findRecordIndexFromCard(card);
+      if (idx < 0) return;
+      const raw = app.dataStore[idx]._raw || [];
+      const url = String(raw[app.colMap.url] || "").trim();
+      if (!url) return;
+      e.preventDefault();
+      window.open(url, "_blank", "noopener,noreferrer");
+    }, true);
+    return true;
+  };
+
+  let patchTry = 0;
+  const patchTimer = setInterval(() => {
+    patchTry += 1;
+    setupAfFilterPatch();
+    setupCardInteractionPatch();
+    if (patchTry > 120) clearInterval(patchTimer);
+  }, 200);
 })();
 <\/script>`;
         const responsivePatch = `<style id="launcher-mobile-patch">
@@ -518,6 +729,70 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
   }
   .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
+
+.jp-talent-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 99999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+.jp-talent-modal.show { display: flex; }
+.jp-talent-card {
+  width: min(760px, 100%);
+  max-height: 86dvh;
+  overflow: auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+}
+.jp-talent-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.jp-talent-head button {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #ef4444;
+  color: #fff;
+  font-weight: 700;
+}
+.jp-talent-body .jp-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #eef2f7;
+}
+.jp-talent-body label {
+  font-weight: 700;
+  color: #475569;
+}
+.jp-talent-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: inherit;
+}
+.jp-talent-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+.jp-talent-actions button {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 700;
+}
+.jp-talent-actions button.secondary { background: #475569; }
 </style>`;
         let seededHtml = entryHtml.includes("<head>")
           ? entryHtml.replace("<head>", `<head>${tokenSeed}${responsivePatch}${bridgePatch}`)
