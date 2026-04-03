@@ -1661,7 +1661,7 @@
 
                     if (storeFilter && itemStore !== storeFilter) return false;
                     if (statusFilter && status !== statusFilter) return false;
-                    if (afVals.length && !afVals.every(v => itemAf.includes(v))) return false;
+                    if (afVals.length && !afVals.some(v => itemAf.includes(v))) return false;
                     if (!Utility.filterByTimeRange(raw[this.colMap.schedule] || '', timeStart, timeEnd)) return false;
 
                     return this.parseAdvancedQuery(kw, item);
