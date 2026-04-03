@@ -150,8 +150,13 @@
   }
 
   function applyHotfix() {
-    if (!window.AppCore || !window.AppCore.prototype) return false;
-    var proto = window.AppCore.prototype;
+    var proto = null;
+    if (window.AppCore && window.AppCore.prototype) {
+      proto = window.AppCore.prototype;
+    } else if (window.app && window.app.constructor && window.app.constructor.prototype) {
+      proto = window.app.constructor.prototype;
+    }
+    if (!proto) return false;
 
     if (!proto.__jpHotfixFetchPatched) {
       proto.fetchHtmlWithProxy = async function (targetUrl) {
@@ -216,6 +221,20 @@
       proto.__jpHotfixSyncTracePatched = true;
     }
 
+    if (!proto.__jpHotfixAfFilterPatched && typeof proto.getSelectedAfValues === "function") {
+      var origGetSelectedAfValues = proto.getSelectedAfValues;
+      proto.getSelectedAfValues = function () {
+        var vals = origGetSelectedAfValues.apply(this, arguments) || [];
+        try {
+          var all = document.querySelectorAll("#af-checkboxes input[type='checkbox']");
+          if (all && all.length && vals.length === all.length) return [];
+        } catch (_) {
+        }
+        return vals;
+      };
+      proto.__jpHotfixAfFilterPatched = true;
+    }
+
     if (!window.__jpHotfixFlushTicker) {
       window.__jpHotfixFlushTicker = setInterval(flushLogs, 1500);
     }
@@ -232,4 +251,3 @@
     if (done || tries > 240) clearInterval(timer);
   }, 150);
 })();
-

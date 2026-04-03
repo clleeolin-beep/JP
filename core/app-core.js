@@ -120,7 +120,10 @@ class AppCore {
             }
 
             getSelectedAfValues() {
-                return [...document.querySelectorAll('#af-checkboxes input[type="checkbox"]:checked')].map(cb => cb.value);
+                const allBoxes = [...document.querySelectorAll('#af-checkboxes input[type="checkbox"]')];
+                const checked = allBoxes.filter(cb => cb.checked).map(cb => cb.value);
+                if (allBoxes.length && checked.length === allBoxes.length) return [];
+                return checked;
             }
 
             toggleSortDir() {
@@ -587,19 +590,50 @@ class AppCore {
 
             findRecordIndex(record) {
                 if (!record) return -1;
+                const normalizeUrl = (url) => decodeURIComponent(String(url || ''))
+                    .toLowerCase()
+                    .replace(/^https?:\/\/(www\.)?/, '')
+                    .split('#')[0]
+                    .split('?')[0]
+                    .replace(/\/+$/, '');
+
+                const extractProfileKey = (url) => {
+                    const src = normalizeUrl(url);
+                    if (!src) return '';
+                    const girlid = src.match(/girlid-?(\d+)/i);
+                    if (girlid?.[1]) return `girlid:${girlid[1]}`;
+                    const cast = src.match(/\/cast\/([^\/?#]+)/i);
+                    if (cast?.[1]) return `cast:${cast[1]}`;
+                    return src;
+                };
+
+                const normalizeName = (value) => String(value || '')
+                    .toLowerCase()
+                    .replace(/[・．·\.\s　'"`´’‘“”\-_/\\()（）\[\]【】]/g, '');
+
                 if (record.url) {
-                    const cleanIncoming = record.url.split('?')[0].replace(/\/$/, '');
+                    const cleanIncoming = normalizeUrl(record.url);
                     const byUrl = this.dataStore.findIndex(item => {
-                        const dbUrl = String(item._raw[this.colMap.url] || '').split('?')[0].replace(/\/$/, '');
+                        const dbUrl = normalizeUrl(item._raw[this.colMap.url] || '');
                         return dbUrl && dbUrl === cleanIncoming;
                     });
                     if (byUrl !== -1) return byUrl;
+
+                    const incomingKey = extractProfileKey(record.url);
+                    if (incomingKey) {
+                        const byProfileKey = this.dataStore.findIndex(item => {
+                            const dbKey = extractProfileKey(item._raw[this.colMap.url] || '');
+                            return dbKey && dbKey === incomingKey;
+                        });
+                        if (byProfileKey !== -1) return byProfileKey;
+                    }
                 }
 
                 return this.dataStore.findIndex(item => {
-                    const dbName = Utility.parseName(item._raw[this.colMap.name] || '', window.ruleEngine).pureName;
+                    const dbName = normalizeName(Utility.parseName(item._raw[this.colMap.name] || '', window.ruleEngine).pureName);
+                    const extName = normalizeName(record.name);
                     const dbStore = item._raw[this.colMap.store] || '';
-                    return dbName.toLowerCase() === String(record.name).toLowerCase() &&
+                    return dbName && extName && dbName === extName &&
                         Utility.isSameStore(dbStore, record.store);
                 });
             }
