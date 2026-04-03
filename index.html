@@ -476,6 +476,7 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
   function patchApp() {
     var app = window.app;
     if (!app) return false;
+    pushLog("APP detected");
     if (!app.__jpDebugFetchPatched && typeof app.fetchHtmlWithProxy === "function") {
       var origFetch = app.fetchHtmlWithProxy.bind(app);
       app.fetchHtmlWithProxy = async function (url) {
@@ -490,12 +491,144 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
         }
       };
       app.__jpDebugFetchPatched = true;
+      pushLog("APP patch fetchHtmlWithProxy ok");
+    }
+
+    function extractBlocks(html, baseUrl) {
+      var out = [];
+      var seen = {};
+      try {
+        var doc = new DOMParser().parseFromString(String(html || ""), "text/html");
+        var anchors = Array.prototype.slice.call(doc.querySelectorAll("a[href]"));
+        anchors.forEach(function (a) {
+          var href = String(a.getAttribute("href") || "").trim();
+          if (!href) return;
+          if (!/(girlid|girls-list|\/cast\/|\/girl\/|\/profile\/)/i.test(href)) return;
+          var abs = "";
+          try { abs = new URL(href, baseUrl || window.location.href).toString(); } catch (e) { abs = href; }
+          if (!/^https?:\/\//i.test(abs) || seen[abs]) return;
+          seen[abs] = true;
+          var txt = String((a.closest("li,article,.cast,.girl,.item,div") || a).textContent || "").replace(/\s+/g, " ").trim();
+          out.push((txt || "") + "\n" + abs);
+        });
+      } catch (e) {}
+      return out;
+    }
+
+    function buildRecord(block, html, siteCode, sourceUrl) {
+      if (!app.extractCommonRuleData) return null;
+      var common = app.extractCommonRuleData(String(block || ""), String(html || ""), [siteCode, "Common"]);
+      var name = ((common.nameInfo && common.nameInfo.pureName) || common.rawName || "").trim();
+      if (!name) return null;
+      var url = "";
+      if (common.extractedUrl && common.extractedUrl.value) url = common.extractedUrl.value;
+      else if (common.urlFallback && common.urlFallback[0]) url = common.urlFallback[0];
+      else url = sourceUrl || "";
+      try { url = new URL(url, sourceUrl || window.location.href).toString(); } catch (e) {}
+      var tags = new Set();
+      if (common.nameInfo && Array.isArray(common.nameInfo.tags)) common.nameInfo.tags.forEach(function (t) { if (t) tags.add(t); });
+      if (common.extractedAf && common.extractedAf.tags) common.extractedAf.tags.forEach(function (t) { if (t) tags.add(t); });
+      var noMatch = String(block || "").match(/No\.?\s*0*([0-9]{1,6})/i);
+      return {
+        location: "",
+        store: app.getRecordStoreName ? app.getRecordStoreName(common) : "",
+        techId: "",
+        listNo: noMatch && noMatch[1] ? noMatch[1] : "",
+        startDate: (common.extractedDate && common.extractedDate.value) || "",
+        name: name,
+        age: (common.extractedAge && common.extractedAge.value) || (common.ageFallback && common.ageFallback[1]) || "",
+        stats: (common.extractedStats && common.extractedStats.value) || (common.statsFallback && common.statsFallback[1]) || "",
+        url: url,
+        price: (common.extractedPrice && common.extractedPrice.value) || "",
+        tags: Array.from(tags),
+        level: (common.extractedName && common.extractedName.level) || (common.nameInfo && common.nameInfo.level) || "",
+        schedule: common.formattedSchedule || "",
+        hasSchedule: !!common.formattedSchedule
+      };
+    }
+
+    async function fetchWithFallback(url) {
+      try { return await app.fetchHtmlWithProxy(url); } catch (e0) {}
+      try {
+        var noProto = String(url || "").replace(/^https?:\/\//i, "");
+        var r = await fetch("https://r.jina.ai/http://" + noProto);
+        if (r.ok) {
+          var t = await r.text();
+          if (t && t.length > 20) return t;
+        }
+      } catch (e1) {}
+      return "";
+    }
+
+    async function fallbackSync(syncRules) {
+      pushLog("SYNC fallback begin");
+      var syncStats = {};
+      for (var i = 0; i < syncRules.length; i += 1) {
+        var rule = syncRules[i];
+        var siteCode = rule.siteMatch || ("site-" + (i + 1));
+        var url = String(rule.pattern || "").trim();
+        if (!syncStats[siteCode]) syncStats[siteCode] = { total: 0, updated: 0, missing: 0 };
+        var urls = siteCode === "yoshiwara-soap"
+          ? [
+            "https://yoshiwara-soap.jp/schedule/",
+            "https://yoshiwara-soap.jp/schedule/tomorrow.html",
+            "https://yoshiwara-soap.jp/schedule/in-2-days.html",
+            "https://yoshiwara-soap.jp/schedule/in-3-days.html",
+            "https://yoshiwara-soap.jp/schedule/in-4-days.html",
+            "https://yoshiwara-soap.jp/schedule/in-5-days.html",
+            "https://yoshiwara-soap.jp/schedule/in-6-days.html"
+          ]
+          : [url];
+        for (var u = 0; u < urls.length; u += 1) {
+          var src = urls[u];
+          pushLog("SYNC site " + siteCode + " url " + src);
+          var html = await fetchWithFallback(src);
+          if (!html) {
+            syncStats[siteCode].missing += 1;
+            pushLog("SYNC miss no-html " + siteCode);
+            continue;
+          }
+          var blocks = extractBlocks(html, src);
+          if (!blocks.length) blocks = [String(html || "")];
+          pushLog("SYNC blocks " + siteCode + " = " + blocks.length);
+          for (var b = 0; b < blocks.length; b += 1) {
+            var record = buildRecord(blocks[b], html, siteCode, src);
+            if (!record || !record.name) continue;
+            syncStats[siteCode].total += 1;
+            var idx = app.findRecordIndex(record);
+            if (idx !== -1) {
+              app.applyRecordToRow(app.dataStore[idx]._raw, record, false);
+              syncStats[siteCode].updated += 1;
+            } else {
+              syncStats[siteCode].missing += 1;
+            }
+          }
+        }
+      }
+      app.renderCatalog && app.renderCatalog();
+      app.saveOrderToGoogleSheet && await app.saveOrderToGoogleSheet(true);
+      app.showSyncStatsModal && app.showSyncStatsModal(syncStats);
+      pushLog("SYNC fallback done");
     }
 
     if (!app.__jpDebugSyncPatched && typeof app.startAutoSync === "function") {
       var origSync = app.startAutoSync.bind(app);
       app.startAutoSync = async function () {
         pushLog("SYNC begin");
+        var syncRules = (window.ruleEngine && window.ruleEngine.rules || []).filter(function (rule) {
+          return rule.field === "System_AutoSync" && String(rule.action || "").toUpperCase() === "Y";
+        });
+        var missingHandlers = syncRules.some(function (rule) {
+          var code = rule.siteMatch || "";
+          var h = app.getSiteHandler ? app.getSiteHandler(code, rule.pattern, [code]) : null;
+          return !h || typeof h.syncAuto !== "function";
+        });
+        if (missingHandlers) {
+          pushLog("SYNC handlers missing, use fallback");
+          await fallbackSync(syncRules);
+          pushLog("SYNC done (fallback)");
+          return;
+        }
         try {
           var result = await origSync();
           pushLog("SYNC done");
@@ -506,15 +639,47 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
         }
       };
       app.__jpDebugSyncPatched = true;
+      pushLog("APP patch startAutoSync ok");
     }
-    return true;
+    return !!(app.__jpDebugFetchPatched || app.__jpDebugSyncPatched);
   }
+
+  if (!window.__jpDebugFetchWrapped) {
+    var nativeFetch = window.fetch && window.fetch.bind(window);
+    if (nativeFetch) {
+      window.fetch = async function (input, init) {
+        var url = (typeof input === "string") ? input : (input && input.url) || "";
+        if (url) pushLog("GLOBAL fetch -> " + url);
+        try {
+          var res = await nativeFetch(input, init);
+          if (url) pushLog("GLOBAL fetch <- " + res.status + " " + url);
+          return res;
+        } catch (err) {
+          if (url) pushLog("GLOBAL fetch xx " + url + " :: " + (err && err.message ? err.message : String(err)));
+          throw err;
+        }
+      };
+      window.__jpDebugFetchWrapped = true;
+      pushLog("GLOBAL fetch patch ok");
+    }
+  }
+
+  document.addEventListener("click", function (e) {
+    var el = e.target && e.target.closest ? e.target.closest("button") : null;
+    if (!el) return;
+    var id = el.id || "";
+    var txt = String(el.textContent || "").trim();
+    if (id === "btn-auto-sync" || /自動同步|Auto Sync/i.test(txt)) {
+      pushLog("CLICK auto-sync button id=" + id + " text=" + txt);
+    }
+  }, true);
 
   var tries = 0;
   var timer = setInterval(function () {
     tries += 1;
     ensureUi();
-    if (patchApp() || tries > 240) clearInterval(timer);
+    patchApp();
+    if (tries > 1200) clearInterval(timer);
   }, 250);
   pushLog("DEBUG installed");
 })();
