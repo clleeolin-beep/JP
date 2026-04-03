@@ -359,7 +359,7 @@ sessionStorage.setItem("gapi_access_token", ${JSON.stringify(state.accessToken)}
 sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ? "true" : "false")});
 <\/script>`;
 
-        const debugPatch = `<style id="jp-sync-debug-style">
+        const debugPatch = String.raw`<style id="jp-sync-debug-style">
 #jp-sync-debug-btn {
   position: fixed;
   right: 14px;
