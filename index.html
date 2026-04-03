@@ -859,6 +859,10 @@
         </div>
     </div>
 
+    <script src="./core/site-sync-registry.js"></script>
+    <script src="./core/site-sync-yoasobi-heaven.js"></script>
+    <script src="./core/site-sync-yoshiwara-soap.js"></script>
+
     <script>
         const CLIENT_ID = '615427641075-2e4i1l7smqp30l8v1qrf75c924aro94i.apps.googleusercontent.com';
         const SHEET_ID = '1WpEGW6m-N-Ofdsn4LGIrT0uQvFRPkVTh9RyJkKgqlc8';
@@ -1854,40 +1858,39 @@
                 }
             }
 
-            inferSiteMatches(text = '', html = '', sourceUrl = '') {
-                const matches = new Set(['Common']);
-                const haystacks = [String(text).toLowerCase(), String(html).toLowerCase(), String(sourceUrl).toLowerCase()];
-                const joined = haystacks.join('\n');
+            getSiteHandler(siteCode = '', sourceUrl = '', siteMatches = []) {
+                return window.SiteSyncRegistry?.getHandler?.({ siteCode, sourceUrl, siteMatches }) || null;
+            }
 
-                window.ruleEngine.rules.forEach(rule => {
-                    if (!rule.siteMatch || rule.siteMatch === 'Common') return;
-                    if (joined.includes(String(rule.siteMatch).toLowerCase())) matches.add(rule.siteMatch);
-                    if (rule.pattern && joined.includes(String(rule.pattern).toLowerCase())) matches.add(rule.siteMatch);
+            inferSiteMatches(text = '', html = '', sourceUrl = '', preferredSiteCode = '') {
+                return window.SiteSyncRegistry?.inferSiteMatches?.({
+                    app: this,
+                    text,
+                    html,
+                    sourceUrl,
+                    preferredSiteCode
+                }) || ['Common'];
+            }
+
+            parseBlocksFromMagicPaste(text, siteMatches = ['Common'], sourceUrl = '') {
+                const primarySite = siteMatches.find(site => site && site !== 'Common') || '';
+                const handler = this.getSiteHandler(primarySite, sourceUrl, siteMatches);
+                const blocks = handler?.parseBlocks?.({
+                    app: this,
+                    text,
+                    siteMatches,
+                    sourceUrl
                 });
-
-                const urlMatch = String(sourceUrl).match(/\/tokyo\/[A-Za-z0-9_]+\/([^\/?#]+)/i);
-                if (urlMatch?.[1]) matches.add(urlMatch[1].toLowerCase());
-                if (joined.includes('yoshiwara-soap')) matches.add('yoshiwara-soap');
-                return Array.from(matches);
+                return blocks?.length ? blocks : [String(text)];
             }
 
-            parseBlocksFromMagicPaste(text) {
-                const splitterRegex = this.getSplitterRegex();
-                let blocks = String(text).split(splitterRegex).map(block => block.trim()).filter(Boolean);
-                if (blocks.length <= 1) {
-                    blocks = String(text).split(/(?:^|\n)\s*No\.\s*\d+/i).map(block => block.trim()).filter(Boolean);
-                }
-                return blocks.length ? blocks : [String(text)];
-            }
-
-            extractRecordFromBlock(block, html = '', siteMatches = ['Common']) {
+            extractCommonRuleData(block, html = '', siteMatches = ['Common']) {
                 const extractedName = window.ruleEngine.extractByRules(block, html, 'v_name', siteMatches);
                 let rawName = extractedName.value || '';
                 if (!rawName) {
                     const fallback = block.match(/(?:Name|姓名|名前)\s*[:：]?\s*([^\n]+)/i);
                     if (fallback?.[1]) rawName = fallback[1].trim();
                 }
-                if (!rawName) return null;
 
                 const nameInfo = Utility.parseName(rawName, window.ruleEngine);
                 const extractedStore = window.ruleEngine.extractByRules(block, html, 'v_store', siteMatches);
@@ -1908,24 +1911,54 @@
                 if (!scheduleText && scheduleFallback?.[0]) scheduleText = scheduleFallback[0];
 
                 const formattedSchedule = Utility.parseAndFormatSchedule(scheduleText, window.ruleEngine);
-                const tags = new Set(nameInfo.tags);
-                extractedAf.tags.forEach(tag => tags.add(tag));
 
                 return {
-                    name: nameInfo.pureName || rawName.trim(),
-                    store: Utility.cleanStoreNameDisplay(extractedName.secondaryValue || extractedStore.value || document.getElementById('v_store')?.value || ''),
-                    stats: extractedStats.value || (statsFallback?.[1]?.replace(/from.*/i, '').trim() || ''),
-                    url: extractedUrl.value || (urlFallback?.[0] || ''),
-                    age: extractedAge.value || (ageFallback?.[1] || ''),
-                    startDate: extractedDate.value || '',
-                    price: extractedPrice.value || document.getElementById('v_price')?.value || '',
-                    schedule: formattedSchedule,
-                    hasSchedule: /\d{1,2}\/\d{1,2}/.test(formattedSchedule),
-                    tags: Array.from(tags),
-                    level: nameInfo.level || extractedName.level || '',
-                    location: document.getElementById('v_location')?.value || '',
-                    rawBlock: block
+                    rawName,
+                    nameInfo,
+                    extractedName,
+                    extractedStore,
+                    extractedStats,
+                    extractedUrl,
+                    extractedAge,
+                    extractedDate,
+                    extractedPrice,
+                    extractedSchedule,
+                    extractedAf,
+                    urlFallback,
+                    statsFallback,
+                    ageFallback,
+                    scheduleText,
+                    formattedSchedule
                 };
+            }
+
+            getRecordStoreName(commonData) {
+                if (!commonData) return '';
+                return Utility.cleanStoreNameDisplay(
+                    commonData.extractedName.secondaryValue ||
+                    commonData.extractedStore.value ||
+                    document.getElementById('v_store')?.value || ''
+                );
+            }
+
+            cleanStoreName(value) {
+                return Utility.cleanStoreNameDisplay(value);
+            }
+
+            isSameStore(a, b) {
+                return Utility.isSameStore(a, b);
+            }
+
+            extractRecordFromBlock(block, html = '', siteMatches = ['Common'], sourceUrl = '') {
+                const primarySite = siteMatches.find(site => site && site !== 'Common') || '';
+                const handler = this.getSiteHandler(primarySite, sourceUrl, siteMatches);
+                return handler?.extractRecord?.({
+                    app: this,
+                    block,
+                    html,
+                    siteMatches,
+                    sourceUrl
+                }) || null;
             }
 
             findRecordIndex(record) {
@@ -1988,14 +2021,15 @@
                 }
 
                 const html = '';
-                const siteMatches = this.inferSiteMatches(text, html, document.getElementById('v_url')?.value || '');
-                const blocks = this.parseBlocksFromMagicPaste(text);
+                const sourceUrl = document.getElementById('v_url')?.value || '';
+                const siteMatches = this.inferSiteMatches(text, html, sourceUrl);
+                const blocks = this.parseBlocksFromMagicPaste(text, siteMatches, sourceUrl);
 
                 let updated = 0;
                 let created = 0;
 
                 blocks.forEach(block => {
-                    const record = this.extractRecordFromBlock(block, html, siteMatches);
+                    const record = this.extractRecordFromBlock(block, html, siteMatches, sourceUrl);
                     if (!record || !record.name) return;
                     const existingIndex = this.findRecordIndex(record);
 
@@ -2026,13 +2060,13 @@
                     : `✅ 批次完成：更新 ${updated} 筆。`);
             }
 
-            processBatchDataInternally(text, html, siteMatches, statsObj, createMissing = false) {
-                const blocks = this.parseBlocksFromMagicPaste(text);
+            processBatchDataInternally(text, html, siteMatches, statsObj, createMissing = false, sourceUrl = '') {
+                const blocks = this.parseBlocksFromMagicPaste(text, siteMatches, sourceUrl);
                 let updated = 0;
                 let created = 0;
 
                 blocks.forEach(block => {
-                    const record = this.extractRecordFromBlock(block, html, siteMatches);
+                    const record = this.extractRecordFromBlock(block, html, siteMatches, sourceUrl);
                     if (!record || !record.name) return;
                     statsObj.total++;
 
@@ -2057,155 +2091,6 @@
                 });
 
                 return { updated, created };
-            }
-
-            getYoshiwaraScheduleUrls(baseUrl = 'https://yoshiwara-soap.jp/schedule/') {
-                const root = String(baseUrl || 'https://yoshiwara-soap.jp/schedule/').replace(/\/+$/, '') + '/';
-                return [
-                    root,
-                    `${root}tomorrow.html`,
-                    `${root}in-2-days.html`,
-                    `${root}in-3-days.html`,
-                    `${root}in-4-days.html`,
-                    `${root}in-5-days.html`,
-                    `${root}in-6-days.html`
-                ];
-            }
-
-            formatScheduleLine(dateObj, value) {
-                const dayMap = ['日', '一', '二', '三', '四', '五', '六'];
-                return `${dateObj.getMonth() + 1}/${dateObj.getDate()} (${dayMap[dateObj.getDay()]}) ${value}`;
-            }
-
-            parseYoshiwaraSchedulePage(html, dateObj) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = String(html || '')
-                    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-                    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
-
-                const results = [];
-                const seen = new Set();
-
-                tempDiv.querySelectorAll('a[href*="/cast/"]').forEach(anchor => {
-                    const href = anchor.getAttribute('href') || '';
-                    const absUrl = new URL(href, 'https://yoshiwara-soap.jp').href;
-                    const text = (anchor.textContent || '').replace(/\s+/g, ' ').trim();
-                    if (!text || !/\(\d{1,2}歳\)/.test(text) || !/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(text)) return;
-                    if (seen.has(absUrl)) return;
-                    seen.add(absUrl);
-
-                    const nameMatch = text.match(/^(.+?)\((\d{1,2})歳\)/);
-                    const statsMatch = text.match(/(T\d{3}\s*B\d{2,3}\([A-Z]\)\s*W\d{2}\s*H\d{2})/i);
-                    const timeMatch = text.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
-                    if (!nameMatch || !timeMatch) return;
-
-                    results.push({
-                        name: nameMatch[1].trim(),
-                        age: nameMatch[2],
-                        stats: statsMatch?.[1]?.replace(/\s+/g, ' ').trim() || '',
-                        url: absUrl,
-                        dayLine: this.formatScheduleLine(dateObj, `${timeMatch[1]}-${timeMatch[2]}`)
-                    });
-                });
-
-                return results;
-            }
-
-            async syncYoshiwaraWeeklySchedules(baseUrl, statsObj) {
-                const scheduleUrls = this.getYoshiwaraScheduleUrls(baseUrl);
-                const storeRule = window.ruleEngine.rules.find(rule =>
-                    rule.siteMatch === 'yoshiwara-soap' &&
-                    rule.field === 'v_store' &&
-                    rule.ruleType === 'Set_Default'
-                );
-                const storeName = Utility.cleanStoreNameDisplay(storeRule?.action || 'コートダジュール COTE D\'AZUR');
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const storeIndexes = this.dataStore
-                    .map((item, index) => ({ item, index }))
-                    .filter(({ item }) => Utility.isSameStore(item._raw[this.colMap.store] || '', storeName));
-
-                const scheduleMap = new Map();
-                storeIndexes.forEach(({ item, index }) => {
-                    const lines = [];
-                    for (let offset = 0; offset < 7; offset++) {
-                        const dateObj = new Date(today);
-                        dateObj.setDate(today.getDate() + offset);
-                        lines.push(this.formatScheduleLine(dateObj, '休息'));
-                    }
-
-                    scheduleMap.set(index, {
-                        row: item._raw,
-                        scheduleLines: lines,
-                        touched: false
-                    });
-                });
-
-                const missingKeys = new Set();
-
-                for (let offset = 0; offset < scheduleUrls.length; offset++) {
-                    if (!this.isSyncing) break;
-
-                    const url = scheduleUrls[offset];
-                    const dateObj = new Date(today);
-                    dateObj.setDate(today.getDate() + offset);
-                    Utility.showLoading(`自動同步中...\nyoshiwara-soap\n${url}`);
-
-                    const html = await this.fetchHtmlWithProxy(url);
-                    const records = this.parseYoshiwaraSchedulePage(html, dateObj);
-
-                    records.forEach(record => {
-                        const existingIndex = this.findRecordIndex({ ...record, store: storeName });
-                        if (existingIndex === -1) {
-                            missingKeys.add(record.url || `${storeName}:${record.name}`);
-                            return;
-                        }
-
-                        if (!scheduleMap.has(existingIndex)) {
-                            const row = this.dataStore[existingIndex]._raw;
-                            const lines = [];
-                            for (let innerOffset = 0; innerOffset < 7; innerOffset++) {
-                                const innerDate = new Date(today);
-                                innerDate.setDate(today.getDate() + innerOffset);
-                                lines.push(this.formatScheduleLine(innerDate, '休息'));
-                            }
-                            scheduleMap.set(existingIndex, {
-                                row,
-                                scheduleLines: lines,
-                                touched: false
-                            });
-                        }
-
-                        const entry = scheduleMap.get(existingIndex);
-                        entry.scheduleLines[offset] = record.dayLine;
-                        entry.touched = true;
-
-                        this.applyRecordToRow(entry.row, {
-                            store: storeName,
-                            name: record.name,
-                            age: record.age,
-                            stats: record.stats,
-                            url: record.url,
-                            schedule: entry.scheduleLines.join('\n'),
-                            hasSchedule: true,
-                            tags: []
-                        }, false);
-                    });
-
-                    await new Promise(resolve => setTimeout(resolve, 800));
-                }
-
-                let updatedCount = 0;
-                scheduleMap.forEach((entry) => {
-                    entry.row[this.colMap.schedule] = entry.scheduleLines.join('\n');
-                    entry.row[this.colMap.updateTime] = Utility.getCurrentTime();
-                    updatedCount++;
-                });
-
-                statsObj.total += scheduleMap.size + missingKeys.size;
-                statsObj.updated += updatedCount;
-                statsObj.missing += missingKeys.size;
             }
 
             async startAutoSync() {
@@ -2241,30 +2126,13 @@
                         Utility.showLoading(`自動同步中... (${i + 1}/${syncRules.length})\n${siteCode}\n${url}`);
 
                         try {
-                            if (siteCode === 'yoshiwara-soap') {
-                                await this.syncYoshiwaraWeeklySchedules(url, syncStats[siteCode]);
-                                continue;
-                            }
-
-                            const html = await this.fetchHtmlWithProxy(url);
-                            const tempDiv = document.createElement('div');
-                            const cleanHtml = html
-                                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-                                .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-                                .replace(/<br\s*[\/]?>/gi, '\n')
-                                .replace(/<\/p>/gi, '\n</p>')
-                                .replace(/<\/div>/gi, '\n</div>');
-                            tempDiv.innerHTML = cleanHtml;
-                            tempDiv.querySelectorAll('a').forEach(anchor => {
-                                if (anchor.href && (anchor.href.includes('girlid') || anchor.href.includes('/cast/'))) {
-                                    anchor.innerText = `${anchor.innerText}\n${anchor.href}\n`;
-                                }
+                            const handler = this.getSiteHandler(siteCode, url, [siteCode]);
+                            if (!handler?.syncAuto) throw new Error(`找不到 ${siteCode} 的同步處理器`);
+                            await handler.syncAuto({
+                                app: this,
+                                rule,
+                                statsObj: syncStats[siteCode]
                             });
-
-                            const extractedText = tempDiv.innerText.replace(/\n\s*\n/g, '\n').trim();
-                            const siteMatches = this.inferSiteMatches(extractedText, html, url);
-                            if (!siteMatches.includes(siteCode)) siteMatches.push(siteCode);
-                            this.processBatchDataInternally(extractedText, html, siteMatches, syncStats[siteCode], false);
                         } catch (error) {
                             console.error('[AutoSync]', siteCode, error);
                         }
@@ -2424,21 +2292,8 @@
                 Utility.showLoading('抓取清單頁面中...');
                 try {
                     const html = await this.fetchHtmlWithProxy(url);
-                    const tempDiv = document.createElement('div');
-                    const cleanHtml = html
-                        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-                        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-                        .replace(/<br\s*[\/]?>/gi, '\n')
-                        .replace(/<\/p>/gi, '\n</p>')
-                        .replace(/<\/div>/gi, '\n</div>');
-                    tempDiv.innerHTML = cleanHtml;
-                    tempDiv.querySelectorAll('a').forEach(anchor => {
-                        if (anchor.href && (anchor.href.includes('girlid') || anchor.href.includes('/cast/'))) {
-                            anchor.innerText = `${anchor.innerText}\n${anchor.href}\n`;
-                        }
-                    });
-
-                    const extractedText = tempDiv.innerText.replace(/\n\s*\n/g, '\n').trim();
+                    const handler = this.getSiteHandler('', url);
+                    const extractedText = handler?.buildListText ? handler.buildListText(html) : String(html || '');
                     document.getElementById('v_magic_paste').value = extractedText;
 
                     const siteMatches = this.inferSiteMatches(extractedText, html, url);
@@ -2466,7 +2321,7 @@
 
                 const sourceUrl = (text.match(/https?:\/\/[^\s]+/) || [document.getElementById('v_url')?.value || ''])[0];
                 const siteMatches = this.inferSiteMatches(text, html, sourceUrl);
-                const record = this.extractRecordFromBlock(text, html, siteMatches);
+                const record = this.extractRecordFromBlock(text, html, siteMatches, sourceUrl);
 
                 if (!record) {
                     if (sourceUrl) {
