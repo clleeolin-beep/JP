@@ -404,6 +404,49 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
     layoutTry += 1;
     if (setupFilterLayout() || layoutTry > 80) clearInterval(layoutTimer);
   }, 150);
+
+  const setupViewAutoSyncButton = () => {
+    const sourceBtn = document.getElementById("btn-auto-sync");
+    const cancelBtn = document.getElementById("btn-cancel-sync");
+    const headerControls = document.querySelector(".header-controls");
+    const modeBtn = document.getElementById("btn-mode-toggle");
+    const appContainer = document.getElementById("app-container");
+    if (!sourceBtn || !headerControls || !modeBtn || !appContainer) return false;
+
+    let viewBtn = document.getElementById("btn-auto-sync-view");
+    if (!viewBtn) {
+      viewBtn = document.createElement("button");
+      viewBtn.id = "btn-auto-sync-view";
+      viewBtn.type = "button";
+      viewBtn.style.background = "#03a9f4";
+      headerControls.insertBefore(viewBtn, modeBtn);
+    }
+
+    const render = () => {
+      const isViewMode = appContainer.classList.contains("view-mode");
+      const isCancelVisible = !!cancelBtn && cancelBtn.style.display !== "none";
+      viewBtn.style.display = isViewMode ? "inline-flex" : "none";
+      if (isCancelVisible) {
+        viewBtn.textContent = "⏹️ 取消同步";
+        viewBtn.onclick = () => cancelBtn.click();
+      } else {
+        viewBtn.innerHTML = "🤖 <span class=\"btn-text\">自動同步</span>";
+        viewBtn.onclick = () => sourceBtn.click();
+      }
+    };
+
+    const observer = new MutationObserver(render);
+    observer.observe(appContainer, { attributes: true, attributeFilter: ["class"] });
+    if (cancelBtn) observer.observe(cancelBtn, { attributes: true, attributeFilter: ["style", "class"] });
+    render();
+    return true;
+  };
+
+  let syncBtnTry = 0;
+  const syncBtnTimer = setInterval(() => {
+    syncBtnTry += 1;
+    if (setupViewAutoSyncButton() || syncBtnTry > 80) clearInterval(syncBtnTimer);
+  }, 150);
 })();
 <\/script>`;
         const responsivePatch = `<style id="launcher-mobile-patch">
