@@ -173,7 +173,7 @@
 
   <script>
     const CLIENT_ID = "615427641075-2e4i1l7smqp30l8v1qrf75c924aro94i.apps.googleusercontent.com";
-    const APP_MANIFEST_FILE_ID = "1s38nseW-eMJGzRReXVVAskth6R1ENl3TWTLFXwPgvUQ";
+    const APP_CORE_FILE_ID = "";
     const APP_SCOPE = [
       "https://www.googleapis.com/auth/spreadsheets",
       "https://www.googleapis.com/auth/drive"
@@ -247,23 +247,6 @@
       return res.text();
     }
 
-    async function fetchDriveDocText(fileId) {
-      const res = await fetch(
-        "https://www.googleapis.com/drive/v3/files/" + fileId + "/export?mimeType=text/plain",
-        { headers: { Authorization: "Bearer " + state.accessToken } }
-      );
-      if (!res.ok) throw new Error("Drive doc export failed (" + res.status + ")");
-      return res.text();
-    }
-
-    async function fetchAnyText(fileId, preferDoc) {
-      try {
-        return preferDoc ? await fetchDriveDocText(fileId) : await fetchDriveFileText(fileId);
-      } catch (_) {
-        return preferDoc ? await fetchDriveFileText(fileId) : await fetchDriveDocText(fileId);
-      }
-    }
-
     async function fetchProfileEmail() {
       try {
         const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
@@ -275,23 +258,6 @@
       } catch (_) {
         return "";
       }
-    }
-
-    async function inlineCoreFiles(entryHtml, coreFiles) {
-      if (!Array.isArray(coreFiles) || !coreFiles.length) return entryHtml;
-      const blocks = [];
-      for (let i = 0; i < coreFiles.length; i += 1) {
-        const file = coreFiles[i];
-        if (!file || !file.id) continue;
-        const useDocExport = String(file.source || "").toLowerCase() === "gdoc";
-        const src = await fetchAnyText(file.id, useDocExport);
-        const safeJs = String(src || "").replace(/<\/script>/gi, "<\\/script>");
-        blocks.push("<script>\n" + safeJs + "\n<\\/script>");
-      }
-      if (!blocks.length) return entryHtml;
-      const merged = blocks.join("\n");
-      if (entryHtml.includes("</body>")) return entryHtml.replace("</body>", merged + "\n</body>");
-      return entryHtml + "\n" + merged;
     }
 
     function bridgeAuthToApp() {
@@ -326,15 +292,22 @@
       }, 180);
     }
 
-    async function loadPrivateApp() {
-      const manifestText = await fetchAnyText(APP_MANIFEST_FILE_ID, true);
-      const manifest = JSON.parse((manifestText || "").replace(/^\uFEFF/, ""));
-      if (!manifest.entryFileId) throw new Error("Manifest missing entryFileId");
+    async function resolveCoreFileId() {
+      if (APP_CORE_FILE_ID && APP_CORE_FILE_ID.trim()) return APP_CORE_FILE_ID.trim();
+      const q = encodeURIComponent("name = 'Core.html' and trashed = false and mimeType != 'application/vnd.google-apps.folder'");
+      const url = "https://www.googleapis.com/drive/v3/files?q=" + q + "&orderBy=modifiedTime desc&pageSize=1&fields=files(id,name,mimeType)";
+      const res = await fetch(url, { headers: { Authorization: "Bearer " + state.accessToken } });
+      if (!res.ok) throw new Error("Core file search failed (" + res.status + ")");
+      const data = await res.json();
+      const file = (data.files || [])[0];
+      if (!file || !file.id) throw new Error("Core.html not found in Drive");
+      return String(file.id);
+    }
 
-      const useDocExport = String(manifest.entrySource || "").toLowerCase() === "gdoc";
-      let entryHtml = await fetchAnyText(manifest.entryFileId, useDocExport);
+    async function loadPrivateApp() {
+      const coreFileId = await resolveCoreFileId();
+      let entryHtml = await fetchDriveFileText(coreFileId);
       entryHtml = (entryHtml || "").replace(/^\uFEFF/, "");
-      entryHtml = await inlineCoreFiles(entryHtml, manifest.coreFiles);
 
       if (state.appBlobUrl) URL.revokeObjectURL(state.appBlobUrl);
       state.appBlobUrl = URL.createObjectURL(new Blob([entryHtml], { type: "text/html" }));
@@ -415,8 +388,8 @@
     }
 
     function initAuth() {
-      if (!CLIENT_ID || !APP_MANIFEST_FILE_ID) {
-        setStatus("Missing CLIENT_ID or APP_MANIFEST_FILE_ID.", "error");
+      if (!CLIENT_ID) {
+        setStatus("Missing CLIENT_ID.", "error");
         return;
       }
       if (!window.google || !google.accounts || !google.accounts.oauth2) {
