@@ -127,7 +127,7 @@
 
   async function fetchWithTimeout(url, timeoutMs) {
     var ctrl = new AbortController();
-    var timer = setTimeout(function () { ctrl.abort(); }, timeoutMs || 12000);
+    var timer = setTimeout(function () { ctrl.abort(); }, timeoutMs || 7000);
     try {
       return await fetch(url, { signal: ctrl.signal, cache: "no-store" });
     } finally {
@@ -164,7 +164,7 @@
         for (var i = 0; i < proxies.length; i += 1) {
           var proxy = proxies[i];
           try {
-            var res = await fetchWithTimeout(proxy.url, 12000);
+            var res = await fetchWithTimeout(proxy.url, 7000);
             if (!res.ok) throw new Error("HTTP error " + res.status);
 
             var html = "";
