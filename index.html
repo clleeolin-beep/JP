@@ -348,7 +348,161 @@ window.__JP_TOKEN = ${JSON.stringify(state.accessToken)};
 sessionStorage.setItem("gapi_access_token", ${JSON.stringify(state.accessToken)});
 sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ? "true" : "false")});
 <\/script>`;
-        const bridgePatch = `<script>/* bridge patch temporarily disabled for stability */<\/script>`;
+        const bridgePatch = `<script>
+(function () {
+  function getApp() { return window.app || null; }
+  function getCheckedAf() {
+    var list = Array.prototype.slice.call(document.querySelectorAll('#af-checkboxes input[type="checkbox"]'));
+    if (!list.length) return null;
+    return list.filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
+  }
+  function rememberAfState() {
+    var app = getApp();
+    if (!app) return;
+    var selected = getCheckedAf();
+    if (!selected) return;
+    var allCount = document.querySelectorAll('#af-checkboxes input[type="checkbox"]').length;
+    if (!selected.length || selected.length === allCount) app.__jpAfSelected = null;
+    else app.__jpAfSelected = selected.slice();
+  }
+  function patchAfFilter() {
+    var app = getApp();
+    if (!app || app.__jpAfPatched || typeof app.getSelectedAfValues !== 'function') return false;
+    app.__jpAfPatched = true;
+    var originalGet = app.getSelectedAfValues.bind(app);
+    app.getSelectedAfValues = function () {
+      var selected = originalGet();
+      var allCount = document.querySelectorAll('#af-checkboxes input[type="checkbox"]').length;
+      if (app.__jpAfSelected && app.__jpAfSelected.length) return app.__jpAfSelected.slice();
+      if (allCount && selected.length === allCount) return [];
+      return selected;
+    };
+    if (typeof app.toggleMode === 'function') {
+      var originalToggle = app.toggleMode.bind(app);
+      app.toggleMode = function () {
+        rememberAfState();
+        originalToggle();
+      };
+    }
+    document.addEventListener('change', function (e) {
+      if (e.target && e.target.matches('#af-checkboxes input[type="checkbox"]')) rememberAfState();
+    }, true);
+    return true;
+  }
+
+  function ensureModal() {
+    if (document.getElementById('jp-talent-modal')) return;
+    var modal = document.createElement('div');
+    modal.id = 'jp-talent-modal';
+    modal.className = 'jp-talent-modal';
+    modal.innerHTML =
+      '<div class="jp-talent-card">' +
+      '<div class="jp-talent-head">' +
+      '<strong id="jp-talent-title">Talent Detail</strong>' +
+      '<button type="button" id="jp-talent-close">X</button>' +
+      '</div>' +
+      '<div id="jp-talent-body" class="jp-talent-body"></div>' +
+      '<div class="jp-talent-actions">' +
+      '<button type="button" id="jp-talent-open" class="secondary">Open Profile</button>' +
+      '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) modal.classList.remove('show');
+    });
+    document.getElementById('jp-talent-close').addEventListener('click', function () {
+      modal.classList.remove('show');
+    });
+  }
+
+  function findIndexFromCard(card) {
+    var app = getApp();
+    if (!app || !card || !app.dataStore || !app.colMap) return -1;
+    var nameEl = card.querySelector('.tech-name');
+    var storeEl = card.querySelector('.store-name');
+    if (!nameEl || !storeEl) return -1;
+    var nameText = (nameEl.textContent || '').replace(/\\([^)]*\\)/g, '').trim();
+    var storeText = (storeEl.textContent || '').trim();
+    for (var i = 0; i < app.dataStore.length; i += 1) {
+      var raw = app.dataStore[i]._raw || [];
+      var n = String(raw[app.colMap.name] || '').trim();
+      var s = String(raw[app.colMap.store] || '').trim();
+      if (n === nameText && s === storeText) return i;
+    }
+    return -1;
+  }
+
+  function openDetail(idx) {
+    var app = getApp();
+    if (!app || idx < 0 || !app.dataStore[idx]) return;
+    ensureModal();
+    var raw = app.dataStore[idx]._raw || [];
+    var title = document.getElementById('jp-talent-title');
+    var body = document.getElementById('jp-talent-body');
+    var openBtn = document.getElementById('jp-talent-open');
+    var name = String(raw[app.colMap.name] || 'Talent');
+    var url = String(raw[app.colMap.url] || '').trim();
+    title.textContent = name + ' Detail';
+    function row(k, v) {
+      var safe = String(v || '-').replace(/</g, '&lt;');
+      return '<div class="jp-row"><label>' + k + '</label><pre>' + safe + '</pre></div>';
+    }
+    body.innerHTML =
+      row('Store', raw[app.colMap.store]) +
+      row('Name', raw[app.colMap.name]) +
+      row('Tech ID', raw[app.colMap.techId]) +
+      row('Age', raw[app.colMap.age]) +
+      row('Stats', raw[app.colMap.stats]) +
+      row('Price', raw[app.colMap.price]) +
+      row('AF', raw[app.colMap.af]) +
+      row('Level', raw[app.colMap.level]) +
+      row('Schedule', raw[app.colMap.schedule]) +
+      row('URL', url);
+    openBtn.disabled = !url;
+    openBtn.onclick = function () {
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    };
+    document.getElementById('jp-talent-modal').classList.add('show');
+  }
+
+  function patchCardInteraction() {
+    var app = getApp();
+    var grid = document.getElementById('catalogGrid');
+    if (!app || !grid || grid.dataset.jpCardPatch === '1') return false;
+    grid.dataset.jpCardPatch = '1';
+    grid.addEventListener('click', function (e) {
+      if (app.isEditMode) return;
+      var card = e.target.closest('.card');
+      if (!card) return;
+      if (e.target.closest('.fav-btn') || e.target.closest('.card-checkbox')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var idx = findIndexFromCard(card);
+      if (idx >= 0) openDetail(idx);
+    }, true);
+    grid.addEventListener('contextmenu', function (e) {
+      var card = e.target.closest('.card');
+      if (!card) return;
+      var idx = findIndexFromCard(card);
+      if (idx < 0) return;
+      var raw = app.dataStore[idx]._raw || [];
+      var url = String(raw[app.colMap.url] || '').trim();
+      if (!url) return;
+      e.preventDefault();
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }, true);
+    return true;
+  }
+
+  var tries = 0;
+  var timer = setInterval(function () {
+    tries += 1;
+    patchAfFilter();
+    patchCardInteraction();
+    if (tries > 120) clearInterval(timer);
+  }, 200);
+})();
+<\/script>`;
         const responsivePatch = `<style id="launcher-mobile-patch">
 /* Desktop: compact single-line filters, no awkward gaps */
 .filter-tools {
