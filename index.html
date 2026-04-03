@@ -1980,6 +1980,22 @@
                 });
             }
 
+            resolveBatchTechId(record, targetRow) {
+                if (!record) return '';
+                if (record.techId) return String(record.techId).trim();
+
+                const noValue = String(record.listNo || '').trim();
+                const noMatch = noValue.match(/\d+/);
+                if (!noMatch) return '';
+
+                const seq = noMatch[0].padStart(4, '0');
+                const storeName = String(record.store || targetRow?.[this.colMap.store] || '').trim();
+                const storeCode = Utility.getStoreCodeByName(storeName || 'UNKNOWN');
+                if (!storeCode || storeCode === 'UNKNOWN') return '';
+
+                return `${storeCode}_${seq}`;
+            }
+
             applyRecordToRow(targetRow, record, isNew = false) {
                 const setField = (key, value) => {
                     const idx = this.colMap[key];
@@ -2004,6 +2020,9 @@
                 if (record.startDate) setField('startDate', record.startDate);
                 if (record.schedule && record.hasSchedule) setField('schedule', record.schedule);
                 if (record.level) setField('level', record.level);
+
+                const normalizedTechId = this.resolveBatchTechId(record, targetRow);
+                if (normalizedTechId) setField('techId', normalizedTechId);
 
                 const currentTags = String(targetRow[this.colMap.af] || '')
                     .split(/[\/／]/).map(tag => tag.trim()).filter(Boolean);

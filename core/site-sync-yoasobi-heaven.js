@@ -28,7 +28,10 @@
             const splitterRegex = app.getSplitterRegex();
             let blocks = String(text).split(splitterRegex).map(block => block.trim()).filter(Boolean);
             if (blocks.length <= 1) {
-                blocks = String(text).split(/(?:^|\n)\s*No\.\s*\d+/i).map(block => block.trim()).filter(Boolean);
+                const matches = String(text).match(/No\.\s*\d+[\s\S]*?(?=(?:\n\s*No\.\s*\d+)|$)/ig);
+                if (matches?.length) {
+                    blocks = matches.map(block => block.trim()).filter(Boolean);
+                }
             }
             return blocks.length ? blocks : [String(text)];
         },
@@ -88,6 +91,7 @@
         extractRecord({ app, block, html = '', siteMatches = ['Common'] } = {}) {
             const common = app.extractCommonRuleData(block, html, siteMatches);
             if (!common?.rawName) return null;
+            const listNoMatch = String(block).match(/No\.\s*(\d{1,6})/i);
 
             const tags = new Set(common.nameInfo.tags);
             common.extractedAf.tags.forEach(tag => tags.add(tag));
@@ -104,6 +108,7 @@
                 hasSchedule: /\d{1,2}\/\d{1,2}/.test(common.formattedSchedule),
                 tags: Array.from(tags),
                 level: common.nameInfo.level || common.extractedName.level || '',
+                listNo: listNoMatch?.[1] || '',
                 location: document.getElementById('v_location')?.value || '',
                 rawBlock: block
             };
