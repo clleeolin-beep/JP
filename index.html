@@ -143,10 +143,11 @@
     .toolbar {
       display: none;
       position: fixed;
-      right: 12px;
-      top: 12px;
-      z-index: 30;
+      right: 14px;
+      bottom: 14px;
+      z-index: 20;
       gap: 8px;
+      pointer-events: none;
     }
 
     body.focus-mode .toolbar {
@@ -154,6 +155,7 @@
     }
 
     .toolbar button {
+      pointer-events: auto;
       padding: 8px 12px;
       border-radius: 8px;
       background: rgba(31, 41, 55, 0.9);
@@ -313,18 +315,63 @@ window.__JP_TOKEN = ${JSON.stringify(state.accessToken)};
 sessionStorage.setItem("gapi_access_token", ${JSON.stringify(state.accessToken)});
 sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ? "true" : "false")});
 <\/script>`;
-        const patchedEntryHtml = entryHtml.replace(
-          "https://drive.google.com/thumbnail?authuser=0&sz=w800&id=${m[0]}",
-          "https://www.googleapis.com/drive/v3/files/${m[0]}?alt=media&access_token=${encodeURIComponent((window.__JP_TOKEN || sessionStorage.getItem('gapi_access_token') || '').replace(/^\"|\"$/g, ''))}"
-        );
+        const bridgePatch = `<script>
+(() => {
+  const pickId = (url) => {
+    if (!url) return "";
+    const m = String(url).match(/[-\\\\w]{25,}/);
+    return m ? m[0] : "";
+  };
+  const readToken = () => {
+    const t = window.__JP_TOKEN || sessionStorage.getItem("gapi_access_token") || "";
+    return String(t).replace(/^"|"$/g, "");
+  };
+  const toApi = (url) => {
+    const id = pickId(url);
+    const token = readToken();
+    if (!id || !token) return "";
+    return "https://www.googleapis.com/drive/v3/files/" + id + "?alt=media&access_token=" + encodeURIComponent(token);
+  };
+  const toUc = (url) => {
+    const id = pickId(url);
+    return id ? ("https://drive.google.com/uc?export=view&id=" + id) : "";
+  };
+  const patchUtility = () => {
+    if (!window.Utility || typeof window.Utility.cleanDriveUrl !== "function") return false;
+    const original = window.Utility.cleanDriveUrl.bind(window.Utility);
+    window.Utility.cleanDriveUrl = (url) => {
+      const api = toApi(url);
+      if (api) return api;
+      const uc = toUc(url);
+      if (uc) return uc;
+      return original(url);
+    };
+    return true;
+  };
+
+  let tries = 0;
+  const timer = setInterval(() => {
+    tries += 1;
+    if (patchUtility() || tries > 60) clearInterval(timer);
+  }, 100);
+
+  document.addEventListener("error", (evt) => {
+    const el = evt.target;
+    if (!el || el.tagName !== "IMG") return;
+    const cur = el.getAttribute("src") || "";
+    const next = cur.includes("googleapis.com/drive/v3/files") ? toUc(cur) : (toApi(cur) || toUc(cur));
+    if (next && next !== cur) el.src = next;
+  }, true);
+})();
+<\/script>`;
         const responsivePatch = `<style id="launcher-mobile-patch">
 @media (max-width: 900px) {
   .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
 </style>`;
-        let seededHtml = patchedEntryHtml.includes("<head>")
-          ? patchedEntryHtml.replace("<head>", `<head>${tokenSeed}${responsivePatch}`)
-          : `${tokenSeed}${responsivePatch}${patchedEntryHtml}`;
+        let seededHtml = entryHtml.includes("<head>")
+          ? entryHtml.replace("<head>", `<head>${tokenSeed}${responsivePatch}${bridgePatch}`)
+          : `${tokenSeed}${responsivePatch}${bridgePatch}${entryHtml}`;
 
         if (!/meta\s+name=["']viewport["']/i.test(seededHtml)) {
           seededHtml = seededHtml.replace("<head>", '<head><meta name="viewport" content="width=device-width, initial-scale=1.0">');
