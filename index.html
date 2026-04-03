@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Talent DB Launcher</title>
+  <link rel="icon" href="data:,">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     :root {
@@ -344,25 +345,26 @@
           }
         }
         entryHtml = entryHtml.replace(
-          /window\.onload\s*=\s*\(\)\s*=>\s*\{\s*window\.app\s*=\s*new\s+AppCore\(\);\s*window\.app\.initGoogleAuth\(\);\s*\};/m,
-          `window.onload = () => {
-            window.app = new AppCore();
-            const bootAuth = () => {
+          /window\.app\.initGoogleAuth\(\);/g,
+          `if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+            window.app.initGoogleAuth();
+          } else {
+            const __jpBootAuth = () => {
               if (window.google && window.google.accounts && window.google.accounts.oauth2) {
                 window.app.initGoogleAuth();
               } else {
-                setTimeout(bootAuth, 150);
+                setTimeout(__jpBootAuth, 150);
               }
             };
-            bootAuth();
-          };`
+            __jpBootAuth();
+          }`
         );
         const tokenSeed = `<script>
 window.__JP_TOKEN = ${JSON.stringify(state.accessToken)};
 sessionStorage.setItem("gapi_access_token", ${JSON.stringify(state.accessToken)});
 sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ? "true" : "false")});
 <\/script>`;
-        const bridgePatch = `<script>
+        const bridgePatch = String.raw`<script>
 (function () {
   function getApp() { return window.app || null; }
   function getSelectedAfValues() {
