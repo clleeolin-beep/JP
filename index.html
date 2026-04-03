@@ -2013,7 +2013,35 @@
                 setField('updateTime', Utility.getCurrentTime());
             }
 
-            processBatchData(createMissing = false) {
+            async reconcileRecordWithDetail(record) {
+                if (!record?.url) return record;
+
+                const handler = this.getSiteHandler('', record.url, []);
+                if (!handler) return record;
+                if (handler.shouldFetchDetail && !handler.shouldFetchDetail(record)) return record;
+
+                try {
+                    const detailHtml = await this.fetchHtmlWithProxy(record.url);
+                    const detailText = handler.buildPlainText ? handler.buildPlainText(detailHtml) : String(detailHtml || '');
+                    const detailMatches = this.inferSiteMatches(detailText, detailHtml, record.url);
+                    const detailRecord = this.extractRecordFromBlock(detailText, detailHtml, detailMatches, record.url);
+                    if (!detailRecord) return record;
+
+                    if (handler.mergeRecords) return handler.mergeRecords(record, detailRecord);
+                    const mergedTags = new Set([...(record.tags || []), ...(detailRecord.tags || [])]);
+                    return {
+                        ...record,
+                        ...detailRecord,
+                        url: detailRecord.url || record.url,
+                        tags: Array.from(mergedTags)
+                    };
+                } catch (error) {
+                    console.warn(`[Detail Reconcile] ${record.url} - ${error.message}`);
+                    return record;
+                }
+            }
+
+            async processBatchData(createMissing = false) {
                 const text = document.getElementById('v_magic_paste')?.value?.trim();
                 if (!text) {
                     Utility.showToast('⚠️ 請先貼上要處理的內容。', true);
@@ -2028,9 +2056,11 @@
                 let updated = 0;
                 let created = 0;
 
-                blocks.forEach(block => {
-                    const record = this.extractRecordFromBlock(block, html, siteMatches, sourceUrl);
-                    if (!record || !record.name) return;
+                for (let i = 0; i < blocks.length; i++) {
+                    const block = blocks[i];
+                    let record = this.extractRecordFromBlock(block, html, siteMatches, sourceUrl);
+                    if (!record || !record.name) continue;
+                    record = await this.reconcileRecordWithDetail(record);
                     const existingIndex = this.findRecordIndex(record);
 
                     if (existingIndex !== -1) {
@@ -2046,7 +2076,7 @@
                         });
                         created++;
                     }
-                });
+                }
 
                 if (!updated && !created) {
                     Utility.showToast('⚠️ 沒有找到可處理的有效資料。', true);
@@ -2054,7 +2084,7 @@
                 }
 
                 this.renderCatalog();
-                this.saveOrderToGoogleSheet(true);
+                await this.saveOrderToGoogleSheet(true);
                 Utility.showToast(createMissing
                     ? `✅ 批次完成：新增 ${created} 筆，更新 ${updated} 筆。`
                     : `✅ 批次完成：更新 ${updated} 筆。`);
@@ -2306,7 +2336,7 @@
 
                     Utility.hideLoading();
                     if (confirm('已抓到清單內容。要直接用這份內容執行批次建檔 / 更新嗎？')) {
-                        this.processBatchData(true);
+                        await this.processBatchData(true);
                     } else {
                         Utility.showToast('✅ 清單已載入到魔法貼上欄，可再手動檢查。');
                     }

@@ -1,4 +1,6 @@
 (function() {
+    const CAST_BLOCK_MARKER = '@@YOSHI_CAST_BLOCK@@';
+
     const handler = {
         id: 'yoshiwara-soap',
 
@@ -13,24 +15,102 @@
         },
 
         parseBlocks({ text = '' } = {}) {
-            return [String(text)];
+            const raw = String(text || '');
+            if (raw.includes(CAST_BLOCK_MARKER)) {
+                return raw
+                    .split(CAST_BLOCK_MARKER)
+                    .map(block => block.trim())
+                    .filter(Boolean);
+            }
+            return [raw];
+        },
+
+        buildPlainText(html = '') {
+            const tempDiv = document.createElement('div');
+            const cleanHtml = String(html)
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+                .replace(/<br\s*[\/]?>/gi, '\n')
+                .replace(/<\/p>/gi, '\n</p>')
+                .replace(/<\/div>/gi, '\n</div>');
+            tempDiv.innerHTML = cleanHtml;
+            return tempDiv.innerText.replace(/\n\s*\n/g, '\n').trim();
+        },
+
+        buildListText(html = '') {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = String(html || '')
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+
+            const blocks = [];
+            const seen = new Set();
+
+            tempDiv.querySelectorAll('a[href*="/cast/"]').forEach(anchor => {
+                const href = anchor.getAttribute('href') || '';
+                const absUrl = new URL(href, 'https://yoshiwara-soap.jp').href;
+                if (seen.has(absUrl)) return;
+                seen.add(absUrl);
+
+                const text = (anchor.textContent || '').replace(/\s+/g, ' ').trim();
+                if (!text) return;
+
+                const nameMatch = text.match(/^(.+?)\(\d{1,2}\D*?\)/);
+                const ageMatch = text.match(/\((\d{1,2})\D*?\)/);
+                const statsMatch = text.match(/(T\d{3}\s*B\d{2,3}\([A-Z]\)\s*W\d{2}\s*H\d{2})/i);
+
+                blocks.push([
+                    `NAME: ${(nameMatch?.[1] || '').trim()}`,
+                    `AGE: ${(ageMatch?.[1] || '').trim()}`,
+                    `STATS: ${(statsMatch?.[1] || '').trim()}`,
+                    `URL: ${absUrl}`
+                ].join('\n'));
+            });
+
+            if (!blocks.length) return this.buildPlainText(html);
+            return blocks.join(`\n${CAST_BLOCK_MARKER}\n`);
         },
 
         extractRecord({ app, block, html = '', siteMatches = ['Common'] } = {}) {
-            const common = app.extractCommonRuleData(block, html, siteMatches);
-            if (!common?.rawName) return null;
-
             const storeRule = window.ruleEngine.rules.find(rule =>
                 rule.siteMatch === 'yoshiwara-soap' &&
                 rule.field === 'v_store' &&
                 rule.ruleType === 'Set_Default'
             );
+            const defaultStore = app.cleanStoreName(storeRule?.action || "コートダジュール COTE D'AZUR");
+
+            const nameLine = String(block).match(/(?:^|\n)\s*NAME:\s*(.+)$/im);
+            const ageLine = String(block).match(/(?:^|\n)\s*AGE:\s*(\d{1,2})/im);
+            const statsLine = String(block).match(/(?:^|\n)\s*STATS:\s*(.+)$/im);
+            const urlLine = String(block).match(/(?:^|\n)\s*URL:\s*(https?:\/\/[^\s]+)$/im);
+
+            if (urlLine?.[1] && nameLine?.[1]) {
+                return {
+                    name: nameLine[1].trim(),
+                    store: defaultStore,
+                    stats: (statsLine?.[1] || '').trim(),
+                    url: urlLine[1].trim(),
+                    age: (ageLine?.[1] || '').trim(),
+                    startDate: '',
+                    price: '',
+                    schedule: '',
+                    hasSchedule: false,
+                    tags: [],
+                    level: '',
+                    location: document.getElementById('v_location')?.value || '',
+                    rawBlock: block
+                };
+            }
+
+            const common = app.extractCommonRuleData(block, html, siteMatches);
+            if (!common?.rawName) return null;
+
             const tags = new Set(common.nameInfo.tags);
             common.extractedAf.tags.forEach(tag => tags.add(tag));
 
             return {
                 name: common.nameInfo.pureName || common.rawName.trim(),
-                store: app.getRecordStoreName(common) || storeRule?.action || "コートダジュール COTE D'AZUR",
+                store: app.getRecordStoreName(common) || defaultStore,
                 stats: common.extractedStats.value || (common.statsFallback?.[1]?.replace(/from.*/i, '').trim() || ''),
                 url: common.extractedUrl.value || (common.urlFallback?.[0] || ''),
                 age: common.extractedAge.value || (common.ageFallback?.[1] || ''),
@@ -76,18 +156,19 @@
                 const href = anchor.getAttribute('href') || '';
                 const absUrl = new URL(href, 'https://yoshiwara-soap.jp').href;
                 const text = (anchor.textContent || '').replace(/\s+/g, ' ').trim();
-                if (!text || !/\(\d{1,2}歳\)/.test(text) || !/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(text)) return;
+                if (!text || !/\(\d{1,2}\D*?\)/.test(text) || !/\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}/.test(text)) return;
                 if (seen.has(absUrl)) return;
                 seen.add(absUrl);
 
-                const nameMatch = text.match(/^(.+?)\((\d{1,2})歳\)/);
+                const nameMatch = text.match(/^(.+?)\(\d{1,2}\D*?\)/);
+                const ageMatch = text.match(/\((\d{1,2})\D*?\)/);
                 const statsMatch = text.match(/(T\d{3}\s*B\d{2,3}\([A-Z]\)\s*W\d{2}\s*H\d{2})/i);
                 const timeMatch = text.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
                 if (!nameMatch || !timeMatch) return;
 
                 results.push({
                     name: nameMatch[1].trim(),
-                    age: nameMatch[2],
+                    age: ageMatch?.[1] || '',
                     stats: statsMatch?.[1]?.replace(/\s+/g, ' ').trim() || '',
                     url: absUrl,
                     dayLine: this.formatScheduleLine(dateObj, `${timeMatch[1]}-${timeMatch[2]}`)
@@ -120,11 +201,7 @@
                     dateObj.setDate(today.getDate() + offset);
                     lines.push(this.formatScheduleLine(dateObj, '休息'));
                 }
-
-                scheduleMap.set(index, {
-                    row: item._raw,
-                    scheduleLines: lines
-                });
+                scheduleMap.set(index, { row: item._raw, scheduleLines: lines });
             });
 
             const missingKeys = new Set();
