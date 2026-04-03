@@ -362,10 +362,117 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
     const next = cur.includes("googleapis.com/drive/v3/files") ? toUc(cur) : (toApi(cur) || toUc(cur));
     if (next && next !== cur) el.src = next;
   }, true);
+
+  const setupFilterLayout = () => {
+    const tools = document.querySelector(".filter-tools");
+    if (!tools || tools.dataset.launcherPatched === "1") return false;
+    tools.dataset.launcherPatched = "1";
+    const controls = tools.querySelector("h3 + div");
+    if (!controls) return false;
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "jp-filter-toggle";
+    toggle.textContent = "展開篩選";
+    tools.insertBefore(toggle, controls);
+
+    const applyState = () => {
+      const isMobile = window.matchMedia("(max-width: 900px)").matches;
+      tools.classList.toggle("jp-mobile", isMobile);
+      if (isMobile) {
+        if (!tools.classList.contains("jp-collapsed")) tools.classList.add("jp-collapsed");
+        toggle.style.display = "inline-flex";
+        toggle.textContent = tools.classList.contains("jp-collapsed") ? "展開篩選" : "收合篩選";
+      } else {
+        tools.classList.remove("jp-collapsed");
+        toggle.style.display = "none";
+      }
+    };
+
+    toggle.addEventListener("click", () => {
+      tools.classList.toggle("jp-collapsed");
+      toggle.textContent = tools.classList.contains("jp-collapsed") ? "展開篩選" : "收合篩選";
+    });
+
+    window.addEventListener("resize", applyState);
+    applyState();
+    return true;
+  };
+
+  let layoutTry = 0;
+  const layoutTimer = setInterval(() => {
+    layoutTry += 1;
+    if (setupFilterLayout() || layoutTry > 80) clearInterval(layoutTimer);
+  }, 150);
 })();
 <\/script>`;
         const responsivePatch = `<style id="launcher-mobile-patch">
+/* Desktop: compact single-line filters, no awkward gaps */
+.filter-tools {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: nowrap !important;
+}
+.filter-tools > h3 {
+  margin: 0 !important;
+  min-width: 92px;
+  flex: 0 0 auto;
+}
+.filter-tools > .jp-filter-toggle {
+  display: none;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #4b5563;
+  color: #fff;
+  font-weight: 700;
+}
+.filter-tools > div {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex: 1 !important;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.filter-tools > div > * {
+  flex: 0 0 auto;
+}
+#searchInput {
+  min-width: 240px !important;
+}
+
 @media (max-width: 900px) {
+  .filter-tools {
+    display: block !important;
+  }
+  .filter-tools > h3 {
+    display: inline-flex !important;
+    margin-right: 8px !important;
+  }
+  .filter-tools > .jp-filter-toggle {
+    display: inline-flex !important;
+    margin-bottom: 6px;
+  }
+  .filter-tools > div {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px !important;
+    overflow: visible;
+  }
+  .filter-tools.jp-collapsed > div {
+    display: none !important;
+  }
+  .filter-tools #searchInput {
+    grid-column: 1 / -1;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  .filter-tools .custom-multi-select {
+    min-width: 0 !important;
+  }
   .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
 </style>`;
