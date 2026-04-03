@@ -430,7 +430,7 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
         viewBtn.textContent = "⏹️ 取消同步";
         viewBtn.onclick = () => cancelBtn.click();
       } else {
-        viewBtn.innerHTML = "🤖 <span class=\"btn-text\">自動同步</span>";
+        viewBtn.innerHTML = '🤖 <span class="btn-text">自動同步</span>';
         viewBtn.onclick = () => sourceBtn.click();
       }
     };
