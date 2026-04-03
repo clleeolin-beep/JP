@@ -1,5 +1,5 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,122 +8,150 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     :root {
-      --bg: #f3f4f7;
+      --bg: #f8fafc;
+      --line: #dbeafe;
       --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --primary: #2f6feb;
-      --danger: #b42318;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-strong: #1d4ed8;
+      --shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      font-family: "Segoe UI", Arial, sans-serif;
-      background: radial-gradient(circle at top right, #dbeafe, var(--bg) 45%);
-      color: var(--text);
       min-height: 100dvh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(120deg, transparent 24%, rgba(37, 99, 235, 0.06) 25%, transparent 26%) 0 0/64px 64px,
+        linear-gradient(300deg, transparent 24%, rgba(14, 165, 233, 0.06) 25%, transparent 26%) 0 0/64px 64px,
+        var(--bg);
+      display: grid;
+      place-items: center;
       padding: 20px;
-    }
-
-    .launcher {
-      width: min(760px, 100%);
-      background: var(--card);
-      border-radius: 16px;
-      box-shadow: 0 20px 48px rgba(20, 30, 80, 0.15);
-      padding: 24px;
-    }
-
-    body.mobile .launcher {
-      width: min(100%, 940px);
     }
 
     body.focus-mode {
       display: block;
       padding: 0;
-      background: #dbe3ef;
+      background: #e2e8f0;
+    }
+
+    .launcher {
+      width: min(760px, 100%);
+      background: var(--card);
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 26px;
     }
 
     body.focus-mode .launcher {
       width: 100%;
-      max-width: none;
       min-height: 100dvh;
       border-radius: 0;
+      border: 0;
       box-shadow: none;
-      padding: 8px;
+      padding: 10px;
       background: transparent;
+    }
+
+    .chrome {
+      display: block;
     }
 
     body.focus-mode .chrome {
       display: none;
     }
 
+    h1 {
+      margin: 0 0 10px;
+      font-size: 30px;
+      line-height: 1.1;
+      letter-spacing: 0.2px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      padding: 12px 16px;
+      font-size: 14px;
+      transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    #btn-login {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 8px 22px rgba(37, 99, 235, 0.26);
+    }
+
+    #btn-login:hover {
+      background: var(--primary-strong);
+    }
+
+    #btn-load {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    #status {
+      margin-top: 14px;
+      min-height: 24px;
+      color: var(--muted);
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+
+    #status.error {
+      color: #b91c1c;
+    }
+
+    #app-host {
+      margin-top: 14px;
+      border: 1px solid #d6deea;
+      border-radius: 14px;
+      padding: 12px;
+      background: #f8fafc;
+      min-height: 120px;
+    }
+
     body.focus-mode #app-host {
       margin-top: 0;
       border: 0;
       border-radius: 0;
-      background: transparent;
       padding: 0;
       min-height: 100dvh;
+      background: transparent;
     }
 
-    body.focus-mode #app-frame {
-      min-height: 100dvh;
-      border-radius: 0;
-    }
-
-    h1 {
-      margin: 0 0 8px;
-      font-size: 26px;
-    }
-
-    p {
-      margin: 0;
+    #app-placeholder {
       color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .actions {
-      margin-top: 16px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    button {
-      border: none;
-      border-radius: 10px;
-      padding: 11px 16px;
-      cursor: pointer;
-      font-weight: 700;
-      color: #fff;
-      background: var(--primary);
-    }
-
-    button.secondary {
-      background: #4b5563;
-    }
-
-    #status {
-      margin-top: 16px;
       font-size: 14px;
-      color: var(--muted);
-      white-space: pre-wrap;
-    }
-
-    #status.error { color: var(--danger); }
-
-    #app-host {
-      margin-top: 16px;
-      min-height: 100px;
-      border: 1px dashed #d1d5db;
-      border-radius: 12px;
-      background: #fafafa;
-      padding: 12px;
+      line-height: 1.5;
+      padding: 6px 2px;
     }
 
     #app-frame {
@@ -135,20 +163,18 @@
       border-radius: 10px;
     }
 
-    .hint {
-      margin-top: 10px;
-      font-size: 13px;
-      color: var(--muted);
+    body.focus-mode #app-frame {
+      min-height: 100dvh;
+      border-radius: 0;
     }
 
     .toolbar {
-      display: none;
       position: fixed;
       right: 14px;
       bottom: 14px;
       z-index: 20;
+      display: none;
       gap: 8px;
-      pointer-events: none;
     }
 
     body.focus-mode .toolbar {
@@ -156,45 +182,47 @@
     }
 
     .toolbar button {
-      pointer-events: auto;
-      padding: 8px 12px;
-      border-radius: 8px;
-      background: rgba(31, 41, 55, 0.9);
+      padding: 9px 12px;
+      background: rgba(15, 23, 42, 0.88);
       color: #fff;
-      font-size: 13px;
     }
 
     @media (max-width: 900px) {
       body {
-        padding: 8px;
+        padding: 10px;
       }
 
       .launcher {
-        width: 100%;
-        padding: 14px;
+        padding: 16px;
       }
 
-      #app-frame {
-        min-height: 80dvh;
+      h1 {
+        font-size: 25px;
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
       }
     }
   </style>
 </head>
 <body>
   <main class="launcher">
-    <h1 class="chrome">Talent DB Public Launcher</h1>
-    <p class="chrome">This public page only handles sign-in and app bootstrap.</p>
+    <h1 class="chrome">Talent DB</h1>
+    <p class="subtitle chrome">白底輕量登入頁。登入後會直接載入 Google Drive 私有核心，無多餘 loading 遮罩。</p>
     <div class="actions chrome">
-      <button id="btn-login">Sign in with Google</button>
-      <button id="btn-load" class="secondary" disabled>Load Private App</button>
+      <button id="btn-login" type="button">Sign in with Google</button>
+      <button id="btn-load" type="button" disabled>Load Private App</button>
     </div>
-    <div id="status" class="chrome">Not signed in.</div>
-    <div id="app-host">
+    <div id="status" class="chrome">尚未登入。</div>
+
+    <section id="app-host">
       <iframe id="app-frame" title="Talent DB App"></iframe>
-      <div id="app-placeholder">After sign-in, the app will load from private Google Drive files.</div>
-    </div>
-    <p class="hint chrome">Set CLIENT_ID and APP_MANIFEST_FILE_ID in this file before publishing.</p>
+      <div id="app-placeholder">完成 Google 登入後，點選「Load Private App」載入私有程式。</div>
+    </section>
   </main>
+
   <div class="toolbar">
     <button id="btn-toggle-shell" type="button">Show Launcher</button>
   </div>
@@ -209,7 +237,7 @@
 
     const state = {
       tokenClient: null,
-      accessToken: null,
+      accessToken: "",
       hasWriteAccess: false
     };
 
@@ -220,122 +248,100 @@
     const placeholderEl = document.getElementById("app-placeholder");
     const toggleShellBtn = document.getElementById("btn-toggle-shell");
 
-    function detectDeviceMode() {
-      const isMobile = window.matchMedia("(max-width: 900px)").matches ||
-        /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
-      document.body.classList.toggle("mobile", isMobile);
-    }
-
-    function toggleFocusMode(force) {
-      const shouldEnable = typeof force === "boolean"
-        ? force
-        : !document.body.classList.contains("focus-mode");
-      document.body.classList.toggle("focus-mode", shouldEnable);
-      toggleShellBtn.textContent = shouldEnable ? "Show Launcher" : "Hide Launcher";
-    }
-
     function setStatus(text, isError = false) {
       statusEl.textContent = text;
-      statusEl.className = isError ? "error" : "";
-      if (!statusEl.classList.contains("chrome")) statusEl.classList.add("chrome");
+      statusEl.className = isError ? "chrome error" : "chrome";
+    }
+
+    function toggleFocusMode(enable) {
+      document.body.classList.toggle("focus-mode", !!enable);
+      toggleShellBtn.textContent = enable ? "Show Launcher" : "Hide Launcher";
     }
 
     function assertConfigured() {
-      if (!CLIENT_ID.startsWith("REPLACE_WITH_")) return true;
-      setStatus("Please set CLIENT_ID first.", true);
-      return false;
-    }
-
-    function assertManifestConfigured() {
-      if (!APP_MANIFEST_FILE_ID.startsWith("REPLACE_WITH_")) return true;
-      setStatus("Please set APP_MANIFEST_FILE_ID first.", true);
-      return false;
+      if (!CLIENT_ID || CLIENT_ID.startsWith("REPLACE_WITH_")) {
+        setStatus("CLIENT_ID 尚未設定。", true);
+        return false;
+      }
+      if (!APP_MANIFEST_FILE_ID || APP_MANIFEST_FILE_ID.startsWith("REPLACE_WITH_")) {
+        setStatus("APP_MANIFEST_FILE_ID 尚未設定。", true);
+        return false;
+      }
+      return true;
     }
 
     async function fetchDriveFileText(fileId) {
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), 15000);
-      const res = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-        { headers: { Authorization: `Bearer ${state.accessToken}` }, signal: ctrl.signal }
-      );
-      clearTimeout(timeout);
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+        headers: { Authorization: `Bearer ${state.accessToken}` }
+      });
       if (!res.ok) throw new Error(`Drive read failed (${res.status})`);
       return await res.text();
     }
 
     async function fetchDriveDocText(fileId) {
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), 15000);
-      const res = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`,
-        { headers: { Authorization: `Bearer ${state.accessToken}` }, signal: ctrl.signal }
-      );
-      clearTimeout(timeout);
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain`, {
+        headers: { Authorization: `Bearer ${state.accessToken}` }
+      });
       if (!res.ok) throw new Error(`Drive doc export failed (${res.status})`);
       return await res.text();
     }
 
     async function fetchAnyText(fileId, preferDoc = false) {
-      if (preferDoc) {
-        try {
-          return await fetchDriveDocText(fileId);
-        } catch (error) {
-          return await fetchDriveFileText(fileId);
-        }
-      }
-
       try {
-        return await fetchDriveFileText(fileId);
-      } catch (error) {
-        return await fetchDriveDocText(fileId);
+        return preferDoc ? await fetchDriveDocText(fileId) : await fetchDriveFileText(fileId);
+      } catch (err) {
+        return preferDoc ? await fetchDriveFileText(fileId) : await fetchDriveDocText(fileId);
       }
     }
 
-    async function loadManifest() {
-      const text = await fetchAnyText(APP_MANIFEST_FILE_ID, true);
-      let manifest;
-      try {
-        manifest = JSON.parse(text);
-      } catch (error) {
-        throw new Error("Manifest is not valid JSON.");
-      }
-      if (!manifest.entryFileId) throw new Error("Manifest missing entryFileId.");
-      return manifest;
+    function patchEntryAuthBootstrap(entryHtml) {
+      const safeBootstrap = [
+        "if (window.google && window.google.accounts && window.google.accounts.oauth2) {",
+        "  window.app.initGoogleAuth();",
+        "} else {",
+        "  const __jpBootAuth = () => {",
+        "    if (window.google && window.google.accounts && window.google.accounts.oauth2) {",
+        "      window.app.initGoogleAuth();",
+        "    } else {",
+        "      setTimeout(__jpBootAuth, 150);",
+        "    }",
+        "  };",
+        "  __jpBootAuth();",
+        "}"
+      ].join("\n");
+
+      return entryHtml.split("window.app.initGoogleAuth();").join(safeBootstrap);
     }
 
     async function loadPrivateApp() {
       if (!state.accessToken) {
-        setStatus("Please sign in first.", true);
+        setStatus("請先登入 Google。", true);
         return;
       }
-      if (!assertManifestConfigured()) return;
 
       loadBtn.disabled = true;
-      setStatus("Loading manifest...");
+      setStatus("讀取私有設定中...");
       try {
-        const manifest = await loadManifest();
-        setStatus("Manifest loaded. Loading entry...");
+        const manifestText = await fetchAnyText(APP_MANIFEST_FILE_ID, true);
+        const manifest = JSON.parse((manifestText || "").replace(/^\uFEFF/, ""));
+        if (!manifest.entryFileId) throw new Error("Manifest 缺少 entryFileId。");
+
+        setStatus("讀取私有主程式中...");
         const useDocExport = String(manifest.entrySource || "").toLowerCase() === "gdoc";
         let entryHtml = await fetchAnyText(manifest.entryFileId, useDocExport);
+        entryHtml = (entryHtml || "").replace(/^\uFEFF/, "");
+
         const coreFiles = Array.isArray(manifest.coreFiles) ? manifest.coreFiles : [];
         if (coreFiles.length) {
-          setStatus(`Entry loaded. Loading core files (0/${coreFiles.length})...`);
-          // When modular core files are provided, strip legacy inline scripts from entry html
-          // to avoid duplicate class declarations and runtime conflicts.
           entryHtml = entryHtml.replace(/<script>([\s\S]*?)<\/script>/gi, "");
           const blocks = [];
           for (let i = 0; i < coreFiles.length; i += 1) {
             const file = coreFiles[i];
             if (!file || !file.id) continue;
-            setStatus(`Loading core files (${i + 1}/${coreFiles.length}): ${file.name || file.id}`);
-            const src = await fetchAnyText(
-              file.id,
-              String(file.source || "").toLowerCase() === "gdoc"
-            );
-            const label = String(file.name || file.id).replace(/</g, "_");
+            setStatus(`載入核心檔案 (${i + 1}/${coreFiles.length})...`);
+            const src = await fetchAnyText(file.id, String(file.source || "").toLowerCase() === "gdoc");
             const safeJs = String(src || "").replace(/<\/script>/gi, "<\\/script>");
-            blocks.push(`<script>\n/* ${label} */\n${safeJs}\n<\/script>`);
+            blocks.push(`<script>\n${safeJs}\n<\/script>`);
           }
           if (blocks.length) {
             const merged = blocks.join("\n");
@@ -344,380 +350,28 @@
               : `${entryHtml}\n${merged}`;
           }
         }
-        entryHtml = entryHtml.replace(
-          /window\.app\.initGoogleAuth\(\);/g,
-          `if (window.google && window.google.accounts && window.google.accounts.oauth2) {
-            window.app.initGoogleAuth();
-          } else {
-            const __jpBootAuth = () => {
-              if (window.google && window.google.accounts && window.google.accounts.oauth2) {
-                window.app.initGoogleAuth();
-              } else {
-                setTimeout(__jpBootAuth, 150);
-              }
-            };
-            __jpBootAuth();
-          }`
-        );
+
+        entryHtml = patchEntryAuthBootstrap(entryHtml);
+
         const tokenSeed = `<script>
 window.__JP_TOKEN = ${JSON.stringify(state.accessToken)};
 sessionStorage.setItem("gapi_access_token", ${JSON.stringify(state.accessToken)});
 sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ? "true" : "false")});
 <\/script>`;
-        const bridgePatch = String.raw`<script>
-(function () {
-  function getApp() { return window.app || null; }
-  function getSelectedAfValues() {
-    var list = Array.prototype.slice.call(document.querySelectorAll('#af-checkboxes input[type="checkbox"]'));
-    if (!list.length) return null;
-    return list.filter(function (cb) { return cb.checked; }).map(function (cb) { return cb.value; });
-  }
-  function patchAfFilter() {
-    var app = getApp();
-    if (!app || app.__jpAfPatched || typeof app.getSelectedAfValues !== 'function') return;
-    app.__jpAfPatched = true;
-    var original = app.getSelectedAfValues.bind(app);
-    app.getSelectedAfValues = function () {
-      var values = original();
-      var all = document.querySelectorAll('#af-checkboxes input[type="checkbox"]').length;
-      if (all && values.length === all) return [];
-      return values;
-    };
-  }
-  function patchCardViewMode() {
-    var app = getApp();
-    var grid = document.getElementById('catalogGrid');
-    if (!app || !grid || grid.dataset.jpViewPatch === '1') return;
-    grid.dataset.jpViewPatch = '1';
-    grid.addEventListener('click', function (e) {
-      if (app.isEditMode) return;
-      var card = e.target.closest('.card');
-      if (!card) return;
-      if (e.target.closest('.fav-btn') || e.target.closest('.card-checkbox')) return;
-      e.preventDefault();
-      e.stopPropagation();
-    }, true);
-  }
-  function patchAutoSyncFallback() {
-    var app = getApp();
-    if (!app || app.__jpAutoSyncPatched || typeof app.startAutoSync !== 'function') return;
-    app.__jpAutoSyncPatched = true;
-    var originalStart = app.startAutoSync.bind(app);
 
-    function toText(html) {
-      try {
-        var doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
-        return String(doc.body && doc.body.textContent || '').replace(/\s+/g, ' ').trim();
-      } catch (e) {
-        return String(html || '');
-      }
-    }
-
-    function toBlocksFromHtml(html, baseUrl) {
-      var out = [];
-      var seen = {};
-      try {
-        var doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
-        var anchors = Array.prototype.slice.call(doc.querySelectorAll('a[href]'));
-        anchors.forEach(function (a) {
-          var href = String(a.getAttribute('href') || '').trim();
-          if (!href) return;
-          if (!/(girlid|\/cast\/|\/girl\/|\/profile\/)/i.test(href)) return;
-          var abs = '';
-          try { abs = new URL(href, baseUrl || window.location.href).toString(); } catch (e) { abs = href; }
-          if (!/^https?:\/\//i.test(abs) || seen[abs]) return;
-          seen[abs] = true;
-          var txt = String((a.closest('li,article,.cast,.girl,.item,div') || a).textContent || '').replace(/\s+/g, ' ').trim();
-          if (!txt) return;
-          out.push(txt + '\n' + abs);
-        });
-      } catch (e) {}
-      return out;
-    }
-
-    function buildRecordFromBlock(block, html, siteCode, sourceUrl) {
-      if (!app.extractCommonRuleData) return null;
-      var common = app.extractCommonRuleData(block, html, [siteCode, 'Common']);
-      var name = ((common.nameInfo && common.nameInfo.pureName) || common.rawName || '').trim();
-      if (!name) return null;
-      var url = '';
-      if (common.extractedUrl && common.extractedUrl.value) url = common.extractedUrl.value;
-      else if (common.urlFallback && common.urlFallback[0]) url = common.urlFallback[0];
-      else url = sourceUrl || '';
-      try { url = new URL(url, sourceUrl || window.location.href).toString(); } catch (e) {}
-      var tags = new Set();
-      if (common.nameInfo && Array.isArray(common.nameInfo.tags)) common.nameInfo.tags.forEach(function (t) { if (t) tags.add(t); });
-      if (common.extractedAf && common.extractedAf.tags) common.extractedAf.tags.forEach(function (t) { if (t) tags.add(t); });
-      var noMatch = String(block || '').match(/No\.?\s*0*([0-9]{1,6})/i);
-      return {
-        location: '',
-        store: app.getRecordStoreName ? app.getRecordStoreName(common) : '',
-        techId: '',
-        listNo: noMatch && noMatch[1] ? noMatch[1] : '',
-        startDate: (common.extractedDate && common.extractedDate.value) || '',
-        name: name,
-        age: (common.extractedAge && common.extractedAge.value) || (common.ageFallback && common.ageFallback[1]) || '',
-        stats: (common.extractedStats && common.extractedStats.value) || (common.statsFallback && common.statsFallback[1]) || '',
-        url: url,
-        price: (common.extractedPrice && common.extractedPrice.value) || '',
-        tags: Array.from(tags),
-        level: (common.extractedName && common.extractedName.level) || (common.nameInfo && common.nameInfo.level) || '',
-        schedule: common.formattedSchedule || '',
-        hasSchedule: !!common.formattedSchedule
-      };
-    }
-
-    app.startAutoSync = async function () {
-      if (window.SiteSyncRegistry && typeof window.SiteSyncRegistry.getHandler === 'function') {
-        return originalStart();
-      }
-      if (!app.accessToken || !app.hasWriteAccess) {
-        window.Utility && Utility.showToast('⚠️ 請先完成具有寫入權限的 Google 授權。', true);
-        return;
-      }
-      var syncRules = (window.ruleEngine && window.ruleEngine.rules || []).filter(function (rule) {
-        return rule.field === 'System_AutoSync' && String(rule.action || '').toUpperCase() === 'Y';
-      });
-      if (!syncRules.length) {
-        window.Utility && Utility.showToast('⚠️ Rules 中沒有啟用任何自動同步網址。', true);
-        return;
-      }
-      if (!confirm('將依序同步 ' + syncRules.length + ' 個來源站點，是否開始？')) return;
-      app.isSyncing = true;
-      var btnSync = document.getElementById('btn-auto-sync');
-      var btnCancel = document.getElementById('btn-cancel-sync');
-      if (btnSync) btnSync.style.display = 'none';
-      if (btnCancel) btnCancel.style.display = 'inline-flex';
-      var syncStats = {};
-      try {
-        for (var i = 0; i < syncRules.length; i += 1) {
-          if (!app.isSyncing) break;
-          var rule = syncRules[i];
-          var siteCode = rule.siteMatch || ('site-' + (i + 1));
-          var url = String(rule.pattern || '').trim();
-          if (!syncStats[siteCode]) syncStats[siteCode] = { total: 0, updated: 0, missing: 0 };
-          if (!url) { syncStats[siteCode].missing += 1; continue; }
-
-          var fetchUrls = siteCode === 'yoshiwara-soap'
-            ? ['https://yoshiwara-soap.jp/schedule/','https://yoshiwara-soap.jp/schedule/tomorrow.html','https://yoshiwara-soap.jp/schedule/in-2-days.html','https://yoshiwara-soap.jp/schedule/in-3-days.html','https://yoshiwara-soap.jp/schedule/in-4-days.html','https://yoshiwara-soap.jp/schedule/in-5-days.html','https://yoshiwara-soap.jp/schedule/in-6-days.html']
-            : [url];
-
-          for (var u = 0; u < fetchUrls.length; u += 1) {
-            var src = fetchUrls[u];
-            var html = '';
-            try { html = await app.fetchHtmlWithProxy(src); } catch (e0) {
-              try {
-                var noProto = src.replace(/^https?:\/\//i, '');
-                var r = await fetch('https://r.jina.ai/http://' + noProto);
-                if (r.ok) html = await r.text();
-              } catch (e1) {}
-            }
-            if (!html) { syncStats[siteCode].missing += 1; continue; }
-            var blocks = toBlocksFromHtml(html, src);
-            if (!blocks.length) blocks = [toText(html)];
-            for (var b = 0; b < blocks.length; b += 1) {
-              var record = buildRecordFromBlock(blocks[b], html, siteCode, src);
-              if (!record || !record.name) continue;
-              syncStats[siteCode].total += 1;
-              var idx = app.findRecordIndex(record);
-              if (idx !== -1) {
-                app.applyRecordToRow(app.dataStore[idx]._raw, record, false);
-                syncStats[siteCode].updated += 1;
-              } else {
-                syncStats[siteCode].missing += 1;
-              }
-            }
-          }
-        }
-        app.renderCatalog();
-        await app.saveOrderToGoogleSheet(true);
-        app.showSyncStatsModal(syncStats);
-        window.Utility && Utility.showToast('✅ 自動同步完成。');
-      } catch (err) {
-        window.Utility && Utility.showToast('❌ 自動同步失敗：' + (err.message || err), true);
-      } finally {
-        app.isSyncing = false;
-        if (btnSync) btnSync.style.display = 'inline-flex';
-        if (btnCancel) btnCancel.style.display = 'none';
-        window.Utility && Utility.hideLoading && Utility.hideLoading();
-      }
-    };
-  }
-  var tries = 0;
-  var timer = setInterval(function () {
-    tries += 1;
-    patchAfFilter();
-    patchCardViewMode();
-    patchAutoSyncFallback();
-    if (tries > 120) clearInterval(timer);
-  }, 200);
-})();
-<\/script>`;
-const responsivePatch = `<style id="launcher-mobile-patch">
-/* Desktop: compact single-line filters, no awkward gaps */
-#panel-catalog {
-  padding-top: 10px !important;
-}
-#panel-catalog .filter-tools {
-  margin-top: 0 !important;
-  top: 0 !important;
-}
-#panel-catalog .catalog-grid {
-  margin-top: 8px !important;
-}
-.filter-tools {
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  flex-wrap: nowrap !important;
-}
-.filter-tools > h3 {
-  margin: 0 !important;
-  min-width: 92px;
-  flex: 0 0 auto;
-}
-.filter-tools > .jp-filter-toggle {
-  display: none;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 10px;
-  background: #4b5563;
-  color: #fff;
-  font-weight: 700;
-}
-.filter-tools > div {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  gap: 8px !important;
-  flex: 1 !important;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
-.filter-tools > div > * {
-  flex: 0 0 auto;
-}
-#searchInput {
-  min-width: 240px !important;
-}
-
-@media (max-width: 900px) {
-  .filter-tools {
-    display: block !important;
-  }
-  .filter-tools > h3 {
-    display: inline-flex !important;
-    margin-right: 8px !important;
-  }
-  .filter-tools > .jp-filter-toggle {
-    display: inline-flex !important;
-    margin-bottom: 6px;
-  }
-  .filter-tools > div {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px !important;
-    overflow: visible;
-  }
-  .filter-tools.jp-collapsed > div {
-    display: none !important;
-  }
-  .filter-tools #searchInput {
-    grid-column: 1 / -1;
-    min-width: 0 !important;
-    width: 100% !important;
-  }
-  .filter-tools .custom-multi-select {
-    min-width: 0 !important;
-  }
-  .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-}
-
-.jp-talent-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.45);
-  z-index: 99999;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 14px;
-}
-.jp-talent-modal.show { display: flex; }
-.jp-talent-card {
-  width: min(760px, 100%);
-  max-height: 86dvh;
-  overflow: auto;
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px;
-}
-.jp-talent-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.jp-talent-head button {
-  border: 0;
-  border-radius: 8px;
-  padding: 6px 10px;
-  background: #ef4444;
-  color: #fff;
-  font-weight: 700;
-}
-.jp-talent-body .jp-row {
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 10px;
-  padding: 6px 0;
-  border-bottom: 1px solid #eef2f7;
-}
-.jp-talent-body label {
-  font-weight: 700;
-  color: #475569;
-}
-.jp-talent-body pre {
-  margin: 0;
-  white-space: pre-wrap;
-  font-family: inherit;
-}
-.jp-talent-actions {
-  margin-top: 12px;
-  display: flex;
-  gap: 8px;
-}
-.jp-talent-actions button {
-  border: 0;
-  border-radius: 8px;
-  padding: 8px 12px;
-  background: #2563eb;
-  color: #fff;
-  font-weight: 700;
-}
-.jp-talent-actions button.secondary { background: #475569; }
-</style>`;
-        let seededHtml = entryHtml.includes("<head>")
-          ? entryHtml.replace("<head>", `<head>${tokenSeed}${responsivePatch}${bridgePatch}`)
-          : `${tokenSeed}${responsivePatch}${bridgePatch}${entryHtml}`;
-
-        if (!/meta\s+name=["']viewport["']/i.test(seededHtml)) {
-          seededHtml = seededHtml.replace("<head>", '<head><meta name="viewport" content="width=device-width, initial-scale=1.0">');
-        }
+        const seededHtml = entryHtml.includes("<head>")
+          ? entryHtml.replace("<head>", `<head>${tokenSeed}`)
+          : `${tokenSeed}${entryHtml}`;
 
         const blob = new Blob([seededHtml], { type: "text/html" });
-        const blobUrl = URL.createObjectURL(blob);
-
-        frameEl.src = blobUrl;
+        const url = URL.createObjectURL(blob);
+        frameEl.src = url;
         frameEl.style.display = "block";
         placeholderEl.style.display = "none";
         setStatus("Private app loaded.");
         toggleFocusMode(true);
       } catch (error) {
-        const msg = (error && error.name === "AbortError")
-          ? "Load failed: request timeout while reading Drive files."
-          : `Load failed: ${error.message}`;
-        setStatus(msg, true);
+        setStatus(`載入失敗：${error.message}`, true);
       } finally {
         loadBtn.disabled = false;
       }
@@ -725,12 +379,17 @@ const responsivePatch = `<style id="launcher-mobile-patch">
 
     function initAuth() {
       if (!assertConfigured()) return;
+      if (!window.google || !google.accounts || !google.accounts.oauth2) {
+        setTimeout(initAuth, 120);
+        return;
+      }
+
       state.tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: APP_SCOPE,
         callback: (resp) => {
           if (resp.error) {
-            setStatus(`Sign-in failed: ${resp.error}`, true);
+            setStatus(`登入失敗：${resp.error}`, true);
             return;
           }
           state.accessToken = resp.access_token;
@@ -740,15 +399,14 @@ const responsivePatch = `<style id="launcher-mobile-patch">
             "https://www.googleapis.com/auth/drive"
           );
           loadBtn.disabled = false;
-          setStatus("Signed in. Loading private app...");
-          loadPrivateApp();
+          setStatus("登入成功，請點 Load Private App。");
         }
       });
     }
 
     loginBtn.addEventListener("click", () => {
       if (!state.tokenClient) {
-        setStatus("OAuth is not initialized yet.", true);
+        setStatus("OAuth 尚未初始化，請稍候再試。", true);
         return;
       }
       state.tokenClient.requestAccessToken({ prompt: "consent" });
@@ -759,15 +417,13 @@ const responsivePatch = `<style id="launcher-mobile-patch">
     });
 
     toggleShellBtn.addEventListener("click", () => {
-      toggleFocusMode(document.body.classList.contains("focus-mode") ? false : true);
+      const enable = !document.body.classList.contains("focus-mode");
+      toggleFocusMode(enable);
     });
 
-    window.addEventListener("resize", detectDeviceMode);
     window.addEventListener("load", () => {
-      detectDeviceMode();
       initAuth();
     });
   </script>
 </body>
 </html>
-
