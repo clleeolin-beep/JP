@@ -416,34 +416,59 @@ class AppCore {
             }
 
             async fetchHtmlWithProxy(targetUrl) {
+                const trimmedUrl = String(targetUrl || '').trim();
+                const normalizedForJina = trimmedUrl.replace(/^https?:\/\//i, '');
                 const proxies = [
-                    { url: `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`, isJson: true },
-                    { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`, isJson: false },
-                    { url: `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`, isJson: false }
+                    { name: 'allorigins', url: `https://api.allorigins.win/get?url=${encodeURIComponent(trimmedUrl)}`, isJson: true },
+                    { name: 'codetabs', url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(trimmedUrl)}`, isJson: false },
+                    { name: 'corsproxy', url: `https://corsproxy.io/?${encodeURIComponent(trimmedUrl)}`, isJson: false },
+                    { name: 'jina-http', url: `https://r.jina.ai/http://${normalizedForJina}`, isJson: false },
+                    { name: 'jina-https', url: `https://r.jina.ai/http://https://${normalizedForJina}`, isJson: false }
                 ];
+
+                const looksUsable = (text = '') => {
+                    const t = String(text || '');
+                    if (!t) return false;
+                    if (t.includes('<!DOCTYPE') || t.includes('<html') || t.includes('<body')) return true;
+                    if (t.length > 600 && /(girls-list|\/cast\/|schedule|No\.\s*\d+)/i.test(t)) return true;
+                    return false;
+                };
+
+                const fetchWithTimeout = async (url, timeoutMs = 12000) => {
+                    const ctrl = new AbortController();
+                    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+                    try {
+                        const res = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+                        return res;
+                    } finally {
+                        clearTimeout(timer);
+                    }
+                };
 
                 for (let proxy of proxies) {
                     try {
-                        let res = await fetch(proxy.url);
+                        let res = await fetchWithTimeout(proxy.url);
                         if (!res.ok) throw new Error(`HTTP error ${res.status}`);
 
                         let html = '';
                         if (proxy.isJson) {
                             let data = await res.json();
-                            html = data.contents;
+                            html = data?.contents || '';
                         } else {
                             html = await res.text();
                         }
 
-                        if (html && (html.includes('<body') || html.includes('<!DOCTYPE'))) {
+                        if (looksUsable(html)) {
                             return html;
                         }
+
+                        throw new Error('內容不可用');
                     } catch (e) {
-                        console.warn(`[Proxy Failed] ${proxy.url} - ${e.message}`);
+                        console.warn(`[Proxy Failed] ${proxy.name} ${proxy.url} - ${e.message}`);
                     }
                 }
 
-                throw new Error("所有跨域代理均已失效或被目標網站封鎖。");
+                throw new Error("所有跨域代理均已失效、超時或被目標網站封鎖。");
             }
 
             getSplitterRegex() {
