@@ -797,7 +797,28 @@
                 return h * 60 + m;
             }
 
-            // 核心修復：精準合併被錯誤換行切斷的班表時間，並加上 RegExp 空值/錯誤防護
+            // 【核心防護】：強化店鋪判斷，只要名稱帶有分店特徵，絕對不允許跨店合併！
+            static isSameStore(dbStore, extStore) {
+                if (!dbStore || !extStore) return true;
+                let s1 = dbStore.toLowerCase().replace(/[\s　]/g, '');
+                let s2 = extStore.toLowerCase().replace(/[\s　]/g, '');
+                
+                if (s1 === s2) return true;
+                
+                if (s1.includes(s2) || s2.includes(s1)) {
+                    let longer = s1.length > s2.length ? s1 : s2;
+                    let shorter = s1.length > s2.length ? s2 : s1;
+                    let extra = longer.replace(shorter, '');
+                    
+                    // 只要多出來的字尾包含以下關鍵字，即判定為「分店」，禁止跨店覆蓋！
+                    if (/(in|店|branch|浅草|asakusa|新宿|shinjuku|池袋|ikebukuro|渋谷|shibuya|五反田|gotanda|目黒|meguro|白金|shirokane|上野|ueno|秋葉原|akihabara|新橋|shinbashi|品川|shinagawa|吉原|yoshiwara|川崎|kawasaki|本店|分店)/i.test(extra)) {
+                        return false; 
+                    }
+                    return true; 
+                }
+                return false;
+            }
+
             static parseAndFormatSchedule(rawText, engine = window.ruleEngine) {
                 if (!rawText || !engine) return '';
                 
@@ -819,7 +840,6 @@
                 let stopRegex;
                 try { stopRegex = new RegExp(safeStop || stopRegexStr); } catch(e) { stopRegex = /(?:口碑|口コミ|店鋪資訊|店舗情報|ABOUT|ユーザーレビュー|料金システム|店名|營業時間|給女孩的問題|ユーザー|女孩部落格|写メ日記|搜尋熱門|返回商店|返回首頁|Top|日本的風俗店|北海道・東北|上門服務)/; }
 
-                // 強制壓縮換行符號，完美解決 14:00 \n - \n 1:00 這種格式
                 let cleanText = rawText.replace(/\n\s*-\s*\n/g, ' - ').replace(/\n\s*~\s*\n/g, ' ~ ');
 
                 const regex = /(\d{1,2})\/(\d{1,2})\s*(?:\((.)\))?\s*([\s\S]*?)(?=(?:\d{1,2}\/\d{1,2}\s*(?:\(.\))?)|\s*$)/g;
@@ -840,7 +860,6 @@
                         content = content.substring(0, stopMatch);
                     }
                     
-                    // 去除區塊內的多重空白與換行，確保正則不漏判
                     let compressedContent = content.replace(/\s+/g, ' '); 
                     let timeStr = "休息";
                     
@@ -1245,26 +1264,6 @@
                 }
             }
 
-            isSameStore(dbStore, extStore) {
-                if (!dbStore || !extStore) return true;
-                let s1 = dbStore.toLowerCase().replace(/[\s　]/g, '');
-                let s2 = extStore.toLowerCase().replace(/[\s　]/g, '');
-                
-                if (s1 === s2) return true;
-                
-                if (s1.includes(s2) || s2.includes(s1)) {
-                    let longer = s1.length > s2.length ? s1 : s2;
-                    let shorter = s1.length > s2.length ? s2 : s1;
-                    let extra = longer.replace(shorter, '');
-                    
-                    if (/(in|店|branch|浅草|asakusa|新宿|shinjuku|池袋|ikebukuro|渋谷|shibuya|五反田|gotanda|目黒|meguro|白金|shirokane|上野|ueno|秋葉原|akihabara|新橋|shinbashi|品川|shinagawa)/i.test(extra)) {
-                        return false; 
-                    }
-                    return true; 
-                }
-                return false;
-            }
-
             toggleAfDropdown() {
                 const dropdown = document.getElementById('af-dropdown');
                 if(dropdown) dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
@@ -1498,7 +1497,6 @@
                         blocks.forEach(block => {
                             let extractedName = window.ruleEngine.extractByRules(block, "", "v_name", siteMatches);
                             
-                            // 核心修復：如果 Google Sheet 規則沒有正確設置，強勢啟動備用提取方案 (Fallback)！
                             if (!extractedName.value) {
                                 let fallbackMatch = block.match(/No\.\d+\s*\n\s*(.*?)(?=\s*(?:\(|年齡|年齢|Age|年齢|歳|才|歲|\n|$))/i);
                                 if (fallbackMatch && fallbackMatch[1]) {
@@ -1554,15 +1552,13 @@
                                         let cleanDbName = Utility.parseName(dbName, window.ruleEngine).pureName; 
                                         
                                         let dbStore = r._raw[this.colMap.store] || "";
-                                        let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
                                         
                                         let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
-                                        let storeMatch = this.isSameStore(dbStore, finalStore);
                                         
-                                        let cleanExtStats = extStats.replace(/[\s\/]/g, '');
-                                        let statsMatch = cleanExtStats && dbStats && (dbStats.includes(cleanExtStats) || cleanExtStats.includes(dbStats));
+                                        // 【核心修正：強制隔離分店】不允許單靠 statsMatch 就跨越 storeMatch 的防線！
+                                        let storeMatch = Utility.isSameStore(dbStore, finalStore);
 
-                                        return nameMatch && (storeMatch || statsMatch);
+                                        return nameMatch && storeMatch;
                                     });
 
                                     if (recordIdx !== -1 && this.dataStore[recordIdx]) {
@@ -1639,7 +1635,6 @@
                         console.error(err);
                         Utility.showToast('⚠️ 解析過程發生系統錯誤：' + err.message, true);
                     } finally {
-                        // 無論成功失敗，確保遮罩解除！
                         Utility.hideLoading();
                     }
                 }, 100); 
@@ -1716,15 +1711,13 @@
                         let cleanDbName = Utility.parseName(dbName, window.ruleEngine).pureName; 
                         
                         let dbStore = (r._raw[this.colMap.store] || "").trim();
-                        let dbStats = (r._raw[this.colMap.stats] || "").replace(/[\s\/]/g, '');
                         
                         let nameMatch = cleanDbName.toLowerCase() === pureName.toLowerCase();
-                        let storeMatch = this.isSameStore(dbStore, extStore);
                         
-                        let cleanExtStats = extStats.replace(/[\s\/]/g, '');
-                        let statsMatch = cleanExtStats && dbStats && (dbStats.includes(cleanExtStats) || cleanExtStats.includes(dbStats));
+                        // 【核心修正：強制隔離分店】
+                        let storeMatch = Utility.isSameStore(dbStore, extStore);
 
-                        return nameMatch && (storeMatch || statsMatch);
+                        return nameMatch && storeMatch;
                     });
                 }
 
