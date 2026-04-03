@@ -359,9 +359,170 @@ sessionStorage.setItem("gapi_access_token", ${JSON.stringify(state.accessToken)}
 sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ? "true" : "false")});
 <\/script>`;
 
+        const debugPatch = `<style id="jp-sync-debug-style">
+#jp-sync-debug-btn {
+  position: fixed;
+  right: 14px;
+  bottom: 58px;
+  z-index: 2147483000;
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: rgba(30, 41, 59, 0.92);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+#jp-sync-debug-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483001;
+  background: rgba(2, 6, 23, 0.58);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+#jp-sync-debug-modal.show { display: flex; }
+#jp-sync-debug-card {
+  width: min(960px, 100%);
+  max-height: 88dvh;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+#jp-sync-debug-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+#jp-sync-debug-head .actions { display: flex; gap: 8px; }
+#jp-sync-debug-head button {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+#jp-sync-debug-copy { background: #2563eb; color: #fff; }
+#jp-sync-debug-clear { background: #f59e0b; color: #fff; }
+#jp-sync-debug-close { background: #ef4444; color: #fff; }
+#jp-sync-debug-body {
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: Consolas, monospace;
+  background: #f8fafc;
+  color: #0f172a;
+}
+<\/style>
+<script>
+(function () {
+  if (window.__JP_SYNC_DEBUG_INSTALLED) return;
+  window.__JP_SYNC_DEBUG_INSTALLED = true;
+  var logs = [];
+  function now() { return new Date().toISOString(); }
+  function pushLog(msg) {
+    var line = "[" + now() + "] " + msg;
+    logs.push(line);
+    if (logs.length > 600) logs = logs.slice(-600);
+    var pre = document.getElementById("jp-sync-debug-body");
+    if (pre) pre.textContent = logs.join("\\n");
+  }
+  function ensureUi() {
+    if (document.getElementById("jp-sync-debug-btn")) return;
+    var btn = document.createElement("button");
+    btn.id = "jp-sync-debug-btn";
+    btn.type = "button";
+    btn.textContent = "Sync Debug";
+    document.body.appendChild(btn);
+
+    var modal = document.createElement("div");
+    modal.id = "jp-sync-debug-modal";
+    modal.innerHTML = '<div id="jp-sync-debug-card"><div id="jp-sync-debug-head"><strong>Auto Sync Debug</strong><div class="actions"><button id="jp-sync-debug-copy" type="button">Copy</button><button id="jp-sync-debug-clear" type="button">Clear</button><button id="jp-sync-debug-close" type="button">Close</button></div></div><pre id="jp-sync-debug-body"></pre></div>';
+    document.body.appendChild(modal);
+
+    btn.addEventListener("click", function () {
+      modal.classList.add("show");
+      var pre = document.getElementById("jp-sync-debug-body");
+      if (pre) pre.textContent = logs.join("\\n");
+    });
+    modal.addEventListener("click", function (e) {
+      if (e.target === modal) modal.classList.remove("show");
+    });
+    document.getElementById("jp-sync-debug-close").addEventListener("click", function () {
+      modal.classList.remove("show");
+    });
+    document.getElementById("jp-sync-debug-clear").addEventListener("click", function () {
+      logs = [];
+      var pre = document.getElementById("jp-sync-debug-body");
+      if (pre) pre.textContent = "";
+    });
+    document.getElementById("jp-sync-debug-copy").addEventListener("click", function () {
+      var text = logs.join("\\n");
+      if (!text) return;
+      navigator.clipboard && navigator.clipboard.writeText(text);
+    });
+  }
+
+  function patchApp() {
+    var app = window.app;
+    if (!app) return false;
+    if (!app.__jpDebugFetchPatched && typeof app.fetchHtmlWithProxy === "function") {
+      var origFetch = app.fetchHtmlWithProxy.bind(app);
+      app.fetchHtmlWithProxy = async function (url) {
+        pushLog("FETCH start " + url);
+        try {
+          var html = await origFetch(url);
+          pushLog("FETCH ok    " + url + " (len=" + String(html || "").length + ")");
+          return html;
+        } catch (err) {
+          pushLog("FETCH fail  " + url + " :: " + (err && err.message ? err.message : String(err)));
+          throw err;
+        }
+      };
+      app.__jpDebugFetchPatched = true;
+    }
+
+    if (!app.__jpDebugSyncPatched && typeof app.startAutoSync === "function") {
+      var origSync = app.startAutoSync.bind(app);
+      app.startAutoSync = async function () {
+        pushLog("SYNC begin");
+        try {
+          var result = await origSync();
+          pushLog("SYNC done");
+          return result;
+        } catch (err) {
+          pushLog("SYNC error :: " + (err && err.message ? err.message : String(err)));
+          throw err;
+        }
+      };
+      app.__jpDebugSyncPatched = true;
+    }
+    return true;
+  }
+
+  var tries = 0;
+  var timer = setInterval(function () {
+    tries += 1;
+    ensureUi();
+    if (patchApp() || tries > 240) clearInterval(timer);
+  }, 250);
+  pushLog("DEBUG installed");
+})();
+<\/script>`;
+
         const seededHtml = entryHtml.includes("<head>")
-          ? entryHtml.replace("<head>", `<head>${tokenSeed}`)
-          : `${tokenSeed}${entryHtml}`;
+          ? entryHtml.replace("<head>", `<head>${tokenSeed}${debugPatch}`)
+          : `${tokenSeed}${debugPatch}${entryHtml}`;
 
         const blob = new Blob([seededHtml], { type: "text/html" });
         const url = URL.createObjectURL(blob);
