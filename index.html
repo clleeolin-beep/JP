@@ -309,7 +309,27 @@
       try {
         const manifest = await loadManifest();
         const useDocExport = String(manifest.entrySource || "").toLowerCase() === "gdoc";
-        const entryHtml = await fetchAnyText(manifest.entryFileId, useDocExport);
+        let entryHtml = await fetchAnyText(manifest.entryFileId, useDocExport);
+        const coreFiles = Array.isArray(manifest.coreFiles) ? manifest.coreFiles : [];
+        if (coreFiles.length) {
+          const blocks = [];
+          for (const file of coreFiles) {
+            if (!file || !file.id) continue;
+            const src = await fetchAnyText(
+              file.id,
+              String(file.source || "").toLowerCase() === "gdoc"
+            );
+            const label = String(file.name || file.id).replace(/</g, "_");
+            const safeJs = String(src || "").replace(/<\/script>/gi, "<\\/script>");
+            blocks.push(`<script>\n/* ${label} */\n${safeJs}\n<\/script>`);
+          }
+          if (blocks.length) {
+            const merged = blocks.join("\n");
+            entryHtml = entryHtml.includes("</body>")
+              ? entryHtml.replace("</body>", `${merged}\n</body>`)
+              : `${entryHtml}\n${merged}`;
+          }
+        }
         const tokenSeed = `<script>
 window.__JP_TOKEN = ${JSON.stringify(state.accessToken)};
 sessionStorage.setItem("gapi_access_token", ${JSON.stringify(state.accessToken)});
