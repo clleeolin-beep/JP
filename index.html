@@ -348,7 +348,7 @@ window.__JP_TOKEN = ${JSON.stringify(state.accessToken)};
 sessionStorage.setItem("gapi_access_token", ${JSON.stringify(state.accessToken)});
 sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ? "true" : "false")});
 <\/script>`;
-        const bridgePatch = `<script>
+        const bridgePatch = String.raw`<script>
 (function () {
   function getApp() { return window.app || null; }
   function getCheckedAf() {
@@ -531,6 +531,50 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
     return blocks;
   }
 
+  function extractListBlocksFromText(text, baseUrl) {
+    var lines = String(text || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    var blocks = [];
+    var seen = {};
+    for (var i = 0; i < lines.length; i += 1) {
+      var line = lines[i];
+      var m = line.match(/https?:\/\/[^\s]+/i);
+      if (!m || !m[0]) continue;
+      var abs = normalizeUrl(m[0], baseUrl);
+      if (!/(girlid|girls-list|\/cast\/|\/girl\/|\/profile\/)/i.test(abs)) continue;
+      if (seen[abs]) continue;
+      seen[abs] = true;
+      var prev = i > 0 ? lines[i - 1] : '';
+      var next = i + 1 < lines.length ? lines[i + 1] : '';
+      var block = [prev, line, next, abs].filter(Boolean).join('\n');
+      blocks.push(block);
+    }
+    return blocks;
+  }
+
+  async function fetchHtmlForSync(app, url) {
+    var target = String(url || '').trim();
+    if (!target) throw new Error('sync url is empty');
+
+    try {
+      return await app.fetchHtmlWithProxy(target);
+    } catch (e1) {}
+
+    var noProto = target.replace(/^https?:\/\//i, '');
+    var fallbacks = [
+      'https://r.jina.ai/http://' + noProto,
+      'https://r.jina.ai/http://https://' + noProto
+    ];
+    for (var i = 0; i < fallbacks.length; i += 1) {
+      try {
+        var res = await fetch(fallbacks[i]);
+        if (!res.ok) continue;
+        var text = await res.text();
+        if (text && text.length > 80) return text;
+      } catch (e2) {}
+    }
+    throw new Error('all sync fetch channels failed');
+  }
+
   function inferSiteCodeFromUrl(url) {
     var u = String(url || '').toLowerCase();
     if (!u) return '';
@@ -619,8 +663,15 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
         var statsObj = ctx.statsObj || { total: 0, updated: 0, missing: 0 };
         var url = String(rule.pattern || '').trim();
         if (!url) return;
-        var html = await app.fetchHtmlWithProxy(url);
+        var html = '';
+        try {
+          html = await fetchHtmlForSync(app, url);
+        } catch (fetchError) {
+          statsObj.missing += 1;
+          return;
+        }
         var blocks = extractListBlocksFromHtml(html, url);
+        if (!blocks.length) blocks = extractListBlocksFromText(html, url);
         if (!blocks.length) {
           var plain = String(html || '').replace(/<script[\s\S]*?<\/script>/gi, ' ')
             .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -711,8 +762,15 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
         ];
         for (var i = 0; i < urls.length; i += 1) {
           var url = urls[i];
-          var html = await app.fetchHtmlWithProxy(url);
+          var html = '';
+          try {
+            html = await fetchHtmlForSync(app, url);
+          } catch (fetchError) {
+            statsObj.missing += 1;
+            continue;
+          }
           var blocks = extractListBlocksFromHtml(html, url);
+          if (!blocks.length) blocks = extractListBlocksFromText(html, url);
           for (var j = 0; j < blocks.length; j += 1) {
             var record = parseRecordFromBlock({
               app: app,
