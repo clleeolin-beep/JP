@@ -216,12 +216,17 @@
         const useDocExport = String(manifest.entrySource || "").toLowerCase() === "gdoc";
         const entryHtml = await fetchAnyText(manifest.entryFileId, useDocExport);
         const tokenSeed = `<script>
+window.__JP_TOKEN = ${JSON.stringify(state.accessToken)};
 sessionStorage.setItem("gapi_access_token", ${JSON.stringify(state.accessToken)});
 sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ? "true" : "false")});
 <\/script>`;
-        const seededHtml = entryHtml.includes("<head>")
-          ? entryHtml.replace("<head>", `<head>${tokenSeed}`)
-          : `${tokenSeed}${entryHtml}`;
+        const patchedEntryHtml = entryHtml.replace(
+          "https://drive.google.com/thumbnail?authuser=0&sz=w800&id=${m[0]}",
+          "https://www.googleapis.com/drive/v3/files/${m[0]}?alt=media&access_token=${encodeURIComponent((window.__JP_TOKEN || sessionStorage.getItem('gapi_access_token') || '').replace(/^\"|\"$/g, ''))}"
+        );
+        const seededHtml = patchedEntryHtml.includes("<head>")
+          ? patchedEntryHtml.replace("<head>", `<head>${tokenSeed}`)
+          : `${tokenSeed}${patchedEntryHtml}`;
         const blob = new Blob([seededHtml], { type: "text/html" });
         const blobUrl = URL.createObjectURL(blob);
 
