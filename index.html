@@ -494,17 +494,272 @@ sessionStorage.setItem("gapi_has_write", ${JSON.stringify(state.hasWriteAccess ?
     return true;
   }
 
+  function htmlToDoc(html) {
+    try {
+      return new DOMParser().parseFromString(String(html || ''), 'text/html');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function normalizeUrl(url, base) {
+    try {
+      return new URL(url, base || window.location.href).toString();
+    } catch (e) {
+      return String(url || '').trim();
+    }
+  }
+
+  function extractListBlocksFromHtml(html, baseUrl) {
+    var doc = htmlToDoc(html);
+    if (!doc) return [];
+    var blocks = [];
+    var seen = {};
+    var anchors = Array.prototype.slice.call(doc.querySelectorAll('a[href]'));
+    anchors.forEach(function (a) {
+      var href = String(a.getAttribute('href') || '').trim();
+      if (!href) return;
+      if (!/(girlid|girls-list|\/cast\/|\/girl\/|\/profile\/)/i.test(href)) return;
+      var abs = normalizeUrl(href, baseUrl);
+      if (!/^https?:\/\//i.test(abs) || seen[abs]) return;
+      seen[abs] = true;
+      var root = a.closest('li,article,.cast,.cast-item,.girl,.girl-item,.profile,.item,div') || a;
+      var txt = String(root.textContent || a.textContent || '').replace(/\s+/g, ' ').trim();
+      if (txt.length < 2) return;
+      blocks.push(txt + '\n' + abs);
+    });
+    return blocks;
+  }
+
+  function inferSiteCodeFromUrl(url) {
+    var u = String(url || '').toLowerCase();
+    if (!u) return '';
+    if (u.indexOf('yoshiwara-soap.jp') !== -1) return 'yoshiwara-soap';
+    if (u.indexOf('my-essentials.net') !== -1) return 'my-essentials';
+    if (u.indexOf('iramachion.com') !== -1) return 'iramachion';
+    if (u.indexOf('kiwami-girls.com') !== -1) return 'kiwami_g';
+    if (u.indexOf('yoasobi-heaven.com') !== -1) {
+      if (u.indexOf('/sft/') !== -1 || u.indexOf('f13') !== -1) return 'sft';
+      if (u.indexOf('/omjg-shinjuku/') !== -1 || u.indexOf('shinjuku') !== -1) return 'omjg_shinjuku';
+      if (u.indexOf('/omjg-asakusa/') !== -1 || u.indexOf('asakusa') !== -1) return 'omjg_asakusa';
+      if (u.indexOf('/omjg/') !== -1) return 'omjg';
+      if (u.indexOf('/robo-deli/') !== -1 || u.indexOf('/robo/') !== -1) return 'robo-deli';
+    }
+    return '';
+  }
+
+  function parseRecordFromBlock(ctx) {
+    var app = ctx.app;
+    var block = String(ctx.block || '');
+    var html = String(ctx.html || '');
+    var siteMatches = ctx.siteMatches || ['Common'];
+    var sourceUrl = String(ctx.sourceUrl || '');
+    if (!app || typeof app.extractCommonRuleData !== 'function') return null;
+
+    var common = app.extractCommonRuleData(block, html, siteMatches);
+    var name = (common.nameInfo && common.nameInfo.pureName) || common.rawName || '';
+    name = String(name || '').trim();
+    if (!name) return null;
+
+    var url = '';
+    if (common.extractedUrl && common.extractedUrl.value) url = common.extractedUrl.value;
+    else if (common.urlFallback && common.urlFallback[0]) url = common.urlFallback[0];
+    else url = sourceUrl;
+    url = normalizeUrl(url, sourceUrl);
+
+    var tags = new Set();
+    if (common.nameInfo && Array.isArray(common.nameInfo.tags)) {
+      common.nameInfo.tags.forEach(function (v) { if (v) tags.add(v); });
+    }
+    if (common.extractedAf && common.extractedAf.tags) {
+      common.extractedAf.tags.forEach(function (v) { if (v) tags.add(v); });
+    }
+
+    var listNo = '';
+    var noMatch = block.match(/No\.?\s*0*([0-9]{1,6})/i);
+    if (noMatch && noMatch[1]) listNo = noMatch[1];
+    if (!listNo && url) {
+      var idMatch = url.match(/girlid[-_]?0*([0-9]{1,6})/i) || url.match(/\/cast\/(?:detail\/)?([a-z0-9_-]{2,})/i);
+      if (idMatch && idMatch[1]) listNo = idMatch[1];
+    }
+
+    return {
+      location: '',
+      store: (typeof app.getRecordStoreName === 'function') ? app.getRecordStoreName(common) : '',
+      techId: '',
+      listNo: listNo,
+      startDate: (common.extractedDate && common.extractedDate.value) || '',
+      name: name,
+      age: (common.extractedAge && common.extractedAge.value) || (common.ageFallback && common.ageFallback[1]) || '',
+      stats: (common.extractedStats && common.extractedStats.value) || (common.statsFallback && common.statsFallback[1]) || '',
+      url: url,
+      price: (common.extractedPrice && common.extractedPrice.value) || '',
+      tags: Array.from(tags),
+      level: (common.extractedName && common.extractedName.level) || (common.nameInfo && common.nameInfo.level) || '',
+      schedule: common.formattedSchedule || '',
+      hasSchedule: !!common.formattedSchedule
+    };
+  }
+
+  function buildGenericHandler(siteCode) {
+    return {
+      parseBlocks: function (ctx) {
+        var blocks = extractListBlocksFromHtml(ctx && ctx.html, ctx && ctx.sourceUrl);
+        if (blocks.length) return blocks;
+        var text = String((ctx && ctx.text) || '');
+        var parts = text.split(/\n{2,}/).map(function (s) { return s.trim(); }).filter(Boolean);
+        return parts.length ? parts : [text];
+      },
+      extractRecord: function (ctx) {
+        return parseRecordFromBlock(ctx);
+      },
+      syncAuto: async function (ctx) {
+        var app = ctx.app;
+        var rule = ctx.rule || {};
+        var statsObj = ctx.statsObj || { total: 0, updated: 0, missing: 0 };
+        var url = String(rule.pattern || '').trim();
+        if (!url) return;
+        var html = await app.fetchHtmlWithProxy(url);
+        var blocks = extractListBlocksFromHtml(html, url);
+        if (!blocks.length) {
+          var plain = String(html || '').replace(/<script[\s\S]*?<\/script>/gi, ' ')
+            .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          blocks = plain ? [plain] : [];
+        }
+        for (var i = 0; i < blocks.length; i += 1) {
+          var record = parseRecordFromBlock({
+            app: app,
+            block: blocks[i],
+            html: html,
+            siteMatches: [siteCode, 'Common'],
+            sourceUrl: url
+          });
+          if (!record || !record.name) continue;
+          statsObj.total += 1;
+          var existingIndex = app.findRecordIndex(record);
+          if (existingIndex !== -1) {
+            app.applyRecordToRow(app.dataStore[existingIndex]._raw, record, false);
+            statsObj.updated += 1;
+          } else {
+            statsObj.missing += 1;
+          }
+        }
+      }
+    };
+  }
+
+  function ensureSiteSyncRegistry() {
+    if (window.SiteSyncRegistry && typeof window.SiteSyncRegistry.getHandler === 'function') return;
+    var handlers = {};
+    var api = {
+      registerHandler: function (code, handler) {
+        if (!code || !handler) return;
+        handlers[String(code)] = handler;
+      },
+      inferSiteMatches: function (ctx) {
+        var preferred = String((ctx && ctx.preferredSiteCode) || '').trim();
+        var sourceUrl = String((ctx && ctx.sourceUrl) || '').trim();
+        var out = [];
+        if (preferred) out.push(preferred);
+        var inferred = inferSiteCodeFromUrl(sourceUrl);
+        if (inferred && out.indexOf(inferred) === -1) out.push(inferred);
+        if (out.indexOf('Common') === -1) out.push('Common');
+        return out;
+      },
+      getHandler: function (ctx) {
+        var siteCode = String((ctx && ctx.siteCode) || '').trim();
+        var siteMatches = (ctx && ctx.siteMatches) || [];
+        var sourceUrl = String((ctx && ctx.sourceUrl) || '').trim();
+        var inferred = inferSiteCodeFromUrl(sourceUrl);
+        var candidates = [];
+        [siteCode].concat(siteMatches || []).concat([inferred, 'Common']).forEach(function (k) {
+          if (k && candidates.indexOf(k) === -1) candidates.push(k);
+        });
+        for (var i = 0; i < candidates.length; i += 1) {
+          if (handlers[candidates[i]]) return handlers[candidates[i]];
+        }
+        return null;
+      }
+    };
+
+    var commonCodes = ['robo-deli', 'kiwami_g', 'omjg', 'omjg_shinjuku', 'omjg_asakusa', 'sft', 'iramachion', 'my-essentials', 'Common'];
+    commonCodes.forEach(function (code) {
+      api.registerHandler(code, buildGenericHandler(code));
+    });
+
+    api.registerHandler('yoshiwara-soap', {
+      parseBlocks: function (ctx) {
+        return extractListBlocksFromHtml(ctx && ctx.html, ctx && ctx.sourceUrl);
+      },
+      extractRecord: function (ctx) {
+        return parseRecordFromBlock(ctx);
+      },
+      syncAuto: async function (ctx) {
+        var app = ctx.app;
+        var statsObj = ctx.statsObj || { total: 0, updated: 0, missing: 0 };
+        var urls = [
+          'https://yoshiwara-soap.jp/schedule/',
+          'https://yoshiwara-soap.jp/schedule/tomorrow.html',
+          'https://yoshiwara-soap.jp/schedule/in-2-days.html',
+          'https://yoshiwara-soap.jp/schedule/in-3-days.html',
+          'https://yoshiwara-soap.jp/schedule/in-4-days.html',
+          'https://yoshiwara-soap.jp/schedule/in-5-days.html',
+          'https://yoshiwara-soap.jp/schedule/in-6-days.html'
+        ];
+        for (var i = 0; i < urls.length; i += 1) {
+          var url = urls[i];
+          var html = await app.fetchHtmlWithProxy(url);
+          var blocks = extractListBlocksFromHtml(html, url);
+          for (var j = 0; j < blocks.length; j += 1) {
+            var record = parseRecordFromBlock({
+              app: app,
+              block: blocks[j],
+              html: html,
+              siteMatches: ['yoshiwara-soap', 'Common'],
+              sourceUrl: url
+            });
+            if (!record || !record.name) continue;
+            statsObj.total += 1;
+            var existingIndex = app.findRecordIndex(record);
+            if (existingIndex !== -1) {
+              app.applyRecordToRow(app.dataStore[existingIndex]._raw, record, false);
+              statsObj.updated += 1;
+            } else {
+              statsObj.missing += 1;
+            }
+          }
+        }
+      }
+    });
+
+    window.SiteSyncRegistry = api;
+  }
+
   var tries = 0;
   var timer = setInterval(function () {
     tries += 1;
+    ensureSiteSyncRegistry();
     patchAfFilter();
     patchCardInteraction();
     if (tries > 120) clearInterval(timer);
   }, 200);
 })();
 <\/script>`;
-        const responsivePatch = `<style id="launcher-mobile-patch">
+const responsivePatch = `<style id="launcher-mobile-patch">
 /* Desktop: compact single-line filters, no awkward gaps */
+#panel-catalog {
+  padding-top: 10px !important;
+}
+#panel-catalog .filter-tools {
+  margin-top: 0 !important;
+  top: 0 !important;
+}
+#panel-catalog .catalog-grid {
+  margin-top: 8px !important;
+}
 .filter-tools {
   display: flex !important;
   align-items: center !important;
